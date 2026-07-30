@@ -1,0 +1,10 @@
+{
+  "name": "kouki-ai-lab",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && (cd server && npm install)",
+  "forwardPorts": [3000],
+  "remoteUser": "node"
+}

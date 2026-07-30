@@ -12,21 +12,11 @@ node_modules/
 .claude/settings.local.json
 .DS_Store
 
-# ▼ あなたの会社のデータ（テンプレから初回セットアップで生成。git更新で消えないよう除外）
-設計図.md
-office/state.js
-office/company.js
-office/config.js
-server/company.json
-
-# セットアップで生成される社員定義
-.claude/agents/*.md
-agents/*.md
-!agents/README.md
+# 注：設計図.md / office/state.js / office/company.js / office/config.js /
+# .claude/agents/*.md / agents/*.md / logs/ は、配布用テンプレートとしては
+# 本来「初回セットアップで生成される個人データ」として除外する設計だが、
+# このリポジトリは鈴木さん個人のプライベートrepoとして2端末間で"生きた会社データ"を
+# 同期する用途に使うため、あえて追跡対象にする（2026-07-30変更）。
 
 # 専用ツール（別途導入オプション。シンボリックリンクを配布物に含めない）
 tools/
-
-# 成果物ログ（実行時に生成される。フォルダだけ残す）
-logs/*
-!logs/.gitkeep
