@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Write(./templates/**)",
+      "Write(./tests/fixtures/**)",
+      "Write(./tests/cases/**)",
+      "Write(./tests/results/**)",
+      "Write(./docs/**)",
+      "Write(./workflows/draft/**)",
+      "Bash(node ./scripts/*.mjs *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git status)",
+      "Bash(git log *)"
+    ],
+    "ask": [
+      "Write(./workflows/validated/**)",
+      "Write(./workflows/deployed/**)",
+      "Write(./.env)",
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(npm install *)",
+      "Bash(curl *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*credentials*)",
+      "Read(./**/*.key)",
+      "Read(./**/*.pem)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(git tag -d *)",
+      "Bash(git branch -D *)"
+    ]
+  },
+  "hooks": {}
+}

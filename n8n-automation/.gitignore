@@ -1,0 +1,17 @@
+# シークレット・環境変数（絶対にコミットしない）
+.env
+*.env
+
+# 依存関係
+node_modules/
+
+# テスト実行結果（実データ・実行ログを含む可能性があるため既定で除外。共有したい結果はレビュー後に個別追加）
+tests/results/*
+!tests/results/.gitkeep
+
+# 本番稼働中ワークフローのエクスポート（機微情報混入リスクのため既定で除外）
+workflows/deployed/*.json
+
+# OS/エディタ
+.DS_Store
+Thumbs.db

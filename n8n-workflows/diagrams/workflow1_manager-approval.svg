@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 460" font-family="'Hiragino Sans','Yu Gothic',Meiryo,sans-serif">
+  <rect x="0" y="0" width="1240" height="460" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="32" font-size="22" font-weight="700" fill="#0f172a">ワークフロー①：報告書ドラフト完成 → マネージャー承認依頼</text>
+  <text x="20" y="58" font-size="15" fill="#475569">🟦 自動で行われるステップ　　🟧 人（あなた・担当者）が判断するステップ</text>
+
+  <!-- Box1 -->
+  <rect x="30" y="170" width="210" height="120" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="135" y="205" font-size="14" fill="#1e40af" text-anchor="middle" font-weight="700">① きっかけ</text>
+  <text x="135" y="230" font-size="14" fill="#1e293b" text-anchor="middle">報告書の下書きが</text>
+  <text x="135" y="250" font-size="14" fill="#1e293b" text-anchor="middle">できあがる</text>
+
+  <line x1="240" y1="230" x2="300" y2="230" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow1)"/>
+
+  <!-- Box2 -->
+  <rect x="300" y="160" width="250" height="140" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="425" y="192" font-size="14" fill="#1e40af" text-anchor="middle" font-weight="700">② 自動で連絡</text>
+  <text x="425" y="216" font-size="13.5" fill="#1e293b" text-anchor="middle">マネージャーへ確認メールが</text>
+  <text x="425" y="236" font-size="13.5" fill="#1e293b" text-anchor="middle">自動で送信される</text>
+  <text x="425" y="260" font-size="13" fill="#475569" text-anchor="middle">(承認／差し戻しボタン付き)</text>
+
+  <line x1="550" y1="230" x2="610" y2="230" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow1)"/>
+
+  <!-- Box3 (human) -->
+  <rect x="610" y="170" width="230" height="120" rx="16" fill="#fffbeb" stroke="#d97706" stroke-width="2.5"/>
+  <text x="725" y="202" font-size="14" fill="#92400e" text-anchor="middle" font-weight="700">③ 人が判断 👤</text>
+  <text x="725" y="228" font-size="14" fill="#1e293b" text-anchor="middle">マネージャーがメール内の</text>
+  <text x="725" y="248" font-size="14" fill="#1e293b" text-anchor="middle">ボタンを押す</text>
+
+  <line x1="840" y1="210" x2="905" y2="120" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow1)"/>
+  <line x1="840" y1="250" x2="905" y2="330" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow1)"/>
+
+  <!-- Box4a -->
+  <rect x="910" y="40" width="290" height="110" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="1055" y="72" font-size="14" fill="#1e40af" text-anchor="middle" font-weight="700">④-A 承認された場合</text>
+  <text x="1055" y="96" font-size="13.5" fill="#1e293b" text-anchor="middle">次の工程（PDF作成）へ</text>
+  <text x="1055" y="116" font-size="13.5" fill="#1e293b" text-anchor="middle">自動的に進む</text>
+
+  <!-- Box4b -->
+  <rect x="910" y="300" width="290" height="110" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="1055" y="332" font-size="14" fill="#1e40af" text-anchor="middle" font-weight="700">④-B 差し戻された場合</text>
+  <text x="1055" y="356" font-size="13.5" fill="#1e293b" text-anchor="middle">担当の検査員へ</text>
+  <text x="1055" y="376" font-size="13.5" fill="#1e293b" text-anchor="middle">再確認の連絡が届く</text>
+
+  <text x="20" y="440" font-size="12.5" fill="#94a3b8">※ 実際の送信・承認処理はダミーデータでの動作確認段階です（本番未接続）</text>
+</svg>

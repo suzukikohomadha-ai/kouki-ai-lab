@@ -1,0 +1,12 @@
+{
+  "note": "架空のテストデータ。実在する人物・企業・金額の実データではありません。",
+  "cases": [
+    { "id": "normal-1", "amount": 12000, "threshold": 10000, "expectedStatus": "要確認" },
+    { "id": "normal-2", "amount": 5000, "threshold": 10000, "expectedStatus": "自動承認" },
+    { "id": "boundary-equal", "amount": 10000, "threshold": 10000, "expectedStatus": "自動承認" },
+    { "id": "boundary-plus-one", "amount": 10001, "threshold": 10000, "expectedStatus": "要確認" },
+    { "id": "zero-amount", "amount": 0, "threshold": 10000, "expectedStatus": "自動承認" },
+    { "id": "negative-amount", "amount": -100, "threshold": 10000, "expectedStatus": "自動承認" },
+    { "id": "missing-threshold", "amount": 5000, "threshold": null, "expectedStatus": "[要仕様確認：nullの扱いは未定義]" }
+  ]
+}

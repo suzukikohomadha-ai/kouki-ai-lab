@@ -1,0 +1,28 @@
+{
+  "_note": "brand-strategy スキルで確定した値だけを埋めます。未確定の値は空文字のままにし、架空の値を入れません。",
+  "color": {
+    "primary": "",
+    "secondary": "",
+    "accent": "",
+    "background": "",
+    "surface": "",
+    "textPrimary": "",
+    "textSecondary": "",
+    "border": "",
+    "success": "",
+    "warning": "",
+    "error": ""
+  },
+  "typography": {
+    "fontFamilyHeading": "",
+    "fontFamilyBody": "",
+    "fontWeightRegular": "",
+    "fontWeightBold": "",
+    "lineHeightHeading": "",
+    "lineHeightBody": ""
+  },
+  "spacing": {},
+  "radius": {},
+  "shadow": {},
+  "breakpoint": {}
+}

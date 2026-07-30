@@ -1,0 +1,32 @@
+# 依存
+node_modules/
+
+# server/ はRenderデプロイ用の独立リポジトリ（ai-company-brain）として別管理のため対象外
+/server/
+
+# 秘密情報（トークン類は絶対にコミットしない）
+.env
+*.env
+
+# 実行時に生成されるローカル状態
+.claude/settings.local.json
+.DS_Store
+
+# ▼ あなたの会社のデータ（テンプレから初回セットアップで生成。git更新で消えないよう除外）
+設計図.md
+office/state.js
+office/company.js
+office/config.js
+server/company.json
+
+# セットアップで生成される社員定義
+.claude/agents/*.md
+agents/*.md
+!agents/README.md
+
+# 専用ツール（別途導入オプション。シンボリックリンクを配布物に含めない）
+tools/
+
+# 成果物ログ（実行時に生成される。フォルダだけ残す）
+logs/*
+!logs/.gitkeep

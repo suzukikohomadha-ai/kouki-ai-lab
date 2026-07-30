@@ -1,0 +1,113 @@
+{
+  "name": "DEMO-001_経費申請しきい値チェック（デモ・外部接続なし）",
+  "active": false,
+  "nodes": [
+    {
+      "id": "demo-001-manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "notes": "手動実行の起点。[要インスタンス確認] typeVersionは接続先で確認が必要。",
+      "parameters": {}
+    },
+    {
+      "id": "demo-001-set-input",
+      "name": "Set: テスト入力",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [460, 300],
+      "notes": "デモ用の固定入力。実案件ではフォーム/Webhook入力に置き換える。実データは含まない。",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "amount", "name": "amount", "type": "number", "value": 12000 },
+            { "id": "threshold", "name": "threshold", "type": "number", "value": 10000 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "demo-001-if-threshold",
+      "name": "IF: しきい値判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "notes": "amount > threshold を判定。[要インスタンス確認]",
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{$json.amount}}",
+              "rightValue": "={{$json.threshold}}",
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "demo-001-set-needs-review",
+      "name": "Set: 要確認",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [900, 200],
+      "notes": "しきい値超過時。",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "status", "name": "status", "type": "string", "value": "要確認" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "demo-001-set-auto-approved",
+      "name": "Set: 自動承認",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [900, 400],
+      "notes": "しきい値以下の場合。",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "status", "name": "status", "type": "string", "value": "自動承認" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "demo-001-noop-end",
+      "name": "NoOp: 完了",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "notes": "終端ノード。外部送信は行わない。",
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Set: テスト入力", "type": "main", "index": 0 }]]
+    },
+    "Set: テスト入力": {
+      "main": [[{ "node": "IF: しきい値判定", "type": "main", "index": 0 }]]
+    },
+    "IF: しきい値判定": {
+      "main": [
+        [{ "node": "Set: 要確認", "type": "main", "index": 0 }],
+        [{ "node": "Set: 自動承認", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set: 要確認": {
+      "main": [[{ "node": "NoOp: 完了", "type": "main", "index": 0 }]]
+    },
+    "Set: 自動承認": {
+      "main": [[{ "node": "NoOp: 完了", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

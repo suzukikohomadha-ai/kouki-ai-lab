@@ -1,0 +1,62 @@
+{
+  "name": "【デモ】⑤クライアント共有メール下書き作成(メール限定版)",
+  "nodes": [
+    {
+      "id": "n1", "name": "Webhook: 報告書PDF生成完了(デモ)", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 300],
+      "notes": "[要インスタンス確認] typeVersion。本番ではPDF生成完了イベントを想定。",
+      "parameters": { "httpMethod": "POST", "path": "demo-report-pdf-ready", "responseMode": "onReceived", "options": {} }
+    },
+    {
+      "id": "n2", "name": "Set: ダミー案件・PDF情報", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [460, 300],
+      "notes": "[要インスタンス確認] typeVersion",
+      "parameters": { "mode": "manual", "assignments": { "assignments": [
+        { "id": "a1", "name": "caseId", "type": "string", "value": "={{ $json.body?.caseId || $json.caseId || 'DEMO-CASE-0001' }}" },
+        { "id": "a2", "name": "vesselName", "type": "string", "value": "={{ $json.body?.vesselName || $json.vesselName || '[サンプル船舶]' }}" },
+        { "id": "a3", "name": "inspectionType", "type": "string", "value": "={{ $json.body?.inspectionType || $json.inspectionType || 'Bunker' }}" },
+        { "id": "a4", "name": "reportDate", "type": "string", "value": "={{ $json.body?.reportDate || $json.reportDate || '2026-08-05' }}" },
+        { "id": "a5", "name": "clientContactName", "type": "string", "value": "={{ $json.body?.clientContactName || $json.clientContactName || '[クライアント担当者名]' }}" },
+        { "id": "a6", "name": "clientContactEmail", "type": "string", "value": "={{ $json.body?.clientContactEmail || $json.clientContactEmail || 'client-placeholder@example.com' }}" },
+        { "id": "a7", "name": "pdfUrl", "type": "string", "value": "={{ $json.body?.pdfUrl || $json.pdfUrl || 'https://example.com/dummy-files/report-demo.pdf' }}" }
+      ] }, "options": {} }
+    },
+    {
+      "id": "n3", "name": "IF: 必須項目チェック", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [680, 300],
+      "notes": "[要インスタンス確認] conditions内部スキーマ",
+      "parameters": { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "combinator": "and", "conditions": [
+        { "id": "c1", "leftValue": "={{ $json.caseId }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } },
+        { "id": "c2", "leftValue": "={{ $json.clientContactEmail }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }
+      ] }, "options": {} }
+    },
+    { "id": "n4", "name": "NoOp: エラー(必須項目欠落)", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [900, 460], "parameters": {} },
+    {
+      "id": "n5", "name": "Set: メール文面生成(テンプレート)", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [900, 200],
+      "notes": "静的テンプレートによる文面組み立て。AI文章生成は本デモのスコープ外（Phase2で検討）。",
+      "parameters": { "mode": "manual", "assignments": { "assignments": [
+        { "id": "b1", "name": "draftSubject", "type": "string", "value": "=[検査報告書のご送付] {{ $json.vesselName }} ({{ $json.inspectionType }}) - {{ $json.reportDate }}" },
+        { "id": "b2", "name": "draftBody", "type": "string", "value": "={{ $json.clientContactName }} 様\n\n平素より大変お世話になっております。\n下記案件の検査報告書がまとまりましたのでご案内いたします。\n\n船名: {{ $json.vesselName }}\n検査種別: {{ $json.inspectionType }}\n検査日: {{ $json.reportDate }}\n報告書PDF（参照用・本番では添付に置き換え予定）: {{ $json.pdfUrl }}\n\n[本文は下書きです。送信前に必ず内容をご確認・編集の上、担当者が手動で送信してください。]" }
+      ] }, "options": {} }
+    },
+    {
+      "id": "n6", "name": "Gmail: クライアント共有メール下書き作成", "type": "n8n-nodes-base.gmail", "typeVersion": 2.1, "position": [1120, 200],
+      "notes": "[要インスタンス確認] typeVersion・PDF添付方法（今回は本文中にURL参照のみ、添付ファイル操作は未検証）。Credential未設定。resource=draft, operation=createは公式ドキュメントで確認済み。",
+      "parameters": { "resource": "draft", "operation": "create", "sendTo": "={{ $json.clientContactEmail }}", "subject": "={{ $json.draftSubject }}", "message": "={{ $json.draftBody }}", "options": {} },
+      "credentials": { "gmailOAuth2": { "id": "PLACEHOLDER_GMAIL_OAUTH2_CREDENTIAL_ID", "name": "[要設定] Gmail OAuth2 認証情報（未登録）" } }
+    },
+    {
+      "id": "n7", "name": "HTTP Request: 下書き記録ログ(無効化・将来用)", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1340, 200],
+      "disabled": true,
+      "notes": "カスタム側APIが未実装のため無効化。本番では下書きIDを案件フォルダ・カスタムDBへ記録する想定。WhatsApp版は今回対象外。",
+      "parameters": { "method": "POST", "url": "https://YOUR-BACKEND-API.example.com/cases/{{ $json.caseId }}/draft-log", "sendBody": true, "options": {} }
+    }
+  ],
+  "connections": {
+    "Webhook: 報告書PDF生成完了(デモ)": { "main": [[{ "node": "Set: ダミー案件・PDF情報", "type": "main", "index": 0 }]] },
+    "Set: ダミー案件・PDF情報": { "main": [[{ "node": "IF: 必須項目チェック", "type": "main", "index": 0 }]] },
+    "IF: 必須項目チェック": { "main": [ [{ "node": "Set: メール文面生成(テンプレート)", "type": "main", "index": 0 }], [{ "node": "NoOp: エラー(必須項目欠落)", "type": "main", "index": 0 }] ] },
+    "Set: メール文面生成(テンプレート)": { "main": [[{ "node": "Gmail: クライアント共有メール下書き作成", "type": "main", "index": 0 }]] },
+    "Gmail: クライアント共有メール下書き作成": { "main": [[{ "node": "HTTP Request: 下書き記録ログ(無効化・将来用)", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

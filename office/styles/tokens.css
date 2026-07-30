@@ -1,0 +1,56 @@
+/* ============================================================
+   オペレーションモード デザイントークン
+   既存 style.css（MURAデザイン／オフィスモード）とは独立。
+   オフィスモードの見た目には一切影響しない。
+   ============================================================ */
+:root {
+  /* ベース */
+  --op-bg: #0B1220;
+  --op-surface: #121B2E;
+  --op-surface-2: #17233A;
+  --op-border: #263349;
+  --op-text: #E8EDF6;
+  --op-text-2: #9CA9BE;
+  --op-text-3: #6B7890;
+
+  /* 主要操作 */
+  --op-accent: #3FA9F5;
+  --op-accent-ink: #04324F;
+
+  /* 状態 */
+  --op-success: #34C77B;
+  --op-success-bg: rgba(52, 199, 123, .14);
+  --op-warning: #F0B429;
+  --op-warning-bg: rgba(240, 180, 41, .14);
+  --op-danger: #F1554C;
+  --op-danger-bg: rgba(241, 85, 76, .14);
+  --op-idle: #6B7890;
+  --op-idle-bg: rgba(107, 120, 144, .14);
+
+  /* 事業識別色 */
+  --op-biz-kohomada: #3FA9F5;
+  --op-biz-kohomada-bg: rgba(63, 169, 245, .14);
+  --op-biz-kinoto: #34C77B;
+  --op-biz-kinoto-bg: rgba(52, 199, 123, .14);
+  --op-biz-fp: #E0A83C;
+  --op-biz-fp-bg: rgba(224, 168, 60, .14);
+  --op-biz-common: #8A93A6;
+  --op-biz-common-bg: rgba(138, 147, 166, .14);
+
+  /* 形状・間隔 */
+  --op-radius-sm: 8px;
+  --op-radius-md: 12px;
+  --op-radius-lg: 16px;
+  --op-gap: 16px;
+  --op-shadow: 0 1px 0 rgba(0,0,0,.2), 0 8px 24px rgba(0,0,0,.28);
+
+  --op-font: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+
+  --op-sidebar-w: 248px;
+  --op-sidebar-w-collapsed: 68px;
+  --op-header-h: 56px;
+  --op-drawer-w: 360px;
+}
+
+/* ライトOSでの prefers-color-scheme: light でも、オペレーションモードは常時ダーク運用（経営コックピット意図の固定トーン）。
+   将来ライトテーマを追加する場合はここに :root[data-op-theme="light"] を足す。 */

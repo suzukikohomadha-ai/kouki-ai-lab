@@ -1,0 +1,16 @@
+# シークレット・環境変数
+.env
+*.env
+
+# 依存関係
+node_modules/
+
+# ライセンス未確認・高解像度の元素材（機微・容量の観点で既定除外。個別に追加してよい）
+assets/source/*
+!assets/source/.gitkeep
+assets/licensed/*
+!assets/licensed/.gitkeep
+
+# OS/エディタ
+.DS_Store
+Thumbs.db

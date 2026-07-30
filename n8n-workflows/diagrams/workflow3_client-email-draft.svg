@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1460 300" font-family="'Hiragino Sans','Yu Gothic',Meiryo,sans-serif">
+  <rect x="0" y="0" width="1460" height="300" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="32" font-size="22" font-weight="700" fill="#0f172a">ワークフロー⑤：報告書完成 → お客様への送付メール下書き作成</text>
+  <text x="20" y="58" font-size="15" fill="#475569">🟦 自動で行われるステップ　　🟧 人（担当者）が確認・操作するステップ　　自動送信は一切行いません</text>
+
+  <!-- Box1 -->
+  <rect x="20" y="110" width="230" height="120" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="135" y="142" font-size="14" fill="#1e40af" text-anchor="middle" font-weight="700">① きっかけ</text>
+  <text x="135" y="168" font-size="14" fill="#1e293b" text-anchor="middle">報告書のPDFが</text>
+  <text x="135" y="188" font-size="14" fill="#1e293b" text-anchor="middle">完成する</text>
+
+  <line x1="250" y1="170" x2="300" y2="170" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow3)"/>
+
+  <!-- Box2 -->
+  <rect x="300" y="100" width="250" height="140" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="425" y="132" font-size="14" fill="#1e40af" text-anchor="middle" font-weight="700">② 自動で文章作成</text>
+  <text x="425" y="158" font-size="13.5" fill="#1e293b" text-anchor="middle">お客様への送付メールの</text>
+  <text x="425" y="178" font-size="13.5" fill="#1e293b" text-anchor="middle">文面をシステムが</text>
+  <text x="425" y="198" font-size="13.5" fill="#1e293b" text-anchor="middle">自動で組み立てる</text>
+
+  <line x1="550" y1="170" x2="600" y2="170" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow3)"/>
+
+  <!-- Box3 -->
+  <rect x="600" y="100" width="250" height="140" rx="16" fill="#ecfdf5" stroke="#059669" stroke-width="2.5"/>
+  <text x="725" y="132" font-size="14" fill="#065f46" text-anchor="middle" font-weight="700">③ 下書きとして保存</text>
+  <text x="725" y="158" font-size="13.5" fill="#1e293b" text-anchor="middle">メールは「下書き」として</text>
+  <text x="725" y="178" font-size="13.5" fill="#1e293b" text-anchor="middle">保存される</text>
+  <text x="725" y="200" font-size="12.5" fill="#065f46" text-anchor="middle">(まだ送信されていない)</text>
+
+  <line x1="850" y1="170" x2="900" y2="170" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow3)"/>
+
+  <!-- Box4 (human) -->
+  <rect x="900" y="100" width="250" height="140" rx="16" fill="#fffbeb" stroke="#d97706" stroke-width="2.5"/>
+  <text x="1025" y="132" font-size="14" fill="#92400e" text-anchor="middle" font-weight="700">④ 人が確認 👤</text>
+  <text x="1025" y="158" font-size="13.5" fill="#1e293b" text-anchor="middle">担当者が下書きの内容を</text>
+  <text x="1025" y="178" font-size="13.5" fill="#1e293b" text-anchor="middle">確認・修正する</text>
+
+  <line x1="1150" y1="170" x2="1200" y2="170" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow3)"/>
+
+  <!-- Box5 (human) -->
+  <rect x="1200" y="100" width="250" height="140" rx="16" fill="#fffbeb" stroke="#d97706" stroke-width="2.5"/>
+  <text x="1325" y="132" font-size="14" fill="#92400e" text-anchor="middle" font-weight="700">⑤ 人が送信 👤</text>
+  <text x="1325" y="158" font-size="13.5" fill="#1e293b" text-anchor="middle">担当者が送信ボタンを</text>
+  <text x="1325" y="178" font-size="13.5" fill="#1e293b" text-anchor="middle">押して、初めて</text>
+  <text x="1325" y="198" font-size="13.5" fill="#1e293b" text-anchor="middle">お客様に届く</text>
+
+  <text x="20" y="280" font-size="12.5" fill="#94a3b8">※ 実際の送信は必ず人が行い、システムが勝手にお客様へ送ることはありません</text>
+</svg>

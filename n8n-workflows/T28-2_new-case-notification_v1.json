@@ -1,0 +1,62 @@
+{
+  "name": "【デモ】④新規案件登録時の関係者通知",
+  "nodes": [
+    {
+      "id": "n1", "name": "Webhook: 新規案件登録通知(デモ)", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 300],
+      "notes": "[要インスタンス確認] typeVersion。本番ではカスタム側の案件登録UIからのイベントを想定。",
+      "parameters": { "httpMethod": "POST", "path": "demo-case-registered", "responseMode": "onReceived", "options": {} }
+    },
+    {
+      "id": "n2", "name": "Set: ダミー案件データ", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [460, 300],
+      "notes": "[要インスタンス確認] typeVersion・assignments構造",
+      "parameters": {
+        "mode": "manual",
+        "assignments": { "assignments": [
+          { "id": "a1", "name": "caseId", "type": "string", "value": "={{ $json.body?.caseId || $json.caseId || 'DEMO-CASE-0001' }}" },
+          { "id": "a2", "name": "vesselName", "type": "string", "value": "={{ $json.body?.vesselName || $json.vesselName || '[サンプル船舶]' }}" },
+          { "id": "a3", "name": "inspectionType", "type": "string", "value": "={{ $json.body?.inspectionType || $json.inspectionType || 'Bunker' }}" },
+          { "id": "a4", "name": "scheduledDate", "type": "string", "value": "={{ $json.body?.scheduledDate || $json.scheduledDate || '2026-08-05' }}" },
+          { "id": "a5", "name": "inspectorEmail", "type": "string", "value": "={{ $json.body?.inspectorEmail || $json.inspectorEmail || 'inspector-placeholder@example.com' }}" },
+          { "id": "a6", "name": "managerEmail", "type": "string", "value": "={{ $json.body?.managerEmail || $json.managerEmail || 'manager-placeholder@example.com' }}" }
+        ] },
+        "options": {}
+      }
+    },
+    {
+      "id": "n3", "name": "IF: 必須項目チェック", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [680, 300],
+      "notes": "[要インスタンス確認] conditions内部スキーマ",
+      "parameters": { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "combinator": "and", "conditions": [
+        { "id": "c1", "leftValue": "={{ $json.caseId }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } },
+        { "id": "c2", "leftValue": "={{ $json.vesselName }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }
+      ] }, "options": {} }
+    },
+    { "id": "n4", "name": "NoOp: エラー(必須項目欠落)", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [900, 460], "parameters": {} },
+    {
+      "id": "n5", "name": "Gmail: 関係者へ登録通知", "type": "n8n-nodes-base.gmail", "typeVersion": 2.1, "position": [900, 200],
+      "notes": "[要インスタンス確認] typeVersion。Credential未設定。宛先は複数（検査員・マネージャー）をカンマ区切りで指定。",
+      "parameters": {
+        "resource": "message", "operation": "send",
+        "sendTo": "={{ $json.inspectorEmail }},{{ $json.managerEmail }}",
+        "subject": "=[新規案件登録] {{ $json.vesselName }} ({{ $json.inspectionType }}) - {{ $json.scheduledDate }}",
+        "message": "=新規案件が登録されました。\n\n案件ID: {{ $json.caseId }}\n船名: {{ $json.vesselName }}\n検査種別: {{ $json.inspectionType }}\n予定日: {{ $json.scheduledDate }}",
+        "options": {}
+      },
+      "credentials": { "gmailOAuth2": { "id": "PLACEHOLDER_GMAIL_OAUTH2_CREDENTIAL_ID", "name": "[要設定] Gmail OAuth2 認証情報（未登録）" } }
+    },
+    {
+      "id": "n6", "name": "HTTP Request: 登録完了ログ(無効化・将来用)", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1120, 200],
+      "disabled": true,
+      "notes": "カスタム側APIが未実装のため無効化。本番化時にURL・認証を設定して有効化する。",
+      "parameters": { "method": "POST", "url": "https://YOUR-BACKEND-API.example.com/cases/{{ $json.caseId }}/notification-log", "sendBody": true, "options": {} }
+    }
+  ],
+  "connections": {
+    "Webhook: 新規案件登録通知(デモ)": { "main": [[{ "node": "Set: ダミー案件データ", "type": "main", "index": 0 }]] },
+    "Set: ダミー案件データ": { "main": [[{ "node": "IF: 必須項目チェック", "type": "main", "index": 0 }]] },
+    "IF: 必須項目チェック": { "main": [ [{ "node": "Gmail: 関係者へ登録通知", "type": "main", "index": 0 }], [{ "node": "NoOp: エラー(必須項目欠落)", "type": "main", "index": 0 }] ] },
+    "Gmail: 関係者へ登録通知": { "main": [[{ "node": "HTTP Request: 登録完了ログ(無効化・将来用)", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

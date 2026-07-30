@@ -1,0 +1,188 @@
+/* ============================================================
+   オペレーションモード 共通コンポーネント
+   ============================================================ */
+
+/* ---- ボタン ---- */
+.op-btn {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--op-border);
+  background: var(--op-surface-2); color: var(--op-text); border-radius: var(--op-radius-sm);
+  padding: 7px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.op-btn:hover { border-color: var(--op-accent); }
+.op-btn:active { transform: translateY(1px); }
+.op-btn--primary { background: var(--op-accent); border-color: var(--op-accent); color: var(--op-accent-ink); }
+.op-btn--primary:hover { filter: brightness(1.08); }
+.op-btn--danger { background: var(--op-danger-bg); border-color: var(--op-danger); color: var(--op-danger); }
+.op-btn--ghost { background: none; border-color: transparent; color: var(--op-text-2); }
+.op-btn--ghost:hover { background: var(--op-surface-2); color: var(--op-text); }
+.op-btn--sm { padding: 5px 10px; font-size: 11.5px; }
+.op-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.op-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  border-radius: var(--op-radius-sm); border: 1px solid transparent; background: none; color: var(--op-text-2);
+  cursor: pointer; position: relative; flex-shrink: 0;
+}
+.op-iconbtn:hover { background: var(--op-surface-2); color: var(--op-text); border-color: var(--op-border); }
+
+/* ---- カード共通 ---- */
+.op-card {
+  background: var(--op-surface); border: 1px solid var(--op-border); border-radius: var(--op-radius-lg);
+  padding: 16px;
+}
+.op-card__head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.op-card__title { font-size: 14px; font-weight: 700; margin: 0; }
+.op-card__meta { font-size: 11.5px; color: var(--op-text-3); }
+.op-grid { display: grid; gap: var(--op-gap); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.op-grid--2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 980px) { .op-grid--2 { grid-template-columns: 1fr; } }
+
+/* ---- バッジ・ステータス ---- */
+.op-badge {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 9999px; white-space: nowrap; line-height: 1.6;
+}
+.op-badge--idle { background: var(--op-idle-bg); color: var(--op-idle); }
+.op-badge--working, .op-badge--doing, .op-badge--info { background: var(--op-biz-kohomada-bg); color: var(--op-biz-kohomada); }
+.op-badge--success, .op-badge--done, .op-badge--pass { background: var(--op-success-bg); color: var(--op-success); }
+.op-badge--warning, .op-badge--review, .op-badge--blocked { background: var(--op-warning-bg); color: var(--op-warning); }
+.op-badge--danger, .op-badge--error, .op-badge--overdue { background: var(--op-danger-bg); color: var(--op-danger); }
+.op-badge--mock { background: rgba(224,168,60,.18); color: var(--op-biz-fp); border: 1px dashed var(--op-biz-fp); }
+.op-badge--dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+
+/* 事業バッジ */
+.op-biz { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 9999px; white-space: nowrap; }
+.op-biz--kohomada { background: var(--op-biz-kohomada-bg); color: var(--op-biz-kohomada); }
+.op-biz--kinoto { background: var(--op-biz-kinoto-bg); color: var(--op-biz-kinoto); }
+.op-biz--fp { background: var(--op-biz-fp-bg); color: var(--op-biz-fp); }
+.op-biz--common { background: var(--op-biz-common-bg); color: var(--op-biz-common); }
+.op-biz__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* リスクバッジ */
+.op-risk--low { background: var(--op-success-bg); color: var(--op-success); }
+.op-risk--mid { background: var(--op-warning-bg); color: var(--op-warning); }
+.op-risk--high { background: var(--op-danger-bg); color: var(--op-danger); }
+.op-risk--unknown { background: var(--op-idle-bg); color: var(--op-idle); }
+
+/* ---- 事業スイッチャー ---- */
+.op-bizswitch { display: flex; gap: 4px; background: var(--op-surface-2); border-radius: 9999px; padding: 3px; }
+.op-bizswitch button {
+  border: none; background: none; color: var(--op-text-2); font-size: 12px; font-weight: 700;
+  padding: 6px 12px; border-radius: 9999px; cursor: pointer; white-space: nowrap;
+}
+.op-bizswitch button.is-active { background: var(--op-surface); color: var(--op-text); box-shadow: var(--op-shadow); }
+.op-bizswitch-short { display: none; }
+@media (max-width: 780px) {
+  .op-bizswitch-full { display: none; }
+  .op-bizswitch-short { display: inline; }
+}
+@media (max-width: 640px) {
+  .op-bizswitch { overflow-x: auto; max-width: 40vw; }
+}
+
+/* ---- 検索 ---- */
+.op-search { display: flex; align-items: center; gap: 6px; background: var(--op-surface-2);
+  border: 1px solid var(--op-border); border-radius: 9999px; padding: 6px 12px; min-width: 0; }
+.op-search input { border: none; background: none; color: var(--op-text); font-size: 12.5px; outline: none; width: 160px; min-width: 0; }
+.op-search input::placeholder { color: var(--op-text-3); }
+@media (max-width: 640px) { .op-search { display: none; } }
+
+/* ---- テーブル ---- */
+.op-table-wrap { overflow-x: auto; border: 1px solid var(--op-border); border-radius: var(--op-radius-lg); }
+.op-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+.op-table th { text-align: left; font-size: 11px; font-weight: 700; color: var(--op-text-3);
+  text-transform: uppercase; letter-spacing: .04em; padding: 10px 14px; border-bottom: 1px solid var(--op-border);
+  background: var(--op-surface-2); white-space: nowrap; position: sticky; top: 0; }
+.op-table td { padding: 11px 14px; border-bottom: 1px solid var(--op-border); vertical-align: middle; }
+.op-table tbody tr { background: var(--op-surface); cursor: pointer; }
+.op-table tbody tr:hover { background: var(--op-surface-2); }
+.op-table tbody tr:last-child td { border-bottom: none; }
+@media (max-width: 980px) {
+  .op-table-wrap.op-table-wrap--cardify .op-table thead { display: none; }
+  .op-table-wrap.op-table-wrap--cardify .op-table, .op-table-wrap--cardify .op-table tbody, .op-table-wrap--cardify .op-table tr, .op-table-wrap--cardify .op-table td { display: block; width: 100%; }
+  .op-table-wrap--cardify .op-table tr { border-bottom: 1px solid var(--op-border); padding: 10px 14px; }
+  .op-table-wrap--cardify .op-table td { border: none; padding: 3px 0; }
+  .op-table-wrap--cardify .op-table td[data-label]::before {
+    content: attr(data-label); display: inline-block; min-width: 88px; color: var(--op-text-3); font-size: 11px; margin-right: 8px;
+  }
+}
+
+/* ---- フィルタバー ---- */
+.op-filterbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.op-filterbar select, .op-filterbar .op-search { background: var(--op-surface-2); border: 1px solid var(--op-border);
+  color: var(--op-text); font-size: 12.5px; border-radius: var(--op-radius-sm); padding: 6px 10px; }
+
+/* ---- Empty / Loading / Error ---- */
+.op-state { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  gap: 8px; padding: 48px 20px; color: var(--op-text-2); border: 1px dashed var(--op-border); border-radius: var(--op-radius-lg); }
+.op-state__ic { font-size: 30px; opacity: .8; }
+.op-state__title { font-size: 14px; font-weight: 700; color: var(--op-text); }
+.op-state__desc { font-size: 12.5px; color: var(--op-text-3); max-width: 360px; }
+.op-state--error { border-color: var(--op-danger); }
+.op-spinner { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--op-border);
+  border-top-color: var(--op-accent); animation: op-spin .7s linear infinite; }
+@keyframes op-spin { to { transform: rotate(360deg); } }
+
+/* ---- モックバナー ---- */
+.op-mockbanner { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--op-biz-fp);
+  background: rgba(224,168,60,.1); border: 1px dashed var(--op-biz-fp); border-radius: var(--op-radius-sm);
+  padding: 7px 12px; }
+
+/* ---- エージェントカード ---- */
+.op-agent { display: flex; flex-direction: column; gap: 8px; }
+.op-agent__top { display: flex; align-items: center; gap: 10px; }
+.op-agent__emoji { font-size: 26px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  background: var(--op-surface-2); border-radius: var(--op-radius-md); flex-shrink: 0; }
+.op-agent__name { font-size: 14.5px; font-weight: 700; }
+.op-agent__role { font-size: 11.5px; color: var(--op-text-3); }
+.op-agent__body { display: none; flex-direction: column; gap: 8px; font-size: 12px; color: var(--op-text-2); }
+.op-agent.is-open .op-agent__body { display: flex; }
+.op-agent__row { display: flex; justify-content: space-between; gap: 8px; }
+.op-agent__row b { color: var(--op-text); font-weight: 600; }
+.op-agent__pbar { height: 6px; border-radius: 9999px; background: var(--op-surface-2); overflow: hidden; }
+.op-agent__pbar i { display: block; height: 100%; background: var(--op-accent); }
+.op-agent__toggle { align-self: flex-start; background: none; border: none; color: var(--op-accent); font-size: 11.5px;
+  font-weight: 700; cursor: pointer; padding: 0; }
+.op-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.op-tag { background: var(--op-surface-2); color: var(--op-text-2); font-size: 10.5px; padding: 2px 8px; border-radius: 9999px; }
+
+/* ---- 承認カード / 成果物カード ---- */
+.op-approval, .op-deliverable { display: flex; flex-direction: column; gap: 10px; }
+.op-approval__grid, .op-deliverable__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 14px; font-size: 12px; }
+.op-approval__grid dt, .op-deliverable__grid dt { color: var(--op-text-3); }
+.op-approval__grid dd, .op-deliverable__grid dd { margin: 0; color: var(--op-text); }
+.op-approval__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.op-approval__unconnected { font-size: 11px; color: var(--op-text-3); }
+
+/* ---- ドロワー ---- */
+.op-drawer-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40; display: none; }
+.op-drawer-scrim.is-open { display: block; }
+.op-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(var(--op-drawer-w), 92vw);
+  background: var(--op-surface); border-left: 1px solid var(--op-border); z-index: 41;
+  transform: translateX(100%); transition: transform 200ms ease; padding: 18px; overflow-y: auto; }
+.op-drawer.is-open { transform: translateX(0); }
+.op-drawer__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.op-drawer__title { font-size: 15px; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .op-drawer { transition: none; } }
+
+/* ---- フォーム（AI指令センター） ---- */
+.op-form-row { display: flex; flex-direction: column; gap: 5px; }
+.op-form-row label { font-size: 12px; font-weight: 700; color: var(--op-text-2); }
+.op-form-row input, .op-form-row select, .op-form-row textarea {
+  background: var(--op-surface-2); border: 1px solid var(--op-border); color: var(--op-text);
+  border-radius: var(--op-radius-sm); padding: 9px 11px; font-size: 13px; font-family: inherit; width: 100%;
+}
+.op-form-row textarea { resize: vertical; min-height: 64px; }
+.op-form-row input:focus, .op-form-row select:focus, .op-form-row textarea:focus {
+  outline: none; border-color: var(--op-accent); box-shadow: 0 0 0 3px rgba(63,169,245,.18);
+}
+.op-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 640px) { .op-form-grid { grid-template-columns: 1fr; } }
+.op-checkrow { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--op-text-2); }
+.op-hint { font-size: 11px; color: var(--op-text-3); }
+
+/* ---- テンプレチップ ---- */
+.op-chiprow { display: flex; flex-wrap: wrap; gap: 6px; }
+.op-chip { border: 1px solid var(--op-border); background: var(--op-surface-2); color: var(--op-text-2);
+  font-size: 11.5px; padding: 5px 11px; border-radius: 9999px; cursor: pointer; }
+.op-chip:hover { border-color: var(--op-accent); color: var(--op-accent); }

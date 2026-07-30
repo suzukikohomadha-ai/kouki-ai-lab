@@ -1,0 +1,130 @@
+{
+  "name": "【デモ】①報告書ドラフト完成時のマネージャー承認依頼通知",
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "Webhook: ドラフト完成通知(デモ)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "[要インスタンス確認] typeVersion。本番ではカスタム側の「ドラフト完成」イベントを受信する想定のテスト用Webhook。",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo-draft-completed",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Set: ダミー案件データ",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300],
+      "notes": "[要インスタンス確認] typeVersion・assignments構造。受信データが空でもデモが動くよう既定値をフォールバックで埋める。",
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "vesselName", "type": "string", "value": "={{ $json.body?.vesselName || $json.vesselName || '[サンプル船舶]' }}" },
+            { "id": "a2", "name": "inspectionType", "type": "string", "value": "={{ $json.body?.inspectionType || $json.inspectionType || 'Bunker' }}" },
+            { "id": "a3", "name": "reportId", "type": "string", "value": "={{ $json.body?.reportId || $json.reportId || 'DEMO-0001' }}" },
+            { "id": "a4", "name": "draftUrl", "type": "string", "value": "={{ $json.body?.draftUrl || $json.draftUrl || 'https://example.com/dummy-files/report-draft-demo.pdf' }}" },
+            { "id": "a5", "name": "managerEmail", "type": "string", "value": "={{ $json.body?.managerEmail || $json.managerEmail || 'manager-placeholder@example.com' }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n3",
+      "name": "IF: 必須項目チェック",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [680, 300],
+      "notes": "[要インスタンス確認] typeVersion・conditions内部スキーマ",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.vesselName }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } },
+            { "id": "c2", "leftValue": "={{ $json.reportId }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n4",
+      "name": "NoOp: エラー(必須項目欠落)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 460],
+      "notes": "本番では検査員・管理者へのエラー通知に置き換える想定のプレースホルダー",
+      "parameters": {}
+    },
+    {
+      "id": "n5",
+      "name": "Gmail: マネージャー承認依頼(Send and Wait)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [900, 200],
+      "notes": "[要インスタンス確認] typeVersion・operation/approvalOptionsの正確なキー名。Credential未設定。",
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWaitForApproval",
+        "sendTo": "={{ $json.managerEmail }}",
+        "subject": "=[承認依頼] 検査報告書ドラフト確認 - {{ $json.vesselName }} ({{ $json.reportId }})",
+        "message": "=案件: {{ $json.vesselName }}\n検査種別: {{ $json.inspectionType }}\n報告書ID: {{ $json.reportId }}\nドラフトURL: {{ $json.draftUrl }}\n\n内容をご確認の上、承認または差し戻しをお願いします。",
+        "approvalOptions": { "values": { "approvalType": "both" } },
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": { "id": "PLACEHOLDER_GMAIL_OAUTH2_CREDENTIAL_ID", "name": "[要設定] Gmail OAuth2 認証情報（未登録）" }
+      }
+    },
+    {
+      "id": "n6",
+      "name": "IF: 承認結果判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1120, 200],
+      "notes": "[要インスタンス確認] Send and Wait再開後にn8nが返すフィールド名（例: $json.data.approved）は未確認。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "combinator": "and",
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.data?.approved ?? $json.approved }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equal" } }
+          ]
+        },
+        "options": {}
+      }
+    },
+    { "id": "n7", "name": "NoOp: 承認済み(本番連携ポイント)", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [1340, 100], "notes": "本番では「承認後のPDF生成トリガー」ワークフローへの連携ポイント（今回はスコープ外・未実装）", "parameters": {} },
+    { "id": "n8", "name": "NoOp: 差し戻し(本番連携ポイント・スコープ外)", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [1340, 300], "notes": "本番では検査員への差し戻し通知に接続する想定（今回はスコープ外・未実装）", "parameters": {} },
+    {
+      "id": "n9",
+      "name": "HTTP Request: カスタムAPIへステータス反映(無効化・将来用)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 200],
+      "disabled": true,
+      "notes": "カスタム側の案件・承認ステータスAPIが未実装のため無効化(disabled:true)。本番化時はURL・認証・メソッドを実仕様に合わせて設定してから有効化する。",
+      "parameters": { "method": "POST", "url": "https://YOUR-BACKEND-API.example.com/matters/{{ $json.reportId }}/status", "sendBody": true, "options": {} }
+    }
+  ],
+  "connections": {
+    "Webhook: ドラフト完成通知(デモ)": { "main": [[{ "node": "Set: ダミー案件データ", "type": "main", "index": 0 }]] },
+    "Set: ダミー案件データ": { "main": [[{ "node": "IF: 必須項目チェック", "type": "main", "index": 0 }]] },
+    "IF: 必須項目チェック": { "main": [ [{ "node": "Gmail: マネージャー承認依頼(Send and Wait)", "type": "main", "index": 0 }], [{ "node": "NoOp: エラー(必須項目欠落)", "type": "main", "index": 0 }] ] },
+    "Gmail: マネージャー承認依頼(Send and Wait)": { "main": [[{ "node": "IF: 承認結果判定", "type": "main", "index": 0 }]] },
+    "IF: 承認結果判定": { "main": [ [{ "node": "NoOp: 承認済み(本番連携ポイント)", "type": "main", "index": 0 }], [{ "node": "NoOp: 差し戻し(本番連携ポイント・スコープ外)", "type": "main", "index": 0 }] ] },
+    "NoOp: 承認済み(本番連携ポイント)": { "main": [[{ "node": "HTTP Request: カスタムAPIへステータス反映(無効化・将来用)", "type": "main", "index": 0 }]] },
+    "NoOp: 差し戻し(本番連携ポイント・スコープ外)": { "main": [[{ "node": "HTTP Request: カスタムAPIへステータス反映(無効化・将来用)", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

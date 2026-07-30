@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Notion__notion-fetch",
+      "mcp__claude_ai_Google_Drive__read_file_content",
+      "PowerShell(Get-ChildItem *)",
+      "mcp__claude_ai_Notion__notion-query-data-sources",
+      "mcp__claude_ai_Notion__notion-search",
+      "Bash(curl -s http://localhost:3000/*)",
+      "mcp__claude_ai_Google_Drive__search_files"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__claude_ai_Notion__notion-update-page|mcp__claude_ai_Notion__notion-create-pages",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\\\Users\\\\user\\\\Desktop\\\\鈴木　資料\\\\AICompany\\\\AICompany\\\\.claude\\\\hooks\\\\notion-publish-reminder.mjs\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell|WebFetch|mcp__claude_ai_Gmail__create_draft|mcp__claude_ai_Notion__notion-update-page|mcp__claude_ai_Notion__notion-create-pages|mcp__claude_ai_Notion__notion-update-data-source",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\\\Users\\\\user\\\\Desktop\\\\鈴木　資料\\\\AICompany\\\\AICompany\\\\.claude\\\\hooks\\\\log-dangerous-op.mjs\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:\\\\Users\\\\user\\\\Desktop\\\\鈴木　資料\\\\AICompany\\\\AICompany\\\\.claude\\\\hooks\\\\daily-report-reminder.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "office",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "server", "start"],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "video-t16",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["hyperframes", "preview", "videos/T16_myna-short", "--port", "4300", "--no-open"],
+      "port": 4300
+    },
+    {
+      "name": "video-t48",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["hyperframes", "preview", "videos/T48_nenkin-short", "--port", "4301", "--no-open"],
+      "port": 4301
+    }
+  ]
+}

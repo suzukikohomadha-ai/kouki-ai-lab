@@ -1,0 +1,141 @@
+/* ============================================================
+   オペレーションモード レイアウト（AppShell）
+   ============================================================ */
+#opshell {
+  font-family: var(--op-font);
+  color: var(--op-text);
+  background: var(--op-bg);
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  overflow: hidden;
+}
+#opshell.is-active { display: block; }
+#opshell * { box-sizing: border-box; }
+#opshell a { color: inherit; }
+#opshell button { font-family: inherit; color: inherit; }
+#opshell :focus-visible {
+  outline: 2px solid var(--op-accent);
+  outline-offset: 2px;
+  border-radius: var(--op-radius-sm);
+}
+
+.op-shell {
+  display: grid;
+  grid-template-columns: var(--op-sidebar-w) 1fr;
+  grid-template-rows: var(--op-header-h) 1fr;
+  grid-template-areas: "sidebar header" "sidebar main";
+  height: 100%;
+  transition: grid-template-columns 180ms ease;
+}
+.op-shell.is-collapsed { grid-template-columns: var(--op-sidebar-w-collapsed) 1fr; }
+
+/* ---- ヘッダー ---- */
+.op-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--op-surface);
+  border-bottom: 1px solid var(--op-border);
+  min-width: 0;
+}
+.op-header__logo { font-weight: 700; font-size: 14px; white-space: nowrap; flex-shrink: 0; }
+.op-header__title { font-size: 14px; color: var(--op-text-2); white-space: nowrap; flex-shrink: 0; }
+.op-header__spacer { flex: 1; min-width: 8px; }
+.op-header__group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* ---- サイドバー ---- */
+.op-sidebar {
+  grid-area: sidebar;
+  background: var(--op-surface);
+  border-right: 1px solid var(--op-border);
+  overflow-y: auto;
+  padding: 12px 8px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.op-sidebar__group { margin-top: 10px; }
+.op-sidebar__group:first-child { margin-top: 0; }
+.op-sidebar__group-head {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  background: none; border: none; cursor: pointer;
+  padding: 8px 10px; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  color: var(--op-text-3); text-transform: uppercase;
+}
+.op-sidebar__group-head:hover { color: var(--op-text-2); }
+.op-sidebar__group-body { display: flex; flex-direction: column; gap: 2px; }
+.op-sidebar__group.is-collapsed .op-sidebar__group-body { display: none; }
+.op-shell.is-collapsed .op-sidebar__group-head span.label,
+.op-shell.is-collapsed .op-sidebar__group-head svg.chev { display: none; }
+
+.op-navitem {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--op-radius-sm);
+  color: var(--op-text-2); font-size: 13.5px; text-decoration: none; cursor: pointer; border: none; background: none;
+  width: 100%; text-align: left; white-space: nowrap; overflow: hidden;
+}
+.op-navitem:hover { background: var(--op-surface-2); color: var(--op-text); }
+.op-navitem.is-current { background: rgba(63,169,245,.16); color: var(--op-accent); font-weight: 700; }
+.op-navitem__ic { flex-shrink: 0; width: 18px; text-align: center; }
+.op-navitem__label { overflow: hidden; text-overflow: ellipsis; }
+.op-navitem__badge {
+  margin-left: auto; background: var(--op-danger); color: #fff; font-size: 10.5px; font-weight: 700;
+  border-radius: 9999px; padding: 1px 7px; flex-shrink: 0;
+}
+.op-shell.is-collapsed .op-navitem__label,
+.op-shell.is-collapsed .op-navitem__badge { display: none; }
+.op-shell.is-collapsed .op-navitem { justify-content: center; }
+
+/* ---- メイン ---- */
+.op-main {
+  grid-area: main;
+  overflow-y: auto;
+  padding: 20px 24px 60px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.op-view { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+.op-view[hidden] { display: none; }
+.op-aside {
+  width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px;
+}
+.op-aside[hidden] { display: none; }
+
+.op-view-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.op-view-head h1 { font-size: 19px; margin: 0; }
+.op-view-head .op-view-sub { font-size: 12.5px; color: var(--op-text-3); }
+
+/* ---- レスポンシブ ---- */
+@media (max-width: 1180px) {
+  .op-aside { width: 260px; }
+}
+@media (max-width: 980px) {
+  .op-shell { grid-template-columns: 0 1fr; }
+  .op-sidebar { position: fixed; top: var(--op-header-h); bottom: 0; left: 0; width: var(--op-sidebar-w);
+    transform: translateX(-100%); transition: transform 180ms ease; z-index: 20; box-shadow: var(--op-shadow); }
+  .op-shell.is-sidebar-open .op-sidebar { transform: translateX(0); }
+  .op-scrim { display: none; position: fixed; inset: var(--op-header-h) 0 0 0; background: rgba(0,0,0,.45); z-index: 15; }
+  .op-shell.is-sidebar-open .op-scrim { display: block; }
+  .op-main { flex-direction: column; padding: 14px 14px 40px; }
+  .op-aside { width: 100%; }
+}
+@media (max-width: 640px) {
+  .op-header__title { display: none; }
+  .op-main { padding: 10px 10px 84px; }
+  .op-view { gap: 12px; }
+  /* 狭幅では長いラベルのボタンをアイコンのみに縮める。中身は data-modetoggle 内で切替済みテキストをCSSで隠す */
+  .op-header [data-modetoggle] .op-modetoggle-label { display: none; }
+  /* それでも幅が足りない場合の保険：ヘッダー自体を横スクロール可能にし、操作不能を防ぐ */
+  .op-header { overflow-x: auto; scrollbar-width: none; }
+  .op-header::-webkit-scrollbar { display: none; }
+  .op-header__group { flex-shrink: 0; }
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  #opshell, #opshell * { transition: none !important; animation: none !important; }
+}

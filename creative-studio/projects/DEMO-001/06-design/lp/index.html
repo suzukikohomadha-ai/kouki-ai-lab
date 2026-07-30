@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>森のパン香房｜季節限定パン はじまりました（デモ・架空案件）</title>
+<meta name="description" content="森のパン香房の季節限定パンのご案内。焼きたてパンとコーヒーでゆっくり過ごせるイートインスペースです。※これはデモ用の架空ページです。">
+<style>
+  :root {
+    --beige: #f6efe2; --brown: #6b4a2f; --brown-d: #4a3220; --green: #4a6b4f; --text: #3a2f22;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Hiragino Sans", "Yu Gothic", sans-serif; color: var(--text); line-height: 1.7; }
+  .demo-badge { background: var(--brown-d); color: #fff; text-align: center; font-size: 13px; padding: 6px; }
+  header.hero { background: var(--beige); padding: 64px 20px; text-align: center; }
+  header.hero h1 { font-size: clamp(24px, 5vw, 40px); color: var(--brown-d); margin: 0 0 12px; }
+  header.hero p { font-size: 16px; color: var(--green); font-weight: bold; margin: 0 0 24px; }
+  .cta-btn { display: inline-block; background: var(--green); color: #fff; padding: 14px 32px;
+    border-radius: 999px; text-decoration: none; font-weight: bold; }
+  .cta-btn:focus-visible { outline: 3px solid #1d3b20; outline-offset: 2px; }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 20px; }
+  section { margin-bottom: 56px; }
+  h2 { color: var(--brown-d); font-size: 22px; border-left: 6px solid var(--green); padding-left: 12px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
+  .card { background: #fff; border: 1px solid #e3d6bf; border-radius: 10px; padding: 18px; }
+  .card h3 { margin: 0 0 8px; font-size: 15px; color: var(--brown-d); }
+  dl.faq dt { font-weight: bold; margin-top: 16px; }
+  dl.faq dd { margin: 4px 0 0; color: #5a4d3c; }
+  footer { background: var(--brown-d); color: #f0e6d6; text-align: center; padding: 32px 20px; font-size: 13px; }
+  footer p { margin: 4px 0; }
+  .skip-link { position: absolute; left: -999px; top: 0; background: #fff; padding: 8px 12px; }
+  .skip-link:focus { left: 8px; top: 8px; z-index: 10; }
+</style>
+</head>
+<body>
+  <div class="demo-badge">DEMO：架空案件のサンプルLPです。実在の店舗・商品ではなく、外部には公開していません。</div>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
+  <header class="hero">
+    <h1>近所に、もう一つの落ち着ける場所。</h1>
+    <p>季節限定パン、はじまりました。</p>
+    <a class="cta-btn" href="#contact">お店の情報を見る</a>
+  </header>
+
+  <main id="main">
+    <section aria-labelledby="about-h">
+      <h2 id="about-h">森のパン香房について</h2>
+      <p>
+        在宅ワークの合間や、ちょっとした休憩に。焼きたてパンとコーヒーで
+        ゆっくり過ごせるイートインスペースをご用意しています。
+      </p>
+    </section>
+
+    <section aria-labelledby="menu-h">
+      <h2 id="menu-h">季節限定パンのご紹介</h2>
+      <div class="cards">
+        <div class="card"><h3>季節限定パンA（仮）</h3><p>商品説明はここに入ります。※デモのため詳細未定。</p></div>
+        <div class="card"><h3>季節限定パンB（仮）</h3><p>商品説明はここに入ります。※デモのため詳細未定。</p></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-h">
+      <h2 id="faq-h">よくある質問</h2>
+      <dl class="faq">
+        <dt>予約は必要ですか？</dt>
+        <dd>`[要確認]` デモのため実際の運用ルールは未確定です。</dd>
+        <dt>駐車場はありますか？</dt>
+        <dd>`[要確認]` デモのため実際の情報は未確定です。</dd>
+      </dl>
+    </section>
+
+    <section id="contact" aria-labelledby="contact-h">
+      <h2 id="contact-h">店舗情報</h2>
+      <p>営業時間：8:00〜18:00（架空の設定です）<br>
+      Instagram：@mori_no_pan_demo（架空アカウント）</p>
+      <a class="cta-btn" href="#">Instagramをフォロー（ダミーリンク）</a>
+    </section>
+  </main>
+
+  <footer>
+    <p>森のパン香房（架空・デモ用）</p>
+    <p>このページはClaude Code制作チーム環境の動作確認用デモです。実在の店舗・商品・実績ではありません。</p>
+  </footer>
+</body>
+</html>
