@@ -689,8 +689,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
       "position": [
-        3888,
-        964
+        3948,
+        700
       ],
       "webhookId": "cd8a914e-dd4e-4929-93fe-ac29d79291e1",
       "notes": "[要インスタンス確認][要公式確認] Slackノードのresource/operation名（\"message\"/\"post\"想定）・channelIdのresourceLocator構造は今回未確認です。既定の配信先（設計書どおり）。"
@@ -724,8 +724,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3888,
-        1172
+        3948,
+        1000
       ],
       "notes": "[要インスタンス確認] 既定はfalse（設計書どおり、メール出力は任意）。"
     },
@@ -741,8 +741,8 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4128,
-        1124
+        4248,
+        900
       ],
       "webhookId": "4d084228-05bc-4b1e-9a7b-9f5dff602549",
       "notes": "resource=draft, operation=create は T28(2026-07-28)のn8n公式ドキュメント確認済みパターン（Gmail Draft作成＝送信しない）を踏襲。typeVersion・添付方法は今回未再確認のため[要インスタンス確認]。送信は行わず、下書きの作成のみ。"
@@ -754,8 +754,8 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        4128,
-        1220
+        4248,
+        1150
       ],
       "notes": "createGmailDraft=falseの場合の分岐終端。"
     },
@@ -788,8 +788,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3888,
-        1364
+        3948,
+        1500
       ],
       "notes": "[要インスタンス確認] 既定はfalse（設計書どおり、Notion出力は任意）。"
     },
@@ -811,8 +811,8 @@
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
       "position": [
-        4128,
-        1316
+        4248,
+        1400
       ],
       "notes": "[要インスタンス確認][要公式確認] Notionノードのresource/operation/プロパティ設定キー（propertiesUi等）はn8nバージョンにより差異が大きく、今回一次確認できていません。既定OFF（低リスク）。本番化時は必ず実インスタンスで構造確認してください。"
     },
@@ -823,8 +823,8 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        4128,
-        1428
+        4248,
+        1650
       ],
       "notes": "appendToNotion=falseの場合の分岐終端。"
     },
@@ -835,8 +835,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        4368,
-        1060
+        4548,
+        900
       ],
       "notes": "[要インスタンス確認] 3つの並列配信ブランチ（Slack/Gmail/Notion）が個別に既読ログ更新ノードへ直結すると、ログ更新が最大3回重複実行されてしまう（二重実行防止・冪等性の観点で問題）ため、Mergeノードで同期させてから既読ログ更新に進む設計にしています。"
     },
@@ -847,8 +847,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        4608,
-        1172
+        4848,
+        1150
       ],
       "notes": "[要インスタンス確認] 上記と同じ理由。3ブランチ目（Notion）も合流させてから1回だけ既読ログを更新します。"
     },
@@ -861,8 +861,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4848,
-        1172
+        5148,
+        1150
       ],
       "notes": "[要インスタンス確認] Merge後のアイテムはSlack/Gmail/Notion各ノードのレスポンスで上書きされている可能性があるため、記事一覧は\"Code: Assemble Digest\"ノードの出力を$('...')で直接参照します（Mergeノードは同期タイミングの制御にのみ使用）。"
     },
@@ -921,8 +921,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        5088,
-        1172
+        5448,
+        1150
       ],
       "notes": "[要インスタンス確認][要公式確認] append操作のresource/columns(mappingMode)構造は今回未確認。1回の実行で新着記事の数だけ行を追加する想定。"
     }

@@ -1,6 +1,6 @@
 # 静的検証結果: workflows/draft/AUTO-KHM-001_japan-regulatory-news-digest.internal.json
 
-検証日時: 2026-08-15T12:16:00.507Z
+検証日時: 2026-08-15T12:27:11.141Z
 結果: 重大な問題なし
 
 ## エラー (0)

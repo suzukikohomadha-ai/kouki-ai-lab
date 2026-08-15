@@ -97,7 +97,8 @@ for any specific source.
   4. `Google Sheets: Append Distribution Log`の`columns.schema`欠落
   5. Slack Bot Tokenに`chat:write`・`channels:read`スコープが必要（テンプレート利用者向けの前提条件として説明文に明記済み）
 - `scripts/validate-workflow.mjs`（エラー0件・警告6件＝Sticky Note孤立のみ、想定内）／`scripts/check-secrets.mjs`（実government URL・Anthropic公式APIエンドポイントの誤検知のみで実値漏えいなし）を実施済み。
-- **2026-08-15追記**：過去のPUB-001提出時に「Sticky Noteのテキストが最新版n8nで見切れている」という理由で差し戻しを受けた実績を踏まえ、本テンプレートのSticky Note（特に文章量の多い"Overview & Setup"）のサイズを事前に見直した（高さ250px→800pxへ拡大、レイアウト上の重なりが無いことをスクリプトで確認済み）。**ただし実際にn8n画面上でテキストが最後まで表示されているかの目視確認は、本ファイル作成時点ではまだ実施していない**（次のアクション参照）。
+- **2026-08-15追記**：過去のPUB-001提出時に「Sticky Noteのテキストが最新版n8nで見切れている」という理由で差し戻しを受けた実績を踏まえ、本テンプレートのSticky Note（特に文章量の多い"Overview & Setup"）のサイズを事前に見直した（高さ250px→800pxへ拡大）。**社長がn8n画面上で目視確認済み**：Sticky Noteのテキスト（"IMPORTANT"部分含む）は最後まで表示されている。
+- **2026-08-15追記②**：目視確認の過程で、`validate-workflow.mjs`が検出しない**ノード間（Sticky Note以外）の重なり**が発見された（Slack/Gmail/Notionへの分岐部分、`If`ノードと実際の送信ノードがほぼ重なっていた）。現行の静的検証スクリプトはSticky Noteと通常ノードの重なりのみを検出する仕様のため、この種の重なりは検出対象外だった。座標を手動で計算し直し（1回目は間隔計算を誤り再修正）、プログラム的に矩形重なり0件を確認した上で、社長に画面で最終確認していただき解消を確認した。
 
 ## 次のアクション
 
