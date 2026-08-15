@@ -54,12 +54,27 @@
 
 **この結果を踏まえた評価の更新**：現時点で実際に悪用された形跡は無く、URLの意図しない露出も確認されていない。ただし、脆弱性そのもの（署名検証の欠如＋Webhookパスが推測可能な人間可読文字列`line-note-plan-approval`である点）は解消されていない。「今すぐ無効化が必要な緊急事態」ではなくなったが、「早期に恒久対応（署名検証の実装）を行うべき既知の未解決リスク」として扱う。総合判定は`HUMAN REVIEW REQUIRED（緊急）`から`HUMAN REVIEW REQUIRED（計画的対応）`に見直す。
 
+## 2026-08-15 恒久対応の設計を実施（実機未検証・本番未反映）
+
+推奨アクション2（署名検証の恒久対応）について、n8n公式Cryptoノード（`n8n-nodes-base.crypto`、action='hmac'）を使った設計をワークフローJSON（`workflows/draft/AUTO-CNT-002_line-approval-gdocs-sync.json`）に反映した。
+
+- 出典：n8n公式ドキュメント（`https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.crypto`）、n8n公式GitHub（`n8n-io/n8n`タグ`n8n@2.33.6`、`packages/nodes-base/nodes/Crypto/`、2026-08-15参照）、LINE公式ドキュメント（`https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/`、2026-08-15参照）。
+- 変更内容：Webhook直後のCodeノードを「生ボディ抽出・キーワード判定」のみに縮小し、新設のCryptoノード（HMAC-SHA256・BASE64、Codeノードのサンドボックス制約を受けない）で署名を計算、後続のCodeノードで`x-line-signature`ヘッダーと単純文字列比較して`validSignature`を算出。IF条件を`validSignature===true AND isApprovalKeyword===true`に復元した。
+- 静的検証：`validate-workflow.mjs`0エラー（Sticky Note孤立警告2件のみ、想定内）を確認済み。全41ノードの接続整合性・JSON構文も別途スクリプトで検証済み。`check-secrets.mjs`は32件検出だがすべて既知の誤検知（本番URL・Notion page ID・追加した公式ドキュメントURL）で実値の混入なし。
+- **既知の残存リスク**：署名比較はCodeノードの制約上、定数時間比較（`crypto.timingSafeEqual`）ではなく単純な文字列比較。自己ホスト・低トラフィックの社内用途としては許容範囲と判断したが、理論上タイミング攻撃の余地がわずかに残る。
+- **未検証・未実施（本番反映には以下が必要）**：
+  1. n8n UI上での`crypto`種別Credential新規作成（LINE Channel Secretの実値を`hmacSecret`に設定）— 要ユーザー承認
+  2. 本JSONの実インスタンスへの反映（インポートまたは手動でのノード追加・配線）
+  3. 新Cryptoノードへの上記Credential割当
+  4. 実機テスト（正しい署名で「反映」処理が通ること、不正な署名で弾かれ従来通りリレーに回ることの両方を確認）
+  5. `n8n-quality-auditor`による正式な再監査（本設計変更を含めて）
+
 ## 推奨アクション（社長判断が必要）
 
 1. ~~最優先：Webhookが実際に外部から到達可能か緊急確認~~ → 2026-08-15完了、問題なしを確認済み。
-2. **次の優先事項・恒久対応**（ワークフロー自身のコメントが提案する対応）：n8n公式Cryptoノード＋専用Credentialでの署名検証を実装し、IF条件に`validSignature===true`を復元する。
-3. 二重反映防止の競合状態対策（承認ステータス更新の原子性確保、または簡易ロック機構の追加）。
-4. 本番化の経緯（誰が・いつ有効化したか）を確認し、今後のn8nワークフロー有効化がPhase 6→8のプロセスを必ず経るよう運用を締め直す。
+2. ~~恒久対応の設計~~ → 2026-08-15完了（上記参照）。**次はn8n UI上での適用作業**（Credential作成・JSON反映・実機テスト）。
+3. 二重反映防止の競合状態対策（承認ステータス更新の原子性確保、または簡易ロック機構の追加）。※未着手
+4. 本番化の経緯（誰が・いつ有効化したか）を確認し、今後のn8nワークフロー有効化がPhase 6→8のプロセスを必ず経るよう運用を締め直す。※未着手
 5. 上記対応後、`n8n-quality-auditor`による正式な再監査を実施してから正式にPASS判定を出す。
 
 ---

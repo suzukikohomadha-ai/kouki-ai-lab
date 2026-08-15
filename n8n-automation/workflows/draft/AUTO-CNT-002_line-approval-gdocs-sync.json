@@ -186,8 +186,8 @@
       "notes": "Claude呼び出し失敗時。AUTO-CNT-001と同型。Error Workflow設定（AUTO-COM-002、本番登録時に設定）により失敗が自動通知される想定。",
       "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const err = $input.first().json.error || $input.first().json;\nthrow new Error('AUTO-CNT-002 Phase1: Claude呼び出し（AUTO-COM-001経由）に失敗しました。detail=' + (typeof err === 'string' ? err : JSON.stringify(err)));\n" } },
 
-    { "id": "cnt002-p2-sticky", "name": "Sticky Note: Phase2（LINE Webhook受信・承認判定・反映）", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-1200, 320],
-      "parameters": { "width": 1700, "height": 260, "content": "## Phase 2：入口B（LINE Webhook受信）\n\nLINEからのメッセージ受信は、Phase1のSchedule Triggerとは独立した、常時稼働のWebhookトリガーから開始する。署名検証→承認キーワード判定→Google Docs新版作成、の順で処理する。\n\n**未確認事項（[要インスタンス確認]）**：Webhookのproduction URL到達性、LINE Channel SecretでのHMAC-SHA256署名検証の実装詳細、静的データ経由でのPhase1→Phase2への本文引き継ぎが実際に機能するか。" } },
+    { "id": "cnt002-p2-sticky", "name": "Sticky Note: Phase2（LINE Webhook受信・承認判定・反映）", "type": "n8n-nodes-base.stickyNote", "typeVersion": 1, "position": [-1200, 200],
+      "parameters": { "width": 1100, "height": 380, "content": "## Phase 2：入口B（LINE Webhook受信）\n\nLINEからのメッセージ受信は、Phase1のSchedule Triggerとは独立した、常時稼働のWebhookトリガーから開始する。生ボディ抽出・キーワード判定→Crypto: LINE署名HMAC計算→署名比較→IF（署名一致かつ承認キーワード一致）→Google Docs新版作成、の順で処理する。\n\n**【2026-08-15追記・監査対応】** 2026-08-10の緊急修正で署名検証を完全に無効化したまま（`logs/common_2026-08-15_AUTO-CNT-002_n8n品質監査_v1.md`で指摘）本番稼働していたことが判明。社長が実行履歴・URL一致・URL非公開を確認し悪用形跡はなかったが、脆弱性自体は未解消だったため、n8n公式Cryptoノード（Codeノードのサンドボックス制約を受けない）で署名検証を実装し直した（設計のみ、実機未検証）。\n\n**未確認事項（[要インスタンス確認]）**：Webhookのproduction URL到達性、Cryptoノードのdata出力が既存フィールドを保持したまま追加されるか、静的データ経由でのPhase1→Phase2への本文引き継ぎが実際に機能するか。\n\n**この修正の適用に必要な作業（本番未反映・要社長/エイト対応）**：①n8n UIで`crypto`種別のCredentialを新規作成しLINE Channel Secretの実値を`hmacSecret`に設定（要承認）②本JSONを実インスタンスへインポートまたは手動で該当ノードを追加・配線③新Cryptoノードに①のCredentialを割当④実機テスト（正しい署名のリクエストで反映が通ること、不正な署名で弾かれることの両方を確認）。" } },
 
     { "id": "cnt002-p2-webhook", "name": "Webhook（LINE返信受信）", "type": "n8n-nodes-base.webhook", "typeVersion": 2.1, "position": [-1200, 700],
       "notes": "type/typeVersion(2.1がdefaultVersion)はn8n公式GitHub `packages/nodes-base/nodes/Webhook/Webhook.node.ts`で確認済み（2026-08-10参照）。httpMethod=POST（LINE Webhookは常にPOST）。options.rawBody=trueで生ボディを取得し、HMAC署名検証に使う（rawBody未設定の場合、req.bodyがJSONパース済みとなり正確な署名検証ができない可能性があるため）。responseMode='onReceived'でLINE側への即時200応答を優先し、後続処理の完了を待たない（LINE Webhookは応答が遅いと再送されるため）。pathは一意なランダム文字列を推奨するが本ドラフトでは仮値。credentials不要（署名検証は後続Codeノードで実施）。",
@@ -199,17 +199,34 @@
         "options": { "rawBody": true }
       } },
 
-    { "id": "cnt002-p2-verify-sig", "name": "キーワード判定（署名検証は暫定停止中）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [-960, 700],
-      "notes": "【2026-08-10緊急修正】当初はCodeノード内で`require('crypto')`を使いHMAC署名検証を行う設計だったが、実機テスト（execution 69）で本インスタンスのCodeノードサンドボックス（@n8n/task-runner）が`require('crypto')`自体を禁止していることが判明（エラー：'Module crypto is disallowed'）。この結果、秘書アイ機能へのリレーを含むPhase2の全処理が起動直後に失敗し、実際に稼働中の秘書アイ機能が一時的に機能停止する事態になった。社長の判断で、緊急対応として署名検証を一旦完全に外し、キーワード判定のみでリレー要否を決める暫定実装に変更した（=validSignatureは常にfalseを返す。IF側の判定条件からも署名チェックを削除済み）。**恒久対応（次のアクション）**：n8n公式のCryptoノード（`n8n-nodes-base.crypto`、action='hmac'）はCodeノードのサンドボックスを経由せず本体側でNode.js cryptoを使うため、この制約を受けない。ただし専用の`crypto`種別Credential（`hmacSecret`フィールドにLINE Channel Secretを設定）が別途必要（[ユーザー入力待ち]）。恒久対応が入るまで、Webhook URLを知っている第三者が「反映」という本文でPOSTを送ればGoogle Docsの新版作成が実行されてしまうリスクが理論上残る（社長了承の上での暫定措置）。",
-      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const headers = $input.first().json.headers || {};\nconst binaryRawBody = $input.first().binary && $input.first().binary.data;\n\nlet rawBodyText = '';\ntry {\n  if (binaryRawBody && binaryRawBody.data) {\n    rawBodyText = Buffer.from(binaryRawBody.data, 'base64').toString('utf8');\n  }\n} catch (e) {\n  throw new Error('AUTO-CNT-002 Phase2: rawBodyの取得に失敗しました。Webhookノードのoptions.rawBody設定を確認してください。detail=' + e.message);\n}\n\nconst signature = headers['x-line-signature'] || '';\n// 【2026-08-10緊急修正】署名検証は恒久対応（Cryptoノード＋専用Credential）待ちのため暫定的に常時false。\nconst validSignature = false;\n\nlet parsedBody = {};\ntry { parsedBody = JSON.parse(rawBodyText); } catch (e) { /* パース失敗時は空のまま。後続で検知 */ }\n\nconst events = parsedBody.events || [];\nconst firstTextEvent = events.find(e => e.type === 'message' && e.message && e.message.type === 'text');\nconst replyText = firstTextEvent ? (firstTextEvent.message.text || '').trim() : '';\nconst isApprovalKeyword = replyText === '反映';\n\nreturn [{ json: { validSignature, replyText, isApprovalKeyword, hasTextEvent: !!firstTextEvent, rawBodyText, lineSignature: signature } }];\n" } },
+    { "id": "cnt002-p2-verify-sig", "name": "生ボディ抽出・キーワード判定（署名検証はCryptoノードへ分離）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [-960, 700],
+      "notes": "【2026-08-15恒久対応・設計のみ、実機未検証】2026-08-10の緊急修正でこのノードが署名検証（`validSignature`常時false）も兼ねていたが、`require('crypto')`がCodeノードサンドボックスで禁止されていたことが原因のため、署名検証は後段の専用Cryptoノード（`n8n-nodes-base.crypto`、action='hmac'）に分離した。このノードはrawBody抽出とキーワード判定のみを担当し、`validSignature`はもう返さない（後段の「署名比較（一致判定）」ノードが計算する）。LINE署名の仕様（生のリクエストボディをHMAC-SHA256でChannel Secretを鍵として署名しBASE64化、`x-line-signature`ヘッダーで送付）はLINE公式ドキュメント（`https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/`、2026-08-15参照）で確認済み。",
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const headers = $input.first().json.headers || {};\nconst binaryRawBody = $input.first().binary && $input.first().binary.data;\n\nlet rawBodyText = '';\ntry {\n  if (binaryRawBody && binaryRawBody.data) {\n    rawBodyText = Buffer.from(binaryRawBody.data, 'base64').toString('utf8');\n  }\n} catch (e) {\n  throw new Error('AUTO-CNT-002 Phase2: rawBodyの取得に失敗しました。Webhookノードのoptions.rawBody設定を確認してください。detail=' + e.message);\n}\n\nconst signature = headers['x-line-signature'] || '';\n\nlet parsedBody = {};\ntry { parsedBody = JSON.parse(rawBodyText); } catch (e) { /* パース失敗時は空のまま。後続で検知 */ }\n\nconst events = parsedBody.events || [];\nconst firstTextEvent = events.find(e => e.type === 'message' && e.message && e.message.type === 'text');\nconst replyText = firstTextEvent ? (firstTextEvent.message.text || '').trim() : '';\nconst isApprovalKeyword = replyText === '反映';\n\nreturn [{ json: { replyText, isApprovalKeyword, hasTextEvent: !!firstTextEvent, rawBodyText, lineSignature: signature } }];\n" } },
 
-    { "id": "cnt002-p2-if-valid", "name": "IF：承認キーワード一致（署名検証は暫定停止中）", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [-720, 700],
-      "notes": "【2026-08-10緊急修正】署名検証を一旦完全に外し、キーワード判定のみで分岐する暫定実装（Sticky Note・前段ノードのnotes参照）。true分岐（『反映』完全一致）のみnote運用計画書の反映処理に進み、それ以外はすべてRenderへリレーする。恒久対応（Cryptoノードでの署名検証）が入り次第、このIFにも`validSignature===true`の条件を復元すること。",
+    { "id": "cnt002-p2-crypto-hmac", "name": "Crypto: LINE署名HMAC計算", "type": "n8n-nodes-base.crypto", "typeVersion": 2, "position": [-720, 700],
+      "notes": "【2026-08-15恒久対応・設計のみ、実機未検証・要インスタンス確認】type文字列(n8n-nodes-base.crypto)・defaultVersion 2・action='hmac'の各パラメータ（binaryData/value/type/dataPropertyName/encoding）はn8n公式ドキュメント（`https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.crypto`）および公式GitHub（`n8n-io/n8n`、タグ`n8n@2.33.6`、`packages/nodes-base/nodes/Crypto/`、2026-08-15参照）で確認済み。action='hmac'は専用のCredential（種別名`crypto`、`hmacSecret`フィールドが必須）を要求する仕様も同ソースで確認済み。value にはCodeノードで抽出した生ボディ文字列（`rawBodyText`）をそのまま渡す（LINE公式ドキュメントの警告どおり、JSON再パース・再シリアライズ後の文字列を使うと署名が一致しなくなるため）。type='SHA256'・encoding='BASE64'はLINE公式ドキュメント（HMAC-SHA256・Base64）の仕様に合わせた。dataPropertyNameの出力先に既存フィールド（rawBodyText等）が保持されたまま追加されるかは、このインスタンスでの実例が無いため[要インスタンス確認]（一般的なn8nノードの挙動として保持されるはずだが未検証）。Credential自体の新規作成（LINE Channel Secretの実値をhmacSecretに設定）は[要ユーザー承認・未実施]。",
+      "credentials": { "crypto": { "id": null, "name": "[要ユーザー承認・未作成] LINE Channel Secret (HMAC)" } },
+      "parameters": {
+        "action": "hmac",
+        "binaryData": false,
+        "value": "={{ $json.rawBodyText }}",
+        "type": "SHA256",
+        "dataPropertyName": "computedSignature",
+        "encoding": "BASE64"
+      } },
+
+    { "id": "cnt002-p2-compare-sig", "name": "署名比較（一致判定）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [-480, 700],
+      "notes": "【2026-08-15恒久対応・設計のみ、実機未検証】computedSignature（Cryptoノードが計算したBASE64値）と、Webhookヘッダーから取得したlineSignatureを単純な文字列比較する。本来はタイミング攻撃対策として定数時間比較（Node.js `crypto.timingSafeEqual`）が望ましいが、本インスタンスのCodeノードでは`require('crypto')`自体が禁止されているため使用できない（AUTO-CNT-002がそもそもCryptoノードへ分離した理由と同じ制約）。自己ホストの低トラフィックな社内ボットという用途を踏まえ、単純な文字列比較を許容範囲内のトレードオフとして採用する（残存リスクとして明記）。",
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const d = $input.first().json;\nconst computed = d.computedSignature || '';\nconst received = d.lineSignature || '';\nconst validSignature = computed.length > 0 && received.length > 0 && computed === received;\nreturn [{ json: { ...d, validSignature } }];\n" } },
+
+    { "id": "cnt002-p2-if-valid", "name": "IF：署名一致かつ承認キーワード一致（恒久対応済み）", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [-240, 700],
+      "notes": "【2026-08-15恒久対応】2026-08-10の緊急修正で外していた署名検証条件（`validSignature===true`）を復元し、キーワード一致との論理積（AND）に変更した。これにより、正しいLINE Channel Secretで署名されたリクエストのみが『反映』処理に進む。署名が一致しない、またはキーワードが一致しない場合はすべてRenderへリレーする（既存の設計方針どおり、判定に失敗した場合はリレー側に倒す）。",
       "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [
+        { "id": "cnt002-cond-valid-sig", "leftValue": "={{ $json.validSignature === true }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } },
         { "id": "cnt002-cond-valid2", "leftValue": "={{ $json.isApprovalKeyword === true }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
       ], "combinator": "and" } } },
 
-    { "id": "cnt002-p2-relay-render", "name": "秘書アイ機能へリレー（Renderの既存Webhookへ転送）", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [-480, 900],
+    { "id": "cnt002-p2-relay-render", "name": "秘書アイ機能へリレー（Renderの既存Webhookへ転送）", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [0, 900],
       "notes": "【2026-08-10新規】このLINE公式アカウントの元々のWebhook先（既存の秘書アイ機能、Render: ai-company-brain、社長が実際に使用中）へ、生のリクエストボディをそのまま転送する。Renderのサーバー側でも独自にLINE署名検証を行っている可能性が高いため、n8n側で一度JSONとしてパース・再シリアライズすると署名検証に失敗する（バイト列が変わるため）。そのため`contentType: raw`でBase64デコードした生の文字列をそのまま送り、x-line-signatureヘッダーも元の値をそのまま転送する（出典：n8n公式GitHub `HttpRequestV3.node.ts`、raw body時は`body`パラメータに文字列をそのまま渡す仕様、2026-08-10参照）。credentials不要（Render側は認証なしの公開Webhookエンドポイントと推測、[要確認]）。continueOnFail=trueとし、転送に失敗しても本ワークフロー全体を失敗させない（秘書アイ機能側の障害を本ワークフローのエラー通知で二重に騒がしくしないため。ただし転送失敗自体を検知する仕組みは本ドラフトでは未実装、[未実装]）。",
       "continueOnFail": true,
       "parameters": {
@@ -224,26 +241,26 @@
         "options": {}
       } },
 
-    { "id": "cnt002-p2-notion-get-review", "name": "Notion：レビューページの承認ステータス確認", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [-480, 700],
+    { "id": "cnt002-p2-notion-get-review", "name": "Notion：レビューページの承認ステータス確認", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [0, 700],
       "notes": "GET /v1/pages/{page_id} でレビューページの現在のプロパティを取得し、承認ステータスが「承認待ち」であることを確認する（「反映済み」等の場合は二重反映防止のため処理しない）。credentials未割当（[要ユーザー承認]）。",
       "continueOnFail": true,
       "parameters": { "method": "GET", "url": "https://api.notion.com/v1/pages/3b7040888e9781c3a0cdd91af54da42f", "authentication": "predefinedCredentialType", "nodeCredentialType": "notionApi", "options": {} } },
 
-    { "id": "cnt002-p2-if-pending", "name": "IF：承認待ち状態か（二重反映防止）", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [-240, 700],
+    { "id": "cnt002-p2-if-pending", "name": "IF：承認待ち状態か（二重反映防止）", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [240, 700],
       "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [
         { "id": "cnt002-cond-pending", "leftValue": "={{ $json.properties && $json.properties['承認ステータス'] && $json.properties['承認ステータス'].select && $json.properties['承認ステータス'].select.name === '承認待ち' }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
       ], "combinator": "and" } } },
 
-    { "id": "cnt002-p2-notion-get-blocks", "name": "Notion：レビューページの本文ブロック取得", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [0, 700],
+    { "id": "cnt002-p2-notion-get-blocks", "name": "Notion：レビューページの本文ブロック取得", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [480, 700],
       "notes": "【設計変更・2026-08-10】静的データ方式（手動実行で保存されない・64KB上限、`docs.n8n.io`公式ドキュメントで確認）をやめ、Notionレビューページの本文ブロックから反映用本文を読み戻す方式に変更。GET /v1/blocks/{block_id}/children （page_size=100、AUTO-CNT-001と同じ既存パターン）。credentials未割当（[要ユーザー承認]）。",
       "continueOnFail": true,
       "parameters": { "method": "GET", "url": "https://api.notion.com/v1/blocks/3b7040888e9781c3a0cdd91af54da42f/children?page_size=100", "authentication": "predefinedCredentialType", "nodeCredentialType": "notionApi", "options": {} } },
 
-    { "id": "cnt002-p2-load-pending-text", "name": "本文ブロックから反映用本文を復元", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [0, 900],
+    { "id": "cnt002-p2-load-pending-text", "name": "本文ブロックから反映用本文を復元", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [480, 1080],
       "notes": "Phase1（cnt002-p1-build-review-blocks）が書き込んだ開始/終了マーカー『=== 反映用本文（自動処理用...） ===』『=== 本文ここまで ===』の間にあるパラグラフブロックのテキストを、出現順に単純結合して元の本文を復元する（チャンク分割は単純なsliceのため、順序どおり結合すれば元の文字列に一致する）。マーカーが見つからない場合は反映対象なしとしてエラー停止する（空文書を作らない）。承認待ちバージョン番号はNotionページプロパティ『最終反映バージョン』から取得する（Phase1確認ノードの出力を$('...')で明示参照）。",
       "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const blocksResp = $input.first().json;\nconst reviewPage = $('Notion：レビューページの承認ステータス確認').first().json;\n\nconst results = blocksResp.results || [];\nconst texts = results.map(b => {\n  const rt = b.paragraph && b.paragraph.rich_text;\n  return Array.isArray(rt) ? rt.map(t => t.plain_text || (t.text && t.text.content) || '').join('') : '';\n});\n\nconst startIdx = texts.findIndex(t => t.startsWith('=== 反映用本文'));\nconst endIdx = texts.findIndex(t => t.startsWith('=== 本文ここまで'));\n\nif (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {\n  throw new Error('AUTO-CNT-002 Phase2: レビューページ内に反映用本文のマーカーが見つかりませんでした。Phase1が正しく完了しているか確認してください。');\n}\n\nconst bodyText = texts.slice(startIdx + 1, endIdx).join('');\n\nconst nextVersion = (reviewPage.properties && reviewPage.properties['最終反映バージョン'] && reviewPage.properties['最終反映バージョン'].rich_text && reviewPage.properties['最終反映バージョン'].rich_text[0]) ? reviewPage.properties['最終反映バージョン'].rich_text[0].plain_text : null;\n\nif (!bodyText || !nextVersion) {\n  throw new Error('AUTO-CNT-002 Phase2: 反映対象の本文またはバージョン番号が空でした。');\n}\n\nreturn [{ json: { bodyText, nextVersion, sourceFolderId: '0AH8YWDlKwoFBUk9PVA' } }];\n" } },
 
-    { "id": "cnt002-p2-drive-create", "name": "Google Drive：新バージョン用の空Googleドキュメント作成", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [240, 700],
+    { "id": "cnt002-p2-drive-create", "name": "Google Drive：新バージョン用の空Googleドキュメント作成", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [720, 700],
       "notes": "POST https://www.googleapis.com/drive/v3/files （出典：`https://developers.google.com/workspace/drive/api/guides/create-file`、2026-08-10参照）。mimeType='application/vnd.google-apps.document'で空のGoogleドキュメントを直接目的フォルダに作成する。name='コホマダ note運用計画書 {nextVersion}'。credentials未割当（[要ユーザー承認]、新規Credential前提）。",
       "continueOnFail": true,
       "parameters": {
@@ -257,7 +274,7 @@
         "options": {}
       } },
 
-    { "id": "cnt002-p2-docs-insert", "name": "Google Docs：本文挿入（batchUpdate）", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [480, 700],
+    { "id": "cnt002-p2-docs-insert", "name": "Google Docs：本文挿入（batchUpdate）", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [960, 700],
       "notes": "POST https://docs.googleapis.com/v1/documents/{documentId}:batchUpdate （出典：v2設計書出典節、`https://developers.google.com/workspace/docs/api/how-tos/move-text`、2026-08-10参照）。insertTextリクエスト1件のみ（location.index=1、新規ドキュメントの本文開始位置）でプレーンテキスト全文を挿入する。書式（見出し・表・取り消し線）は本ドラフトでは適用しない（Sticky Note参照、既知の制約）。credentials未割当（[要ユーザー承認]、Drive作成と同じCredentialを想定）。",
       "continueOnFail": true,
       "parameters": {
@@ -271,12 +288,12 @@
         "options": {}
       } },
 
-    { "id": "cnt002-p2-if-write-ok", "name": "IF：Google Docs書き込み成功判定", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [720, 700],
+    { "id": "cnt002-p2-if-write-ok", "name": "IF：Google Docs書き込み成功判定", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [1200, 700],
       "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [
         { "id": "cnt002-cond-write-ok", "leftValue": "={{ $json.error ? 'error' : 'ok' }}", "rightValue": "ok", "operator": { "type": "string", "operation": "equals" } }
       ], "combinator": "and" } } },
 
-    { "id": "cnt002-p2-notion-update-done", "name": "Notion：レビューページを反映済みに更新", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [960, 560],
+    { "id": "cnt002-p2-notion-update-done", "name": "Notion：レビューページを反映済みに更新", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1440, 560],
       "continueOnFail": true,
       "parameters": {
         "method": "PATCH",
@@ -289,15 +306,15 @@
         "options": {}
       } },
 
-    { "id": "cnt002-p2-line-success", "name": "LINE - Broadcast反映完了通知", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1200, 560],
+    { "id": "cnt002-p2-line-success", "name": "LINE - Broadcast反映完了通知", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1680, 560],
       "continueOnFail": true,
       "parameters": { "method": "POST", "url": "https://api.line.me/v2/bot/message/broadcast", "authentication": "genericCredentialType", "genericAuthType": "httpBearerAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ { messages: [ { type: 'text', text: '【note運用計画書】新バージョンをGoogleドライブに作成しました。ご確認ください。' } ] } }}", "options": {} } },
 
-    { "id": "cnt002-p2-throw-write-error", "name": "失敗時エラー送出（Phase2書き込み失敗）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [960, 840],
+    { "id": "cnt002-p2-throw-write-error", "name": "失敗時エラー送出（Phase2書き込み失敗）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1440, 840],
       "notes": "Google Docs書き込み失敗時。空ファイルだけが作成され本文が空のまま残っている可能性がある既知のリスク（設計書 案Yの短所として指摘済み）。ロールバック（空ファイルの削除）は本ドラフトでは未実装（[未実装]、次に必要なアクション）。",
       "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const err = $input.first().json.error || {};\nthrow new Error('AUTO-CNT-002 Phase2: Google Docsへの本文書き込みに失敗しました。空のドキュメントファイルが残っている可能性があります（手動確認・削除が必要）。detail=' + JSON.stringify(err));\n" } },
 
-    { "id": "cnt002-p2-noop-not-pending", "name": "NoOp：完了（承認待ち状態でないため無視・二重反映防止）", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [0, 900], "parameters": {} }
+    { "id": "cnt002-p2-noop-not-pending", "name": "NoOp：完了（承認待ち状態でないため無視・二重反映防止）", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [480, 900], "parameters": {} }
   ],
 
   "connections": {
@@ -329,9 +346,11 @@
     "LINE確認メッセージ本文生成": { "main": [[{ "node": "LINE - Broadcast確認送信", "type": "main", "index": 0 }]] },
     "Notion：レビューページに「変更なし」を記録": { "main": [[{ "node": "Notion：レビューページのプロパティ更新（変更なし）", "type": "main", "index": 0 }]] },
 
-    "Webhook（LINE返信受信）": { "main": [[{ "node": "キーワード判定（署名検証は暫定停止中）", "type": "main", "index": 0 }]] },
-    "キーワード判定（署名検証は暫定停止中）": { "main": [[{ "node": "IF：承認キーワード一致（署名検証は暫定停止中）", "type": "main", "index": 0 }]] },
-    "IF：承認キーワード一致（署名検証は暫定停止中）": { "main": [
+    "Webhook（LINE返信受信）": { "main": [[{ "node": "生ボディ抽出・キーワード判定（署名検証はCryptoノードへ分離）", "type": "main", "index": 0 }]] },
+    "生ボディ抽出・キーワード判定（署名検証はCryptoノードへ分離）": { "main": [[{ "node": "Crypto: LINE署名HMAC計算", "type": "main", "index": 0 }]] },
+    "Crypto: LINE署名HMAC計算": { "main": [[{ "node": "署名比較（一致判定）", "type": "main", "index": 0 }]] },
+    "署名比較（一致判定）": { "main": [[{ "node": "IF：署名一致かつ承認キーワード一致（恒久対応済み）", "type": "main", "index": 0 }]] },
+    "IF：署名一致かつ承認キーワード一致（恒久対応済み）": { "main": [
       [{ "node": "Notion：レビューページの承認ステータス確認", "type": "main", "index": 0 }],
       [{ "node": "秘書アイ機能へリレー（Renderの既存Webhookへ転送）", "type": "main", "index": 0 }]
     ] },

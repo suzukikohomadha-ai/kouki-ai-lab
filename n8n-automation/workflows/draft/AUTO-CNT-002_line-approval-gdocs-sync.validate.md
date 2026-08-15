@@ -1,6 +1,6 @@
 # 静的検証結果: workflows/draft/AUTO-CNT-002_line-approval-gdocs-sync.json
 
-検証日時: 2026-08-10T11:26:49.364Z
+検証日時: 2026-08-15T08:37:24.606Z
 結果: 重大な問題なし
 
 ## エラー (0)

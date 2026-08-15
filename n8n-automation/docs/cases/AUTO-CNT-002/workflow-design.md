@@ -1,6 +1,7 @@
 # AUTO-CNT-002：note運用計画書 分析＋LINE承認反映
 
 - ステータス：Draft（ローカルの体裁上。ただし`workflows/README.md`の2026-08-10確認記録によれば、実際のn8n本体では`active:true`・Credential割当済みで稼働中。詳細と重大な指摘事項は`logs/common_2026-08-15_AUTO-CNT-002_n8n品質監査_v1.md`を参照）
+- 【2026-08-15追記】監査で指摘された「Webhook署名検証が無効化されたまま稼働」への恒久対応として、n8n公式Cryptoノード（`n8n-nodes-base.crypto`、action='hmac'）による署名検証をワークフローJSONに設計・反映済み（`cnt002-p2-crypto-hmac`・`cnt002-p2-compare-sig`ノード、IF条件に`validSignature===true`を復元）。ただし**設計のみで実機未検証・本番未反映**。適用には①`crypto`種別Credential新規作成（LINE Channel Secret、要ユーザー承認）②本JSONの実インスタンスへの反映③Credential割当④実機テスト、が必要（詳細はJSON内Sticky Note・Phase2参照）。
 - 設計元：`logs/common_2026-08-10_n8n自動化_LINE承認反映設計_v2.md`（社長承認済み）
 - 実装：ジン（本セッションで直接実装。エイトの背景実行がセッション上限で中断したため引き継いだ）
 - 実装日：2026-08-10
