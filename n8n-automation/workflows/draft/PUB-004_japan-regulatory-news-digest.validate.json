@@ -1,6 +1,6 @@
 {
   "file": "workflows/draft/PUB-004_japan-regulatory-news-digest.json",
-  "checkedAt": "2026-08-15T09:57:17.726Z",
+  "checkedAt": "2026-08-15T10:04:51.829Z",
   "errors": [],
   "warnings": [
     "ノード \"Sticky Note: Overview & Setup\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",

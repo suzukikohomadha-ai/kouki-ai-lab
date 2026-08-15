@@ -116,7 +116,14 @@
 **提出前に検討が必要な点**：
 - `PUB-003`（RSS要約→Slack投稿）と機能領域が重なる。`PUB-004`の差別化点は、複数ソース対応・Google Sheetsでの重複排除・翻訳機能・Slack/Gmail/Notionの複数配信先・「日本の規制・行政ニュース」という特定ニッチへの特化、と考えられるが、Creator Hub提出の価値があるかは社長判断。
 - ~~レイアウト警告11件（Sticky Noteの重なり・間隔不足）の解消~~ → **2026-08-15完了**。原因はSticky Note群（上部y:0〜508）と機能ノード群（RSS Feed Read等、最上段がy:352から開始）の間隔が設計時点から不足していたこと。機能ノード35個（Copyright & Complianceのstickyを含む、Overview/1〜4のセクション見出しstickyを除く）をy方向に一律+500した上で、Overview & Setupのstickyの高さを340→250に縮小し解消（接続関係・ノードの内容は無変更、位置のみ調整）。`AUTO-KHM-001`本体・内製版・`PUB-004`の3ファイルすべてに適用し、`validate-workflow.mjs`でエラー0件・警告6件（Sticky Note孤立のみ、他ワークフローと同様の想定内パターン）まで低減したことを確認済み。ただしn8n UI上での見た目の最終確認はしていない（`[要インスタンス確認]`）。
-- 実機登録・実機テストの実施（**要承認・未実施**）を経てから`workflows/validated/`への格上げと`*.creator-hub-submission.md`の作成を検討する。
+- ~~実機登録の実施~~ → **2026-08-15、社長承認のもと実施済み**。n8n本体へ実際に登録（実ワークフローID`jejKmWHPDWSUifDZ`、`active:false`のまま）。あわせてAI呼び出しノードを、社長確認（既存Anthropic Credentialを流用）に基づきプレースホルダーからAnthropic Messages API（`https://api.anthropic.com/v1/messages`、`authentication:predefinedCredentialType`/`nodeCredentialType:anthropicApi`、n8n公式仕様で確認済み）へ実装し直し、レスポンス解析（`content[].text`）もAnthropic実仕様に合わせて修正した。ローカルの`workflows/draft/PUB-004_japan-regulatory-news-digest.json`と実インスタンスの内容は同期済み。
+- **実機テストの残作業（n8n UI上で社長が実施、要Credential）**：
+  1. Slack Credential新規作成（お持ちのBot Tokenをn8n UI上で直接入力。トークンをチャットには貼らない方針で統一）→`Slack: Post Digest`ノードへ割当
+  2. 既存の「Google Sheets account」Credentialを`Google Sheets: Read/Append Distribution Log`の2ノードへ割当
+  3. 配信ログ用の実在するGoogleスプレッドシート（列：`articleUrl`・`sourceName`・`distributedAt`）を用意し、`Set: Config`ノードの`documentId`プレースホルダーを実IDに差し替え
+  4. 既存の「Anthropic - n8n」Credentialを`HTTP Request: AI Summarize & Translate (Anthropic Claude)`ノードへ割当
+  5. 手動実行でテストし、レビュー用RSSソース（METI等、内製版で確認済みのものを流用可）を`Set: Config`に一時的に設定してエンドツーエンドの動作を確認
+- 上記完了後、`workflows/validated/`への格上げと`*.creator-hub-submission.md`の作成を検討する。
 
 **2026-08-15、頒布方法を社長確認：n8n公式Creator Hubでの無料公開を採用（n8nplace等の第三者マーケットプレイスでの有料販売は不採用）**。理由（提案・確認時のやり取りより）：
 - n8n公式Creator Hub自体はテンプレートを無料公開する仕組みであり、Creator向けの収益化はテンプレート単体の売上ではなくn8n Cloudアフィリエイト経由の紹介報酬が中心（`https://n8n.io/creators/`・`https://n8n.io/affiliates/`、2026-08-15参照）。有料直接販売はn8nplace等、公式Creator Hubとは別の第三者マーケットプレイスでのみ可能。

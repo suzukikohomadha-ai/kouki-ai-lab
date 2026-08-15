@@ -593,7 +593,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [要インスタンス確認] $('ノード名').all() は一般的な想定であり未検証。\n// 直前ノード（If）の出力ではなく、Dedup結果ノードを直接参照する（Ifノードを通過した時点の$inputは件数チェック用の1件のみのため）。\nconst items = $('Code: Deduplicate Against Log').all();\n\nconst targetLanguage = $('Set: Config (Sources & Distribution Options)').first().json.digestLanguage || 'en';\n\nconst articles = items.map(i => ({\n  title: i.json.articleTitle,\n  url: i.json.articleUrl,\n  publishedAt: i.json.publishedAt,\n  sourceName: i.json.sourceName\n}));\n\nconst systemInstruction = [\n  'You are summarizing Japanese government/regulatory news articles for a non-Japanese-speaking business audience.',\n  'For EACH article provided, produce: (1) a concise summary (3-5 sentences, do NOT reproduce the full article text),',\n  `(2) a translation of that summary into ${targetLanguage},`,\n  '(3) the original title, source URL, and published date EXACTLY as provided (do not omit or alter them).',\n  'Do not fabricate facts not present in the article metadata provided. If the provided data is insufficient to summarize confidently, say so explicitly rather than guessing.',\n  'Return the result as a JSON array, one object per article, with keys: title, url, publishedAt, sourceName, summaryTranslated, language.'\n].join(' ');\n\nconst requestBody = {\n  // [要公式確認] 実際に採用するAI/LLMプロバイダのAPIスキーマに合わせて調整が必要。\n  // ここでは一般的なchat completion形式を想定したプレースホルダー構造。\n  model: '[要ユーザー設定] AI/LLMモデル名',\n  messages: [\n    { role: 'system', content: systemInstruction },\n    { role: 'user', content: JSON.stringify(articles) }\n  ]\n};\n\nreturn [{ json: { requestBody, articleCountBeforeAi: articles.length } }];"
+        "jsCode": "// [要インスタンス確認] $('ノード名').all() は一般的な想定であり未検証。\n// 直前ノード（If）の出力ではなく、Dedup結果ノードを直接参照する（Ifノードを通過した時点の$inputは件数チェック用の1件のみのため）。\nconst items = $('Code: Deduplicate Against Log').all();\n\nconst targetLanguage = $('Set: Config (Sources & Distribution Options)').first().json.digestLanguage || 'en';\n\nconst articles = items.map(i => ({\n  title: i.json.articleTitle,\n  url: i.json.articleUrl,\n  publishedAt: i.json.publishedAt,\n  sourceName: i.json.sourceName\n}));\n\nconst systemInstruction = [\n  'You are summarizing Japanese government/regulatory news articles for a non-Japanese-speaking business audience.',\n  'For EACH article provided, produce: (1) a concise summary (3-5 sentences, do NOT reproduce the full article text),',\n  `(2) a translation of that summary into ${targetLanguage},`,\n  '(3) the original title, source URL, and published date EXACTLY as provided (do not omit or alter them).',\n  'Do not fabricate facts not present in the article metadata provided. If the provided data is insufficient to summarize confidently, say so explicitly rather than guessing.',\n  'Return ONLY a JSON array (no surrounding text, no code fences), one object per article, with keys: title, url, publishedAt, sourceName, summaryTranslated, language.'\n].join(' ');\n\n// Anthropic Messages API形式（2026-08-15、公式ドキュメント・PUB-001等の既存実装で確認済みの形式）：\n// system は独立フィールド、messagesはuser/assistantのみ。\nconst requestBody = {\n  model: 'claude-haiku-4-5',\n  max_tokens: 4000,\n  system: systemInstruction,\n  messages: [\n    { role: 'user', content: JSON.stringify(articles) }\n  ]\n};\n\nreturn [{ json: { requestBody, articleCountBeforeAi: articles.length } }];"
       },
       "id": "bb4d1d9b-fd12-46a7-8ac4-a0cbb62857e3",
       "name": "Code: Build AI Summarize+Translate Prompt",
@@ -603,18 +603,24 @@
         2928,
         1172
       ],
-      "notes": "[要インスタンス確認] $('ノード名').all() は一般的な想定であり未検証。DeepL等の専用翻訳ノード/APIの正式仕様が未確認のため、設計書6節の代替案（要約と翻訳を1回のLLM呼び出しにまとめる）を採用しています。"
+      "notes": "【2026-08-15更新・実機テスト用】社長確認によりAnthropic Claudeを採用。Anthropic Messages APIのリクエスト形式（system独立フィールド、max_tokens必須）に合わせて変更した。modelはテスト時のコスト最小化のためclaude-haiku-4-5を初期値としたが、要約品質を優先する場合はclaude-sonnet-5に変更可（内製版と同様の判断軸）。"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://your-llm-provider.example/v1/chat/completions",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
             }
           ]
         },
@@ -626,18 +632,18 @@
         }
       },
       "id": "4b8b1e2e-17d1-4a30-91b2-9d5a1399a24a",
-      "name": "HTTP Request: AI Summarize & Translate (placeholder)",
+      "name": "HTTP Request: AI Summarize & Translate (Anthropic Claude)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         3168,
         1172
       ],
-      "notes": "[要インスタンス確認][要公式確認][ユーザー入力待ち] 実際に採用するAI/LLMプロバイダのエンドポイント・認証方式・リクエスト/レスポンス形式は未確定です。URLはプレースホルダー（.example ドメイン、実在解決しません）。本番化時にプロバイダ確定後、URL・ヘッダー・ボディ形式を差し替えてください。"
+      "notes": "【2026-08-15更新・実機テスト用】プレースホルダーURLをAnthropic公式Messages APIエンドポイントに変更し、`authentication:predefinedCredentialType`・`nodeCredentialType:anthropicApi`を採用（n8n公式仕様で確認済み：HTTP Requestノードから`anthropicApi`の事前定義Credentialタイプを直接利用可能。x-api-keyヘッダーはCredential側が自動付与、`anthropic-version`ヘッダーのみ明示的に追加が必要）。実際のCredential割当はn8n UI上で社長が行う（既存の「Anthropic - n8n」Credentialを想定）。Creator Hub提出時、他者は自分のAnthropic Credentialを新規作成して割り当てる想定（本ノード自体は自社固有の値を含まない）。"
     },
     {
       "parameters": {
-        "jsCode": "// [要インスタンス確認][要公式確認] レスポンス構造は採用プロバイダ次第。\nconst response = $input.first().json;\n\nlet parsed;\ntry {\n  // 想定：OpenAI互換のchat completion形式。プロバイダに応じて要修正。\n  const rawContent = response?.choices?.[0]?.message?.content ?? response?.content ?? null;\n  if (!rawContent) {\n    throw new Error('AI応答からcontentを取得できませんでした。レスポンス構造を確認してください。');\n  }\n  parsed = JSON.parse(rawContent);\n} catch (e) {\n  // パース失敗時はエラーとして扱い、ワークフローを停止させる（不完全なダイジェスト配信を防ぐ）\n  throw new Error(`AI応答のパースに失敗しました: ${e.message}`);\n}\n\nif (!Array.isArray(parsed)) {\n  throw new Error('AI応答が期待する配列形式ではありません。');\n}\n\nreturn parsed.map(article => ({ json: article }));"
+        "jsCode": "// Anthropic Messages APIの応答形式（content: [{type:'text', text:'...'}], ...）で解析する（2026-08-15更新）。\nconst response = $input.first().json;\n\nlet parsed;\ntry {\n  const block = Array.isArray(response?.content) ? response.content.find(b => b.type === 'text') : null;\n  const rawText = block?.text ?? null;\n  if (!rawText) {\n    throw new Error('AI応答からcontentを取得できませんでした。レスポンス構造を確認してください。detail=' + JSON.stringify(response).slice(0, 500));\n  }\n  let text = rawText.trim();\n  text = text.replace(/^```json\\s*/i, '').replace(/```\\s*$/, '').trim();\n  parsed = JSON.parse(text);\n} catch (e) {\n  // パース失敗時はエラーとして扱い、ワークフローを停止させる（不完全なダイジェスト配信を防ぐ）\n  throw new Error(`AI応答のパースに失敗しました: ${e.message}`);\n}\n\nif (!Array.isArray(parsed)) {\n  throw new Error('AI応答が期待する配列形式ではありません。');\n}\n\nreturn parsed.map(article => ({ json: article }));"
       },
       "id": "583ca90f-c4e0-4a17-8ee7-31382014f370",
       "name": "Code: Parse AI Response",
@@ -647,7 +653,7 @@
         3408,
         1172
       ],
-      "notes": "[要インスタンス確認][要公式確認] HTTP Responseの実構造（choices[0].message.content等）は採用するAI/LLMプロバイダのAPI仕様に依存し未確認。プレースホルダー実装。パース失敗時は例外を投げてワークフローを停止させ、不完全なダイジェスト配信を防ぐ設計です。"
+      "notes": "【2026-08-15更新・実機テスト用】Anthropic Messages APIの実際の応答構造（`content[].text`、typeが'text'のブロックを探す）に合わせて解析ロジックを変更した。コードフェンス除去処理を追加（AUTO-COM-001等の既存実装と同じ対処パターン）。パース失敗時は例外を投げてワークフローを停止させ、不完全なダイジェスト配信を防ぐ設計です。"
     },
     {
       "parameters": {
@@ -1112,14 +1118,14 @@
       "main": [
         [
           {
-            "node": "HTTP Request: AI Summarize & Translate (placeholder)",
+            "node": "HTTP Request: AI Summarize & Translate (Anthropic Claude)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP Request: AI Summarize & Translate (placeholder)": {
+    "HTTP Request: AI Summarize & Translate (Anthropic Claude)": {
       "main": [
         [
           {
