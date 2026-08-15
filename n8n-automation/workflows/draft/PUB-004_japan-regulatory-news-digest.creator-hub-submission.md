@@ -14,69 +14,100 @@ Summarize Japanese regulatory news with Claude and post the digest to Slack
 
 （75字。既定の配信先はSlackのみだが、Gmail下書き作成・Notion追記も設定でON/OFFできる。この点は説明文の"What this workflow does"で明記する）
 
-## 説明文（Markdown・H2見出し構成）
+## 説明文
 
-```markdown
-## Who is this for
-This template is for teams and consultants who support foreign companies
-entering the Japanese market and need a lightweight way to track Japanese
-regulatory and government announcements without reading Japanese daily.
-It's also a solid starting point for anyone who wants to turn multiple RSS
-feeds into a deduplicated, translated digest on a schedule.
+**【2026-08-15訂正】** 実際の提出フォーム（`creators.n8n.io/workflows/<id>/edit`）を鈴木さんに画面共有していただき確認したところ、以前の記述（PUB-001/003作成時点の想定、note.com記事に基づく「タイトル＋Markdown説明文1本＋JSONアップロード」という理解）は不正確だったことが判明した。**実際の説明欄は以下の構造化された複数フィールドに分かれている**（今後のPUB提出でもこの構造を前提にする）：
 
-## What this workflow does
-On a schedule, it reads up to three RSS feeds you configure, keeps only
-items published within a configurable lookback window, and cross-references
-a Google Sheets log so the same article is never summarized twice. New
-articles are sent to Claude in a single batched call that returns a short
-factual summary and a translation for each one (source title, URL, and
-publish date are always preserved). The digest is posted to Slack by
-default; creating a Gmail draft or appending to a Notion database are both
-optional and off by default. The distribution log is updated once per run
-so duplicate work is avoided next time.
+- **簡単な概要**（Brief overview、10〜50語、1段落）
+- **仕組み**（How it works、50語以上、番号付きステップ）
+- **設定**（Setup、50語以上、番号付きステップ）
+- **要件**（Requirements、任意、1項目ずつ追加していくリスト）
+- **カスタマイズ**（Customize、任意、同じくリスト）
+- **追加情報**（Additional info、任意、自由記述）
 
-## Requirements
-- An n8n instance (Cloud or self-hosted)
-- An Anthropic API key, added as an "Anthropic" credential in n8n
-- A Slack app with a Bot Token that has the `chat:write` and
-  `channels:read` OAuth scopes, added as a Slack credential in n8n
-- A Google account with a Sheets credential, plus a spreadsheet you create
-  yourself with columns: articleUrl, sourceName, distributedAt
-- RSS feed URLs you have personally verified — this template ships with NO
-  real source URLs, and you are responsible for confirming each source's
-  terms of use permit AI summarization and redistribution
+なお、n8n側のフォーム自体がアップロードしたJSONから内容を自動生成する機能を持っており、鈴木さんが提出作業を進めた時点で「簡単な概要」「仕組み」「設定」は自動生成された英文が既に入っていた（内容を確認したところ事実誤認はなく、そのまま採用可能な品質だった）。以下は、その自動生成内容と実質的に同内容になるよう当方で用意した版、および自動生成されない「要件」「カスタマイズ」「追加情報」の入力内容。
 
-## How to set up
-1. Import this workflow and its companion error workflow (the
-   `-errorhandler` file). Set this workflow's Settings > Error Workflow to
-   point at the imported error workflow.
-2. Open "Set: Config (Sources & Distribution Options)" and replace the
-   placeholder RSS URLs, source names, and Slack channel with your own.
-3. Create a Google Sheet with columns articleUrl / sourceName /
-   distributedAt, and paste its ID into the two Google Sheets nodes.
-4. Open the Anthropic HTTP Request node and select (or create) your
-   Anthropic credential.
-5. Open the Slack node and select (or create) your Slack credential. Make
-   sure the bot has been invited to the target channel.
-6. Read the "Copyright & Compliance" sticky note before activating.
-7. Test with a manual execution and inspect the output before enabling the
+### 簡単な概要（10〜50語）
+
+```
+This workflow runs weekly, reads user-configured RSS feeds for Japanese
+regulatory and government news, deduplicates against a Google Sheets log,
+summarizes and translates new articles with Anthropic Claude, then posts a
+digest to Slack with optional Gmail draft and Notion logging.
+```
+
+（41語）
+
+### 仕組み（50語以上、番号付き）
+
+```
+1. Runs on a configurable weekly schedule.
+2. Reads up to three RSS feeds you configure in parallel and labels each
+   item with its source name.
+3. Filters out articles older than a configurable lookback window, then
+   cross-references a Google Sheets distribution log so already-sent
+   articles are excluded.
+4. If at least one new article remains, sends all of them in a single
+   batched request to Anthropic Claude, asking for a short summary and
+   translation of each.
+5. Parses Claude's response and assembles one digest that always preserves
+   each article's original title, URL, and publish date.
+6. Posts the digest to a Slack channel; optionally also creates a Gmail
+   draft and/or appends an entry to a Notion database, based on
+   configuration toggles.
+7. Records each newly distributed article in the Google Sheets log with a
+   timestamp, so it is never summarized twice.
+```
+
+### 設定（50語以上、番号付き）
+
+```
+1. Import this workflow along with its companion error-handling workflow,
+   and set this workflow's Settings > Error Workflow to point at the
+   imported error workflow.
+2. Add credentials in n8n: an Anthropic credential (used by the AI
+   summarization HTTP Request node), a Slack credential with chat:write
+   and channels:read scopes, and a Google Sheets credential — plus
+   Gmail/Notion credentials only if you plan to enable those optional
+   branches.
+3. Open "Set: Config (Sources & Distribution Options)" and replace the
+   placeholder RSS feed URLs, source names, lookback window, and Slack
+   channel with your own values.
+4. Create a Google Sheet with columns articleUrl, sourceName, and
+   distributedAt for the distribution log, then paste its ID into both
+   Google Sheets nodes.
+5. Run a manual test execution and check the output before turning on the
    schedule.
+```
 
-## How to customize
-- Change `lookbackDays` to widen or narrow which articles count as "new".
-- Set `createGmailDraft` or `appendToNotion` to true to also deliver the
-  digest by email draft or into a Notion database.
-- Add or remove RSS Feed Read + Set (Label) + Merge nodes if you need more
-  or fewer than three sources.
-- Swap the model in the prompt-building Code node if you want faster/
-  cheaper (Haiku) or higher-quality (Sonnet/Opus) summaries — increase
-  `max_tokens` accordingly if you add more sources.
+### 要件（任意、1項目ずつ）
 
-**This template is provided as-is.** You are solely responsible for
-verifying that your chosen RSS sources and your use (AI summarization,
-translation, automated redistribution) comply with each source's terms of
-use and applicable law. This template does not warrant legal compliance
-for any specific source.
+```
+An n8n instance (Cloud or self-hosted)
+An Anthropic API key, added as an "Anthropic" credential in n8n
+A Slack app with a Bot Token that has the chat:write and channels:read OAuth scopes
+A Google account with a Sheets credential
+A Google Sheet you create yourself with columns: articleUrl, sourceName, distributedAt
+RSS feed URLs you have personally verified — this template ships with no real source URLs, and you are responsible for confirming each source's terms of use permit AI summarization and redistribution
+```
+
+### カスタマイズ（任意、1項目ずつ）
+
+```
+Change lookbackDays to widen or narrow which articles count as "new"
+Set createGmailDraft or appendToNotion to true to also deliver the digest by email draft or into a Notion database
+Add or remove RSS Feed Read + Set (Label) + Merge nodes if you need more or fewer than three sources
+Swap the Claude model in the prompt-building Code node — Haiku for speed/cost, Sonnet or Opus for higher-quality summaries — and increase max_tokens accordingly if you add more sources
+```
+
+### 追加情報（任意）
+
+```
+This template is provided as-is. You are solely responsible for verifying
+that your chosen RSS sources and your use (AI summarization, translation,
+automated redistribution) comply with each source's terms of use and
+applicable law. This template does not warrant legal compliance for any
+specific source.
 ```
 
 ## 設計上の判断
@@ -102,7 +133,7 @@ for any specific source.
 
 ## 次のアクション
 
-1. **[要実施]** n8n画面上で実際の見た目を確認する（特に"Overview & Setup"のSticky Noteが最後まで表示されているか）。スクリーンショットでの目視確認を推奨。
+1. ~~n8n画面上で実際の見た目を確認する~~ **[完了]** 社長が目視確認し、Sticky Note・ノード重なりとも解消済み（上記参照）。
 2. `PUB-001`〜`003`の審査結果・Creator Hub側の受付状況を踏まえ、提出タイミングを判断する。
-3. 提出は鈴木さんご自身のn8n Creator Hubアカウントからログインして行う（Claudeが代行できない操作）。JSONアップロード＋上記タイトル・説明文の入力。
+3. **[進行中]** 提出は鈴木さんご自身のn8n Creator Hubアカウントからログインして行う（Claudeが代行できない操作）。JSONアップロード＋上記「簡単な概要」「仕組み」「設定」「要件」「カスタマイズ」「追加情報」の入力。2026-08-15、鈴木さんが実際にフォーム画面に着手し、上記構造を確認済み。
 4. 提出後、`workflows/validated/`へ格上げし、本ファイルの「ステータス」「提出履歴」を更新する。
