@@ -134,7 +134,20 @@
 - `AUTO-KHM-001_japan-regulatory-news-digest.internal.json`：`validate-workflow.mjs`0エラー・警告17件（既存のレイアウト警告のみ、AI呼び出し変更による新規警告なし）。ノード数40・接続の整合性（孤立参照なし）をスクリプトで確認済み。`check-secrets.mjs`は実government URLの誤検知7件＋プレースホルダーemail1件のみ（実値の混入なし、目視確認済み）。
 - `PUB-004_japan-regulatory-news-digest.json`：元のプレースホルダー版から名称のみ変更のため、検証結果は committed 済みの`AUTO-KHM-001_japan-regulatory-news-digest.json`と同一（0エラー・警告17件、check-secrets 1件＝プレースホルダーemail誤検知のみ）。
 
+## 2026-08-15：PUB-004 実機テストで発見・修正した不具合（重要）
+
+社長立ち会いのもと`PUB-004`を実インスタンスに登録し、Slack/Google Sheets/AnthropicのCredentialを割り当てて手動実行テストを繰り返した結果、**実行環境が無ければ発見できなかった不具合5件**を特定・修正した。すべて`AUTO-KHM-001`本体・内製版・`PUB-004`の3ファイルに反映済み（AI呼び出し関連の2件はPUB-004固有）。
+
+1. **【最重要・全ファイル共通】`Set: Label Source 1/2/3`が記事の日付等を消していた**：n8nのSetノード（Edit Fields）は既定で「指定したフィールド以外を破棄する」動作のため、ソース名を付与する目的のこの3ノードが、RSS由来の`title`/`link`/`pubDate`/`isoDate`等を意図せず全て削除していた。後続の`Filter: Within Lookback Period`が日付を読み取れず、常に0件になる致命的バグだった。`includeOtherFields: true`を追加して解消（`Set: Tag RSS Items`・`Set: Tag Log Entries`も同様の理由で修正）。
+   - **設定場所に関する教訓**：この`includeOtherFields`はn8n公式ドキュメント（`https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.set`、2026-08-15参照）によれば`parameters`直下のトップレベル項目であり、`parameters.options`の中ではない。最初`options`の中に設定して一度目の修正は効果がなかった（要注意ポイントとして記録）。
+2. **【PUB-004固有】AI要約の`max_tokens`が小さすぎた**：日付フィルタの修正で一度に44件の記事を要約することになり、既定の4000トークンでは応答が途中で切れてJSONパースに失敗した。16000に増量して解消（Claude Haiku 4.5の上限は64,000トークン、`2026-08-15`Web検索で確認）。
+3. **【PUB-004固有】AI呼び出しのHTTPタイムアウトが短すぎた**：`max_tokens`増量に伴い応答生成に60秒以上かかり、タイムアウトしていた。180秒に延長して解消。
+4. **【全ファイル共通】`Google Sheets: Append Distribution Log`に`columns.schema`が無かった**：`mappingMode:'defineBelow'`を使う場合、列定義の`schema`配列が必須（n8n UI経由で作成した場合は自動生成されるが、API経由で組み立てた本ドラフトには含まれていなかった）。3列分のschemaを追加して解消。
+5. **【運用上の注意点、バグではない】SlackのBot Tokenには`chat:write`・`channels:read`スコープが必要**：初期状態のBot Tokenではスコープ不足で投稿に失敗した。Slack App管理画面でスコープ追加→再インストール→トークン再取得が必要だった（Creator Hub提出時のセットアップ手順に明記すべき事項）。
+
+**最終確認（2026-08-15、実行ID#251）**：RSS取得（45件）→日付フィルタ（44件通過）→重複排除→AI要約・翻訳（Anthropic Claude、Execute成功）→Slack投稿（`"ok":true`、実際のメッセージ送信を確認）→Google Sheets配信ログへの44行書き込み、まで**完全に成功**したことをn8n API経由で直接確認済み。
+
 ## 次のフェーズ
 
-- **内製運用**：上記「引き続き社長確認が必要な項目」の確定 → Credential作成・割当（要承認）→ `n8n-quality-auditor`監査 → 本番登録（要承認）。
-- **Creator Hub提出**：`PUB-003`との差別化について社長判断 → レイアウト調整 → 実機登録・テスト（要承認）→ `workflows/validated/`格上げ・提出資料作成。
+- **内製運用**：上記「引き続き社長確認が必要な項目」（実配信先の確定）→ Credential作成・割当（要承認）→ 上記5件の不具合修正を反映した上で`n8n-quality-auditor`監査 → 本番登録（要承認）。
+- **Creator Hub提出**：`PUB-003`との差別化について社長判断 → レイアウト調整 → 実機テストは完了済み（上記）→ テスト用の設定値（実RSS・`lookbackDays:90`・テスト用Slackチャンネル`test`等）をプレースホルダーへ戻す → `workflows/validated/`格上げ・提出資料作成（Slackスコープ要件を提出資料に明記）。

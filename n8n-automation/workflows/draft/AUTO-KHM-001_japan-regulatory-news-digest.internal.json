@@ -257,7 +257,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "e393e7a4-0991-4828-b07d-cc90911814ab",
       "name": "Set: Label Source 1",
@@ -302,7 +303,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "4663a58f-029c-47f4-a1da-cba8fe272ed6",
       "name": "Set: Label Source 2",
@@ -347,7 +349,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "b18f44de-0687-4b4a-b4fc-2f0b242f78b0",
       "name": "Set: Label Source 3",
@@ -393,7 +396,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "5e4aecf1-a00c-4de3-9382-d68af344d509",
       "name": "Set: Tag Log Entries",
@@ -493,7 +497,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "fa4a1406-ddf3-4f69-8eb5-63ae9f07948d",
       "name": "Set: Tag RSS Items",
@@ -857,7 +862,36 @@
             "articleUrl": "={{ $json.articleUrl }}",
             "sourceName": "={{ $json.sourceName }}",
             "distributedAt": "={{ $json.distributedAt }}"
-          }
+          },
+          "schema": [
+            {
+              "id": "articleUrl",
+              "displayName": "articleUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sourceName",
+              "displayName": "sourceName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "distributedAt",
+              "displayName": "distributedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
         },
         "options": {}
       },

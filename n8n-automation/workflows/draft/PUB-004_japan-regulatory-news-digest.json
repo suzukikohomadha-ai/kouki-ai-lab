@@ -257,7 +257,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "e393e7a4-0991-4828-b07d-cc90911814ab",
       "name": "Set: Label Source 1",
@@ -302,7 +303,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "4663a58f-029c-47f4-a1da-cba8fe272ed6",
       "name": "Set: Label Source 2",
@@ -347,7 +349,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "b18f44de-0687-4b4a-b4fc-2f0b242f78b0",
       "name": "Set: Label Source 3",
@@ -363,7 +366,7 @@
       "parameters": {
         "documentId": {
           "mode": "list",
-          "value": "1pnoT8HksEVvwt_jEulHk-bg_ikTQ20L0ECyBS1tCgSw"
+          "value": "1B2KoJNBi7NJ-AnjWLuvmElT4fleLy1IS8jKq3iSANxw"
         },
         "sheetName": {
           "mode": "list",
@@ -393,7 +396,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "5e4aecf1-a00c-4de3-9382-d68af344d509",
       "name": "Set: Tag Log Entries",
@@ -493,7 +497,8 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "includeOtherFields": true
       },
       "id": "fa4a1406-ddf3-4f69-8eb5-63ae9f07948d",
       "name": "Set: Tag RSS Items",
@@ -593,7 +598,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [要インスタンス確認] $('ノード名').all() は一般的な想定であり未検証。\n// 直前ノード（If）の出力ではなく、Dedup結果ノードを直接参照する（Ifノードを通過した時点の$inputは件数チェック用の1件のみのため）。\nconst items = $('Code: Deduplicate Against Log').all();\n\nconst targetLanguage = $('Set: Config (Sources & Distribution Options)').first().json.digestLanguage || 'en';\n\nconst articles = items.map(i => ({\n  title: i.json.articleTitle,\n  url: i.json.articleUrl,\n  publishedAt: i.json.publishedAt,\n  sourceName: i.json.sourceName\n}));\n\nconst systemInstruction = [\n  'You are summarizing Japanese government/regulatory news articles for a non-Japanese-speaking business audience.',\n  'For EACH article provided, produce: (1) a concise summary (3-5 sentences, do NOT reproduce the full article text),',\n  `(2) a translation of that summary into ${targetLanguage},`,\n  '(3) the original title, source URL, and published date EXACTLY as provided (do not omit or alter them).',\n  'Do not fabricate facts not present in the article metadata provided. If the provided data is insufficient to summarize confidently, say so explicitly rather than guessing.',\n  'Return ONLY a JSON array (no surrounding text, no code fences), one object per article, with keys: title, url, publishedAt, sourceName, summaryTranslated, language.'\n].join(' ');\n\n// Anthropic Messages API形式（2026-08-15、公式ドキュメント・PUB-001等の既存実装で確認済みの形式）：\n// system は独立フィールド、messagesはuser/assistantのみ。\nconst requestBody = {\n  model: 'claude-haiku-4-5',\n  max_tokens: 4000,\n  system: systemInstruction,\n  messages: [\n    { role: 'user', content: JSON.stringify(articles) }\n  ]\n};\n\nreturn [{ json: { requestBody, articleCountBeforeAi: articles.length } }];"
+        "jsCode": "// [要インスタンス確認] $('ノード名').all() は一般的な想定であり未検証。\n// 直前ノード（If）の出力ではなく、Dedup結果ノードを直接参照する（Ifノードを通過した時点の$inputは件数チェック用の1件のみのため）。\nconst items = $('Code: Deduplicate Against Log').all();\n\nconst targetLanguage = $('Set: Config (Sources & Distribution Options)').first().json.digestLanguage || 'en';\n\nconst articles = items.map(i => ({\n  title: i.json.articleTitle,\n  url: i.json.articleUrl,\n  publishedAt: i.json.publishedAt,\n  sourceName: i.json.sourceName\n}));\n\nconst systemInstruction = [\n  'You are summarizing Japanese government/regulatory news articles for a non-Japanese-speaking business audience.',\n  'For EACH article provided, produce: (1) a concise summary (3-5 sentences, do NOT reproduce the full article text),',\n  `(2) a translation of that summary into ${targetLanguage},`,\n  '(3) the original title, source URL, and published date EXACTLY as provided (do not omit or alter them).',\n  'Do not fabricate facts not present in the article metadata provided. If the provided data is insufficient to summarize confidently, say so explicitly rather than guessing.',\n  'Return ONLY a JSON array (no surrounding text, no code fences), one object per article, with keys: title, url, publishedAt, sourceName, summaryTranslated, language.'\n].join(' ');\n\n// Anthropic Messages API形式（2026-08-15、公式ドキュメント・PUB-001等の既存実装で確認済みの形式）：\n// system は独立フィールド、messagesはuser/assistantのみ。\nconst requestBody = {\n  model: 'claude-haiku-4-5',\n  max_tokens: 16000,\n  system: systemInstruction,\n  messages: [\n    { role: 'user', content: JSON.stringify(articles) }\n  ]\n};\n\nreturn [{ json: { requestBody, articleCountBeforeAi: articles.length } }];"
       },
       "id": "bb4d1d9b-fd12-46a7-8ac4-a0cbb62857e3",
       "name": "Code: Build AI Summarize+Translate Prompt",
@@ -628,7 +633,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ $json.requestBody }}",
         "options": {
-          "timeout": 60000
+          "timeout": 180000
         }
       },
       "id": "4b8b1e2e-17d1-4a30-91b2-9d5a1399a24a",
@@ -866,7 +871,7 @@
         "operation": "append",
         "documentId": {
           "mode": "list",
-          "value": "1pnoT8HksEVvwt_jEulHk-bg_ikTQ20L0ECyBS1tCgSw"
+          "value": "1B2KoJNBi7NJ-AnjWLuvmElT4fleLy1IS8jKq3iSANxw"
         },
         "sheetName": {
           "mode": "list",
@@ -878,7 +883,36 @@
             "articleUrl": "={{ $json.articleUrl }}",
             "sourceName": "={{ $json.sourceName }}",
             "distributedAt": "={{ $json.distributedAt }}"
-          }
+          },
+          "schema": [
+            {
+              "id": "articleUrl",
+              "displayName": "articleUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sourceName",
+              "displayName": "sourceName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "distributedAt",
+              "displayName": "distributedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
         },
         "options": {}
       },

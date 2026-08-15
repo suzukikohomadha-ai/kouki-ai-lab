@@ -1,6 +1,6 @@
 {
   "file": "workflows/draft/AUTO-KHM-001_japan-regulatory-news-digest.internal.json",
-  "checkedAt": "2026-08-15T09:57:17.642Z",
+  "checkedAt": "2026-08-15T12:01:15.722Z",
   "errors": [],
   "warnings": [
     "ノード \"Sticky Note: Overview & Setup\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
