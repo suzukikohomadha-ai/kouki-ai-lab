@@ -1,6 +1,6 @@
 # 静的検証結果: workflows/draft/PUB-004_japan-regulatory-news-digest.json
 
-検証日時: 2026-08-15T12:01:15.811Z
+検証日時: 2026-08-15T12:16:00.593Z
 結果: 重大な問題なし
 
 ## エラー (0)

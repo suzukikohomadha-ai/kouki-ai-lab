@@ -5,7 +5,7 @@
     {
       "parameters": {
         "content": "## Japan Regulatory & Government News Digest (Multi-language)\n\n**Who this is for:** Teams and consultants supporting foreign companies entering the Japanese market, who need a lightweight way to track Japanese regulatory/government announcements without reading Japanese daily.\n\n**What this workflow does:**\n1. On a schedule, reads RSS feeds YOU configure (no source URLs are pre-filled)\n2. Filters to recent items and removes already-distributed articles using a log (Google Sheets)\n3. Summarizes new articles with an AI/LLM provider and translates the summary (default target: English)\n4. Builds a digest that always keeps the source title, source URL, and publish date, plus a disclaimer\n5. Posts the digest to Slack (default) and optionally creates a Gmail draft / appends to Notion\n6. Updates the distribution log to avoid duplicates next run\n\n**Setup steps (required before running):**\n1. Open \"Set: Config (Sources & Distribution Options)\" and replace the placeholder RSS URLs with sources YOU have personally verified (RSS feed exists, and reuse/attribution terms are acceptable for your use case). This template ships with NO real source URLs.\n2. Create credentials: Google Sheets (distribution log), your AI/LLM provider (HTTP Header Auth), Slack, and optionally Gmail / Notion.\n3. Create a Google Sheet with columns: articleUrl, sourceName, distributedAt - this is your distribution log.\n4. Read the \"Copyright & Compliance\" note before activating.\n5. This workflow has a companion Error Workflow (see the -error.json file). After importing both, set this workflow's Settings > Error Workflow to point at the imported error workflow.\n6. Test with a manual execution and inspect the output before enabling the schedule.\n\n**IMPORTANT:** This template is provided as-is. You are solely responsible for verifying that your chosen RSS sources and your use (AI summarization, translation, automated redistribution) comply with each source's terms of use and applicable law. This template does not warrant legal compliance for any specific source.",
-        "height": 250,
+        "height": 800,
         "width": 1300,
         "color": 4
       },
@@ -15,14 +15,14 @@
       "typeVersion": 1,
       "position": [
         0,
-        0
+        -650
       ],
       "notes": "[要インスタンス確認] Sticky Noteノードのparameters構造（content/height/width/color）は一般的な想定であり本セッションで一次確認していません。"
     },
     {
       "parameters": {
         "content": "### 1. Collect\nReads RSS feeds from user-configured sources (no source URLs are pre-filled). This draft ships with 3 configurable source slots run in parallel, then merged. Add/remove RSS Feed Read + Set (Label) + Merge nodes if you need more or fewer sources.",
-        "height": 140,
+        "height": 200,
         "width": 760,
         "color": 5
       },
@@ -39,7 +39,7 @@
     {
       "parameters": {
         "content": "### 2. Dedupe & Filter\nKeeps only items published within the configured lookback window (default 7 days), then cross-references a Google Sheets log of previously distributed article URLs so the same article is never sent twice.",
-        "height": 140,
+        "height": 200,
         "width": 640,
         "color": 5
       },
@@ -56,7 +56,7 @@
     {
       "parameters": {
         "content": "### 3. Summarize & Translate\nSends new articles to your AI/LLM provider to summarize and translate in one call. The prompt instructs the model to preserve source title/URL/publish date and to avoid reproducing full article text. Runs only when at least 1 new article was found.",
-        "height": 140,
+        "height": 200,
         "width": 760,
         "color": 5
       },
@@ -73,7 +73,7 @@
     {
       "parameters": {
         "content": "### 4. Distribute\nPosts the digest to Slack by default. Gmail draft creation and Notion logging are optional and gated by config toggles (both default OFF). Nothing outside Slack is sent automatically without your configuration. The distribution log is updated only once per run (see Merge nodes before the log write).",
-        "height": 140,
+        "height": 200,
         "width": 760,
         "color": 5
       },
@@ -90,7 +90,7 @@
     {
       "parameters": {
         "content": "## Copyright & Compliance Notice (read before use)\n\n- Only use RSS sources you have personally confirmed (a) actually publish an RSS feed and (b) whose terms of use permit AI summarization/translation and redistribution to third parties.\n- Do not reproduce full article text - this template's AI prompt asks for summaries only, but you are responsible for reviewing actual output.\n- The generated digest always keeps source title, source URL, publish date, and a disclaimer stating the content was AI-summarized/translated, including who ran the workflow.\n- This template ships with placeholder source URLs only (no real government or news source URL is hardcoded).\n- This is not legal advice. Consult your own counsel about the specific sources you configure.",
-        "height": 260,
+        "height": 380,
         "width": 1300,
         "color": 3
       },
