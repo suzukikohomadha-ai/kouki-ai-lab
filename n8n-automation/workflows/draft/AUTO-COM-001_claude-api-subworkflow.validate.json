@@ -1,0 +1,10 @@
+{
+  "file": "workflows/draft/AUTO-COM-001_claude-api-subworkflow.json",
+  "checkedAt": "2026-08-10T11:26:50.658Z",
+  "errors": [],
+  "warnings": [
+    "ノード \"Sticky Note: 概要\" が他のどのノードとも接続されていません（孤立ノードの可能性）。"
+  ],
+  "info": [],
+  "valid": true
+}

@@ -1,0 +1,330 @@
+{
+  "name": "Generate text with Claude and post it to Slack via a validated webhook",
+  "active": false,
+  "nodes": [
+    {
+      "id": "pub001-sticky-main",
+      "name": "Sticky Note: Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-900, -1120],
+      "parameters": {
+        "width": 3000,
+        "height": 520,
+        "content": "## Claude (Anthropic) API caller — retry, validation, error handling & Slack delivery\n\nThis workflow exposes a webhook that safely wraps calls to the Anthropic Claude Messages API and posts the result to Slack. It validates the incoming request, fills in sensible defaults, retries automatically on transient failures, and always returns a predictable JSON response to the caller — either the generated text or a structured error — while also pushing the generated text to a Slack channel via an Incoming Webhook.\n\n### Try it\nSend a POST request with a JSON body such as `{\"userPrompt\": \"Write a two-line haiku about automation\"}`.\n\nOptional fields: systemPrompt, model (defaults to claude-sonnet-5), maxTokens (defaults to 4000), temperature (defaults to 1).\n\n### Before you activate\n1. Add an Anthropic API key as a credential in n8n (Credential type: Anthropic), and assign it in the \"Call Claude (Anthropic) API\" node.\n2. Create a Slack Incoming Webhook (no Slack app/OAuth needed) and paste its URL into the \"Set: Slack webhook URL\" node."
+      }
+    },
+    {
+      "id": "pub001-sticky-step1",
+      "name": "Sticky Note: Step 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-850, -520],
+      "parameters": {
+        "width": 600,
+        "height": 220,
+        "content": "Step 1 — Receive & validate\n\nAccepts the incoming webhook POST request and checks that userPrompt is present. Fills in defaults for model, maxTokens and temperature. Invalid requests are rejected immediately with a 400 response instead of reaching the Claude API."
+      }
+    },
+    {
+      "id": "pub001-sticky-step2",
+      "name": "Sticky Note: Step 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-150, -520],
+      "parameters": {
+        "width": 600,
+        "height": 220,
+        "content": "Step 2 — Call Claude\n\nBuilds the Anthropic Messages API request body and sends it with automatic retries (3 attempts, 2 second backoff) so short-lived network or rate-limit errors don't fail the whole request."
+      }
+    },
+    {
+      "id": "pub001-sticky-step3",
+      "name": "Sticky Note: Step 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [550, -520],
+      "parameters": {
+        "width": 600,
+        "height": 220,
+        "content": "Step 3 — Respond\n\nOn success, returns the generated text plus token usage as JSON (200) right away. If the API call still fails after retries, returns a structured error response (502) instead of leaving the caller hanging."
+      }
+    },
+    {
+      "id": "pub001-sticky-step4",
+      "name": "Sticky Note: Step 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1250, -520],
+      "parameters": {
+        "width": 600,
+        "height": 220,
+        "content": "Step 4 — Notify Slack\n\nRuns in parallel after a successful response. Posts a short preview of the generated text to a Slack channel via an Incoming Webhook, so a human can see the output without polling the API."
+      }
+    },
+    {
+      "id": "pub001-webhook",
+      "name": "Receive request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-800, 0],
+      "webhookId": "pub-001-generate-with-claude",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-with-claude",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "pub001-validate",
+      "name": "Validate input & apply defaults",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-560, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const input = $input.first().json || {};\nconst body = input.body || input;\n\nconst userPrompt = (body.userPrompt || '').toString().trim();\nif (!userPrompt) {\n  return [{ json: { validationError: true, errorMessage: 'userPrompt is required but was empty or missing.' } }];\n}\n\nconst systemPromptCaller = (body.systemPrompt || '').toString();\n// Lightweight guardrail applied to every call. Callers can still pass their own systemPrompt above this.\nconst commonGuardrail = '\\n\\n[Guardrail] Clearly separate facts from speculation. Do not state uncertain information as fact, and do not invent names, statistics, or sources that were not provided.';\nconst systemPrompt = (systemPromptCaller + commonGuardrail).trim();\n\nconst model = (body.model || 'claude-sonnet-5').toString();\nconst maxTokens = Number.isFinite(body.maxTokens) ? body.maxTokens : 4000;\nconst temperature = Number.isFinite(body.temperature) ? body.temperature : 1;\n\nreturn [{ json: { validationError: false, systemPrompt, userPrompt, model, maxTokens, temperature } }];\n"
+      }
+    },
+    {
+      "id": "pub001-if-valid",
+      "name": "Input valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-320, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "pub001-cond-valid",
+              "leftValue": "={{ $json.validationError === false }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "pub001-respond-validation-error",
+      "name": "Respond: validation error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [-60, 350],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, error: $json.errorMessage } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "pub001-build-request",
+      "name": "Build Claude request body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-60, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const d = $input.first().json;\n\nconst body = {\n  model: d.model,\n  max_tokens: d.maxTokens,\n  temperature: d.temperature,\n  messages: [\n    { role: 'user', content: d.userPrompt }\n  ]\n};\nif (d.systemPrompt) {\n  body.system = d.systemPrompt;\n}\n\nreturn [{ json: body }];\n"
+      }
+    },
+    {
+      "id": "pub001-http-claude",
+      "name": "Call Claude (Anthropic) API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0],
+      "continueOnFail": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "notes": "No credential ID is embedded — assign your own Anthropic credential in n8n before activating.",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "pub001-if-success",
+      "name": "Call succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "pub001-cond-success",
+              "leftValue": "={{ $json.error ? 'error' : 'ok' }}",
+              "rightValue": "ok",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "pub001-format-success",
+      "name": "Format success response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, -150],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const resp = $input.first().json;\nconst textBlock = (resp.content || []).find(b => b.type === 'text');\nconst text = (textBlock && textBlock.text) || '';\n\nreturn [{\n  json: {\n    success: true,\n    text,\n    model: resp.model || null,\n    stopReason: resp.stop_reason || null,\n    usage: resp.usage || null\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "pub001-respond-success",
+      "name": "Respond: generated text",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [950, -150],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "pub001-set-slack-url",
+      "name": "Set: Slack webhook URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1250, -150],
+      "notes": "Placeholder value — not a real webhook URL. Create your own Slack Incoming Webhook (Slack > your app > Incoming Webhooks) and paste the URL here before activating. No Slack app OAuth setup beyond that is required.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "cfg-slack-url", "name": "slackWebhookUrl", "type": "string", "value": "https://hooks.slack.com/services/REPLACE/WITH/YOUR-WEBHOOK-URL" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pub001-build-slack-message",
+      "name": "Build Slack notification body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, -150],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const generated = $('Format success response').first().json;\nconst config = $input.first().json;\n\nconst preview = (generated.text || '').slice(0, 500);\n\nreturn [{\n  json: {\n    slackWebhookUrl: config.slackWebhookUrl,\n    slackRequestBody: { text: `New response generated via Claude:\\n${preview}` }\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "pub001-notify-slack",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1750, -150],
+      "continueOnFail": true,
+      "notes": "continueOnFail=true so a placeholder or misconfigured Slack URL never affects the caller's response — the webhook has already responded independently by this point.",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.slackWebhookUrl }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.slackRequestBody }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "pub001-format-error",
+      "name": "Format upstream error response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const err = $input.first().json.error || $input.first().json;\nconst detail = typeof err === 'string' ? err : JSON.stringify(err);\nreturn [{ json: { success: false, error: 'Claude API call failed after retries.', detail } }];\n"
+      }
+    },
+    {
+      "id": "pub001-respond-error",
+      "name": "Respond: upstream error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [950, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 502
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Receive request": {
+      "main": [[{ "node": "Validate input & apply defaults", "type": "main", "index": 0 }]]
+    },
+    "Validate input & apply defaults": {
+      "main": [[{ "node": "Input valid?", "type": "main", "index": 0 }]]
+    },
+    "Input valid?": {
+      "main": [
+        [{ "node": "Build Claude request body", "type": "main", "index": 0 }],
+        [{ "node": "Respond: validation error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Claude request body": {
+      "main": [[{ "node": "Call Claude (Anthropic) API", "type": "main", "index": 0 }]]
+    },
+    "Call Claude (Anthropic) API": {
+      "main": [[{ "node": "Call succeeded?", "type": "main", "index": 0 }]]
+    },
+    "Call succeeded?": {
+      "main": [
+        [{ "node": "Format success response", "type": "main", "index": 0 }],
+        [{ "node": "Format upstream error response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format success response": {
+      "main": [[
+        { "node": "Respond: generated text", "type": "main", "index": 0 },
+        { "node": "Set: Slack webhook URL", "type": "main", "index": 0 }
+      ]]
+    },
+    "Set: Slack webhook URL": {
+      "main": [[{ "node": "Build Slack notification body", "type": "main", "index": 0 }]]
+    },
+    "Build Slack notification body": {
+      "main": [[{ "node": "Notify Slack", "type": "main", "index": 0 }]]
+    },
+    "Format upstream error response": {
+      "main": [[{ "node": "Respond: upstream error", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

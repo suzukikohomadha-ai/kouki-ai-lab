@@ -1,0 +1,41 @@
+{
+  "note": "架空のテストデータ。実在するプロンプト内容・実データではありません。すべて[実行環境なしのため未テスト]（n8nインスタンスへの実インポート・実行は未実施）。",
+  "cases": [
+    {
+      "id": "normal-1",
+      "description": "正常系：systemPrompt省略・userPromptのみ指定",
+      "input": { "userPrompt": "架空のテストプロンプトです。" },
+      "expected": "デフォルト値（model=claude-sonnet-5, maxTokens=4000, temperature=1）が適用され、Anthropic Messages API形式のリクエストボディが生成される"
+    },
+    {
+      "id": "normal-2",
+      "description": "正常系：全パラメータ指定",
+      "input": { "systemPrompt": "架空のシステムプロンプト", "userPrompt": "架空のユーザープロンプト", "model": "claude-sonnet-5", "maxTokens": 1000, "temperature": 0.5 },
+      "expected": "指定値がそのまま使われ、systemPromptには共通ガードレール文が追記される"
+    },
+    {
+      "id": "missing-userprompt",
+      "description": "異常系：userPrompt未指定",
+      "input": { "systemPrompt": "架空のシステムプロンプト" },
+      "expected": "「入力検証・デフォルト適用」ノードでthrowし、ワークフロー実行が失敗する"
+    },
+    {
+      "id": "empty-userprompt",
+      "description": "境界値：userPromptが空文字・空白のみ",
+      "input": { "userPrompt": "   " },
+      "expected": "trim後に空となるためthrowする（missing-userpromptと同じ扱い）"
+    },
+    {
+      "id": "api-error-simulated",
+      "description": "異常系：Anthropic APIが4xx/5xxを返した場合（モック想定）",
+      "input": { "userPrompt": "架空のプロンプト", "mockHttpStatus": 529 },
+      "expected": "continueOnFail=trueによりitem.json.errorが設定され、IF: 呼び出し成功判定でエラー分岐へ進み、最終的にthrowする。[要インスタンス確認]：continueOnFail使用時のerror格納形式は本インスタンスでの実例が無く未確認のため、実際にこの通り動くかは未検証。"
+    },
+    {
+      "id": "empty-content-response",
+      "description": "境界値：Anthropic APIが200を返すがcontent配列が空の場合（モック想定）",
+      "input": { "userPrompt": "架空のプロンプト", "mockResponseContent": [] },
+      "expected": "textが空文字となり、success:trueのまま呼び出し元に空文字が渡る（呼び出し元側での空文字ハンドリングが必要、現状本サブワークフローはこのケースをエラー扱いしない設計）"
+    }
+  ]
+}

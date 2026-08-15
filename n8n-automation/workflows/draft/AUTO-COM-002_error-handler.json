@@ -1,0 +1,242 @@
+{
+  "name": "AUTO-COM-002_共通エラーハンドラー",
+  "active": false,
+  "nodes": [
+    {
+      "id": "com002-sticky-overview",
+      "name": "Sticky Note: 概要",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-620, -700],
+      "parameters": {
+        "width": 1300,
+        "height": 420,
+        "content": "## AUTO-COM-002 共通エラーハンドラー（ドラフト）\n\n### 目的\nn8n標準の「Error Workflow」設定（各ワークフローのSettings > Error Workflow）にこのワークフローを割り当てておくことで、対象ワークフローが失敗した際に自動起動し、通知・ログ記録を行う。\n\n### 通知・ログ記録の格納先（一部未確定）\n[要確認/社長] 通知の主経路はLINE Messaging API（下記参照）に変更したが、フォールバック（LINE送信失敗時の代替経路）としてNotion通知を残している。Notion側の格納先は以下2案のうち案1をデフォルトのプレースホルダーとして実装しているが、実際の格納先は未確定。\n- 案1（本ドラフトの既定値）：Notion内に新規のエラーログ専用DBを作成し、そこに1件＝1ページで記録する。データベースIDは未確定のため、先頭のSet設定ノードで `[要確認/社長]` のプレースホルダーとしている。\n- 案2：既存の📚ナレッジDB（database_id: 16fa0285-535e-42c3-8836-b8fda84b7522。CRM週次品質監査workflowで実際に使用されているのを確認済み）に、種別『システムアラート』等の新規select値を追加して記録する。既存の業務ナレッジと性質の異なる情報を混在させることになる点は要検討。\n- 案3：Google Sheetsの新規シートに追記する（googleSheetsOAuth2Api Credentialが既存）。\n\n### 【2026-08-09追記】社長回答「接続してある公式LINE」の調査結果\n社長より通知先＝「接続してある公式LINE」との回答を受け、以下を確認したが、**LINE送信先（userId等）を確実に特定できなかった**。\n\n1. n8n Credential再確認（読み取り専用、GET /api/v1/credentials）：`httpBearerAuth`型のCredentialが1件存在するが、登録名は`Bearer Auth account`という**n8nの初期値のままの汎用名**で、LINEであることを示す名称ではない（作成日時と更新日時が同一＝作成後に一度も編集された形跡がない）。既存7ワークフローのノード一覧（T105監査）にもこのCredentialが実際に使われている形跡は確認できなかった。LINE用である確証は得られなかった。\n2. リポジトリ内記録：`office/state.js`のroutinesに「KINOTO 公式LINE運営」の記載があり、これは**KINOTO顧客向けにブログ・ショート動画更新を配信する顧客向けアカウント**（配信は現状手動、n8n非連携）と判明。メイの全体設計v3（119行目）には「LINEチャネルは未設定（ユーザーメモリより）」との明記もあり、`server/SETUP.md`パート2（秘書アイ用LINE Messaging API連携）も現状未設定。\n3. 以上より「接続してある公式LINE」の候補は最低3つ（(a)上記httpBearerAuth Credential＝用途不明、(b)KINOTO顧客向け公式LINE＝配信専用で内部エラー通知には不適切、(c)秘書アイ用LINE＝未設定）あり、いずれも「n8nの内部エラー通知先として使ってよい」と確証を持って特定できなかった。\n\n### 【2026-08-09続報】社長より「名前が『コウキAIラボ』の公式LINE」と回答（一次情報として確定）\n通知先が「コウキAIラボ」という名称の公式LINEアカウントであること自体は社長ご本人からの直接回答として確定した。ただし以下2点は技術的に未確認のまま残っている。\n\n- **[2026-08-10解消・技術疎通確認のみ未実施] Credential紐付け**：このLINEアカウントのチャネルアクセストークンがn8n上のどのCredentialに対応するかという**識別**は、2026-08-10に社長ご本人から「（`httpBearerAuth`＝`Bearer Auth account`、id: QpSnEXPfPjtBKSVD は）以前連携したやつで確実に正しい」との直接確認を得て一次情報として確定した。ただし、このCredentialが実際に有効なチャネルアクセストークンを保持し、n8n実行時にLINEへ正しく送信できるかという**技術的な動作確認**は、識別確認とは別軸の事項であり未実施のまま残っている。本番投入前に以下の手順で必ず確認すること。\n  1. n8nエディタで対象Credential一覧（Credentials画面）を開く。\n  2. `Bearer Auth account`（`httpBearerAuth`種別）を、値は見ずに`LINE - Broadcast通知送信`ノードへn8n UI上で手動割当てる。\n  3. 本番ワークフローとは別の使い捨てテスト実行で、Broadcast Message送信を1件のみ行い、社長側で自分のLINEに届くかを確認する（この試験自体も要事前承認）。Broadcast方式のため送信先userIdの指定は不要（下記参照）。\n  4. 実際に届くことを確認できたら、本番登録・有効化の判断材料とする（登録・有効化自体は別途ユーザー承認が必要）。\n- **[2026-08-10解消] 送信先（`to`パラメータのuserId、またはbroadcast送信可否）**：従来は送信先を`to`（LINEユーザーID等の識別子1件）で指定する必要があるPush Message方式を採用し、`[要確認/社長：送信先userIdまたはbroadcast可否]`のプレースホルダーを設定ノードに置いていたが、社長より「『コウキAIラボ』公式LINEは自分以外登録しておらず、ほかの人が登録することは今後もありません」との直接回答を得たため、ジンの判断で`to`パラメータが不要なBroadcast Message（`POST https://api.line.me/v2/bot/message/broadcast`、このLINE公式アカウントの友だち全員へ送信）へ切り替えて実装した（2026-08-10）。友だちが社長1名のみであるため、実質的な送信先はPush方式でuserIdを指定した場合と同一である。詳細な経緯・比較検討は`docs/cases/AUTO-COM-002/workflow-design.md`参照。架空のuserIdは生成していない。\n\n### 【2026-08-10追記】Push MessageからBroadcast Messageへの切替\n\n社長より「『コウキAIラボ』公式LINEは自分以外登録しておらず、ほかの人が登録することは今後もありません」との回答を受け、ジンの判断で通知方式をPush Message（`to`必須）からBroadcast Message（`to`不要、`POST https://api.line.me/v2/bot/message/broadcast`）へ変更した。エンドポイント・リクエストボディ仕様（`messages`のみ必須、1〜5件、`notificationDisabled`任意）・認証方式（Bearer）はLINE公式OpenAPI定義（`github.com/line/line-openapi`、BroadcastRequest/BroadcastResponseスキーマ、2026-08-10参照）で確認済み。BroadcastResponseはPushMessageResponseと異なり空オブジェクト（`sentMessages`配列を含まない）であるため、`LINE送信結果判定`ノードの成功判定ロジックからも`sentMessages`参照を削除し簡素化した。これにより、送信先（`to`）に関する未確認事項は解消された。残る未確認事項は、上記Credentialの技術的な疎通確認（n8n UI上でのテスト送信）のみである。\n\n### 通知フローの設計変更（LINE主経路＋Notionフォールバック）\n通知の主経路をLINE Messaging API（2026-08-10よりBroadcast Message）に変更し、LINE送信が失敗した場合（Credential未割当・API障害等）のみ、従来のNotion通知ページ作成にフォールバックする構成に変更した。送信先（`to`）に関する未確認事項はBroadcast方式への切替により解消したが、Credentialの技術的な疎通確認が未実施な現状では、実際にはLINE送信ステップが失敗し続け、常にNotionフォールバックが使われる可能性がある（意図した安全側の挙動）。理由・代替案は`docs/cases/AUTO-COM-002/workflow-design.md`を参照。\n\n### 【2026-08-10追記②】Notionフォールバック格納先の暫定値設定とparent形式の修正\nジン（社長のAI Chief of Staff）が、社長の正式承認を経ずに簡易な運用インフラとして、📚ナレッジDB内に通常のNotionページ「n8nエラー通知フォールバックログ」（page id: `3b7040888e97815bbc0ee2441ab6c316`）を作成した（読み取り専用GETで実在・用途を2026-08-10に確認済み。子ページとしてエラー詳細ページを1件ずつ作成する想定であることもページ本文に明記されている）。これはNotion**データベース**ではなく通常の**ページ**であるため、Notion公式APIドキュメント「Create a page」（`https://developers.notion.com/reference/post-page`、2026-08-10参照）に基づき、以下2点を修正した。\n\n1. **parentの形式**：`parent: { database_id: ... }`から`parent: { page_id: ... }`へ変更（`com002-build-notion-page`／`com002-http-notion-create`ノード）。公式ドキュメントに明記の通り、parentが既存ページ（page_id）の場合、`properties`に指定できるのは`title`型のプロパティのみであり、データベースのスキーマに紐づく`select`等のプロパティは指定できない。そのため、従来`properties`に含めていた`事業`/`カテゴリ`/`種別`のselectプロパティは削除し、代わりにページ本文（`children`）内のテキスト行として記録するよう変更した（情報自体は失われていない）。\n2. **変数名**：`destinationDatabaseId`（データベースIDを想定した名称）は実態と合わないため、`destinationParentPageId`（親ページIDである実態を表す名称）へ変更した（`com002-set-config`ノード）。\n\nあわせて、`com002-set-config`ノードの値を、従来の`[要確認/社長]`プレースホルダーから、ジンが作成した上記ページのID（`3b7040888e97815bbc0ee2441ab6c316`）へ暫定的に設定した。**ただし、このページ自体が社長の正式承認を経ずに作成されたインフラであるため、これを恒久的なNotionフォールバック格納先として採用することについて、社長の正式承認は別途必要である**（本番登録（n8n-deployスキル）には別途ユーザー承認が必須のため、そのタイミングで併せて確認することを推奨）。詳細は`docs/cases/AUTO-COM-002/workflow-design.md`「リスク・注意点」参照。\n\n### 冪等性\nError Triggerが同一の失敗に対して複数回起動される可能性（親子ワークフローの多重失敗等）を想定し、workflow静的データ（getWorkflowStaticData）に処理済みexecution IDを記録し、重複時はスキップする。\n\n### 二次通知手段が無い場合のリスク\nLINE送信・Notion書き込みの両方が失敗した場合、このワークフローの実行はn8n自身の実行ログには残るが、それ以外の能動的な通知手段は現状ない（リスクとして残る）。"
+      }
+    },
+    {
+      "id": "com002-error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [-620, 0],
+      "notes": "type文字列 n8n-nodes-base.errorTrigger は公式ドキュメントページタイトルから確認（出典：https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.errortrigger/ 、2026-08-09参照）。用途（エラーワークフローの起点として使用し、対象ワークフローのSettingsでError Workflowに指定する）も同ページで確認済み。typeVersionはページに記載が無く未確認のため暫定値1とした。[要インスタンス確認][要公式確認]",
+      "parameters": {}
+    },
+    {
+      "id": "com002-normalize",
+      "name": "エラー情報整形＋冪等性チェック",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-360, 0],
+      "notes": "Error Triggerの出力データ構造（workflow/execution/error等のキー名）は公式ドキュメント上で詳細な仕様確認ができなかったため、複数の想定パスを防御的に読み取る実装にしている。[要インスタンス確認][要公式確認]",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const raw = $input.first().json || {};\n\n// Error Triggerの出力構造は公式ドキュメントで詳細確認できなかったため、複数の想定パスを防御的に読む。\n// [要インスタンス確認][要公式確認]\nconst workflowName = raw.workflow?.name || raw.workflowData?.name || '[不明なワークフロー]';\nconst workflowId = raw.workflow?.id || raw.workflowData?.id || null;\nconst executionId = raw.execution?.id || raw.executionId || null;\nconst executionUrl = raw.execution?.url || null;\nconst errorMessage = raw.execution?.error?.message || raw.error?.message || raw.message || '[エラーメッセージ取得不可]';\nconst failedNodeName = raw.execution?.lastNodeExecuted || raw.error?.node?.name || raw.node?.name || '[不明なノード]';\nconst mode = raw.execution?.mode || raw.mode || null;\n\n// JSTでの発生時刻表示（Node.jsのICUデータにAsia/Tokyoが含まれることが前提。含まれない実行環境の場合はUTC表記にフォールバック）\nlet occurredAtJst;\ntry {\n  occurredAtJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\n} catch (e) {\n  occurredAtJst = new Date().toISOString() + ' (UTC, JST変換失敗)';\n}\n\n// 冪等性チェック：同一execution+nodeの組み合わせを一定件数保持し、重複起動を検出する\nconst staticData = $getWorkflowStaticData('global');\nif (!Array.isArray(staticData.processedErrorKeys)) {\n  staticData.processedErrorKeys = [];\n}\nconst dedupeKey = String(executionId) + '_' + String(failedNodeName);\nconst isDuplicate = staticData.processedErrorKeys.includes(dedupeKey);\nif (!isDuplicate) {\n  staticData.processedErrorKeys.push(dedupeKey);\n  // 直近200件のみ保持（無限増加防止）\n  if (staticData.processedErrorKeys.length > 200) {\n    staticData.processedErrorKeys = staticData.processedErrorKeys.slice(-200);\n  }\n}\n\nreturn [{\n  json: {\n    workflowName,\n    workflowId,\n    executionId,\n    executionUrl,\n    errorMessage,\n    failedNodeName,\n    mode,\n    occurredAtJst,\n    isDuplicate: isDuplicate ? 'true' : 'false'\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "com002-if-duplicate",
+      "name": "IF: 重複チェック",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-100, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "com002-cond-dup",
+              "leftValue": "={{ $json.isDuplicate }}",
+              "rightValue": "true",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "com002-set-config",
+      "name": "設定：通知先（Notionフォールバック格納先は暫定値・社長の正式承認は未了）",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [180, 140],
+      "notes": "typeVersion 3.4は本インスタンスの既存ワークフローで実際に使用されているのを確認済み（出典：n8n実環境監査 2026-08-09）。【2026-08-10更新】従来ここで保持していた`lineTargetTo`（LINE送信先userIdのプレースホルダー）は、社長より『コウキAIラボ』公式LINEは自分以外登録しておらず今後も登録されない旨の回答を得て、Push MessageからBroadcast Message（`to`パラメータ不要）へ切り替えたため削除した。【2026-08-10更新②】`destinationDatabaseId`は、実際にはNotionの通常ページ（データベースではない）のIDを保持する変数であったため、実態に合わせて`destinationParentPageId`へ改名した。値についても、従来の`[要確認/社長]`プレースホルダーから、ジン（社長のAI Chief of Staff）が2026-08-08に社長の正式承認を経ずに作成したNotionページ「n8nエラー通知フォールバックログ」（page id: `3b7040888e97815bbc0ee2441ab6c316`、読み取り専用GETで実在を2026-08-10に確認済み）のIDへ暫定的に更新した。架空のIDではなく実在確認済みの値だが、**このページを恒久的な格納先として採用することについて社長の正式承認は別途必要**（本番登録時に確認すること）。",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "dest-parent-page", "name": "destinationParentPageId", "type": "string", "value": "3b7040888e97815bbc0ee2441ab6c316" }
+          ]
+        },
+        "includeOtherFields": true
+      }
+    },
+    {
+      "id": "com002-line-build-body",
+      "name": "LINE通知メッセージ本文生成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 20],
+      "notes": "【2026-08-10更新】LINE Messaging API「Send broadcast message」（POST /v2/bot/message/broadcast）のリクエストボディ構造（`messages`のみ必須、`to`は不要、`messages`は1〜5件）は、LINE公式OpenAPI定義（https://github.com/line/line-openapi/blob/main/messaging-api.yml 、BroadcastRequestスキーマ、2026-08-10参照）で確認済み。社長より『コウキAIラボ』公式LINEは自分以外登録しておらず今後も登録されない旨の回答を得たため、Push Message（to必須）からBroadcast Message（to不要）へ切り替え、`to`フィールドの構築ロジックを削除した。text messageの文字数上限は本調査では公式ページから数値を確認できなかったため、[要公式確認]として安全側に1900文字で切り詰めている（Notion側の既存chunk実装と同じ安全マージンを踏襲）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const d = $input.first().json;\n\nconst lines = [\n  `【n8nエラー】${d.workflowName}`,\n  `発生時刻: ${d.occurredAtJst}`,\n  `失敗ノード: ${d.failedNodeName}`,\n  `実行ID: ${d.executionId || '不明'}`,\n  `エラー: ${d.errorMessage}`,\n  '',\n  '本通知はn8n共通エラーハンドラー（AUTO-COM-002）による自動送信です。'\n];\nlet text = lines.join('\\n');\n\n// LINE公式ドキュメントでtext messageの正確な文字数上限を本調査では確認できなかったため、\n// 安全側に1900文字で切り詰める。[要公式確認]\nconst MAX_LEN = 1900;\nif (text.length > MAX_LEN) {\n  text = text.slice(0, MAX_LEN - 20) + '\\n...(切り詰め)';\n}\n\n// Broadcast Message（POST /v2/bot/message/broadcast）は`to`パラメータが不要\n// （LINE公式OpenAPI定義 BroadcastRequestスキーマ、2026-08-10参照）。\nconst lineRequestBody = {\n  messages: [\n    { type: 'text', text }\n  ]\n};\n\nreturn [{ json: { ...d, lineRequestBody } }];\n"
+      }
+    },
+    {
+      "id": "com002-http-line-push",
+      "name": "LINE - Broadcast通知送信",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 20],
+      "notes": "【2026-08-10更新：PushからBroadcastへ切替】社長より『コウキAIラボ』公式LINEは自分以外登録しておらず、ほかの人が登録することは今後もないとの回答を得たため、ジンの判断で送信先を`to`（userId 1件指定）で指定するPush Message方式から、`to`不要で友だち全員に送信するBroadcast Message方式へ切り替えた。エンドポイント（POST https://api.line.me/v2/bot/message/broadcast）・認証方式（Bearer、Authorization: Bearer <channel access token>）・リクエストボディ（`messages`のみ必須、1〜5件）は、LINE公式Messaging APIリファレンス（https://developers.line.biz/en/reference/messaging-api/#send-broadcast-message ）およびLINE公式OpenAPI定義（line/line-openapi リポジトリ messaging-api.yml、BroadcastRequestスキーマ、securitySchemes.Bearer＝\"Channel access token\"、2026-08-10参照）で確認済み。n8n側のHTTP RequestノードでのgenericCredentialType（authentication=genericCredentialType、genericAuthType=httpBearerAuth）というパラメータ名の組み合わせは、n8n公式ドキュメント（HTTP Request credentials、Bearer Authの説明あり）と一般的なn8nの実装パターンに基づくが、本インスタンスでの実例（同種ノードのエクスポート実例）では未確認。[要インスタンス確認] credentialsは実IDを埋め込まず未割当のまま（インポート後にn8n UI上で`httpBearerAuth`種別のCredentialを手動割当。対象Credential自体は『Bearer Auth account』〔id: QpSnEXPfPjtBKSVD〕であることを社長ご本人から2026-08-10に直接確認済みだが、このCredentialが実際に有効なトークンを保持しているかのn8n UI上での疎通確認〔テスト送信〕は未実施のまま残っている、[要インスタンス確認]。手順はSticky Note参照）。continueOnFail=trueとし、失敗時は後続のIF判定でNotionフォールバックへ分岐させる。",
+      "continueOnFail": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/broadcast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.lineRequestBody }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "com002-line-result-normalize",
+      "name": "LINE送信結果判定",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 20],
+      "notes": "【2026-08-10実機テストで確認・修正】n8n 2.33.6の実機テスト（execution id 47、LINE 401エラー時）で、continueOnFail=true時のHTTP Requestノードの失敗出力は、jsonが`{error:{message,name,stack}}`のみに完全に置き換わり、それ以前の項目（destinationParentPageId・workflowName等の文脈情報）が失われることを確認した（従来の[要インスタンス確認]は解消）。この結果、LINE失敗→Notionフォールバックの分岐自体は正しく機能していたが、Notion書き込み時にdestinationParentPageIdが失われてundefinedとなり、Notion側も『body.parent.page_id should be defined』で失敗するという連鎖的な不具合が実機で発生した。対策として、`$input`（LINEノードの直接出力）ではなく、LINE呼び出し前の`設定：通知先`ノードの出力を`$('設定：通知先...')`で明示的に参照し直すことで、文脈情報を復元する実装に修正した。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const raw = $input.first().json || {};\n\n// 2026-08-10実機テスト（execution 47）で確認済み：continueOnFail=true時、HTTP Requestノードが\n// 失敗するとjsonは{error:{message,name,stack}}のみに置き換わり、それ以前の項目は失われる。\nconst hasHttpError = Boolean(raw.error) || (typeof raw.statusCode === 'number' && raw.statusCode >= 300);\nconst lineSendSuccess = !hasHttpError;\n\n// 失敗時に必要な文脈情報（destinationParentPageId・workflowName等）はLINEノードの出力からは\n// 失われているため、LINE呼び出し前の「設定：通知先」ノードから明示的に取り直す（実機確認済みの修正）。\nconst context = $('設定：通知先（Notionフォールバック格納先は暫定値・社長の正式承認は未了）').first().json;\n\nreturn [{\n  json: {\n    ...context,\n    lineSendSuccess: lineSendSuccess ? 'true' : 'false',\n    lineError: hasHttpError ? raw.error : null\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "com002-if-line-failed",
+      "name": "IF: LINE送信失敗判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1140, 20],
+      "notes": "true分岐（失敗）→Notionフォールバックへ。false分岐（成功）→終端。Credential未割当・送信先未確定の現状では、常にtrue分岐（Notionフォールバック）に流れる想定。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "com002-cond-line-failed",
+              "leftValue": "={{ $json.lineSendSuccess }}",
+              "rightValue": "false",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "com002-noop-line-success",
+      "name": "NoOp: 完了（LINE通知成功）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1380, -140],
+      "parameters": {}
+    },
+    {
+      "id": "com002-build-notion-page",
+      "name": "Notion通知ページ本文生成（フォールバック）",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 200],
+      "notes": "【2026-08-10更新：parent形式修正】格納先（`destinationParentPageId`、旧`destinationDatabaseId`）はNotionの通常ページ（データベースではない）のIDであるため、`parent`は`{ database_id: ... }`ではなく`{ page_id: ... }`とする必要がある。Notion公式APIドキュメント「Create a page」（https://developers.notion.com/reference/post-page 、2026-08-10参照）に『If the new page is a child of an existing page, title is the only valid property in the properties body parameter.』と明記されており、parentがpage_idの場合はproperties内にtitle型以外のプロパティ（select等）を指定できない。そのため、従来properties内にあった`事業`/`カテゴリ`/`種別`のselectプロパティは削除し、children（本文）内のテキスト行として記録する形に変更した（情報自体は失われていない）。properties内のキー名（本実装では`Name`）は公式ドキュメント上の例（同ページ内サンプル、キー名`Name`でtitle型を指定）でも任意の名称が許容されていることを確認済み。rich_text 2000字制限に対するchunk処理は、本インスタンスの既存ワークフロー『CRM週次品質監査』のBuild Notion Page Bodyノードの実装パターンを踏襲（出典：n8n実環境監査 2026-08-09）。格納先ページ自体は、ジンが社長の正式承認を経ずに作成した『n8nエラー通知フォールバックログ』ページ（page id: 3b7040888e97815bbc0ee2441ab6c316）を暫定的に指す（Sticky Note参照、社長の正式承認は別途必要）。【2026-08-09追記】LINE送信失敗時のフォールバック経路に位置づけを変更（従来は唯一の通知経路だった）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const d = $input.first().json;\n\nfunction chunk(str, size) {\n  const out = [];\n  for (let i = 0; i < str.length; i += size) out.push(str.slice(i, i + size));\n  return out.length ? out : [''];\n}\n\nconst detailLines = [\n  `事業: コホマダ`,\n  `カテゴリ: その他`,\n  `種別: システムアラート`,\n  `発生時刻: ${d.occurredAtJst}`,\n  `対象ワークフロー: ${d.workflowName}（ID: ${d.workflowId || '不明'}）`,\n  `失敗ノード: ${d.failedNodeName}`,\n  `実行ID: ${d.executionId || '不明'}`,\n  `実行モード: ${d.mode || '不明'}`,\n  `エラーメッセージ: ${d.errorMessage}`,\n  '',\n  '本通知はn8n共通エラーハンドラー（AUTO-COM-002）による自動記録です（LINE送信失敗時のフォールバック経路）。実際の対応要否・原因調査は人が行ってください。'\n];\n\nconst children = [];\nfor (const line of detailLines) {\n  for (const part of chunk(line, 1900)) {\n    children.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: part } }] } });\n  }\n}\n\n// parentがpage_id（通常ページの子として作成）の場合、propertiesに指定できるのはtitle型のみ。\n// database_id（データベースの行として作成）の場合と異なり、select等のプロパティは指定不可。\n// 出典：Notion公式APIドキュメント「Create a page」（https://developers.notion.com/reference/post-page 、2026-08-10参照）\n// 2026-08-10実機テスト（execution 49）で確認：プロパティキーに'Name'を使うと\n// 'Invalid property identifier Name'で失敗した。parentがpage_id（親がデータベースの行であっても、\n// page_id指定で子ページを作る場合は親の行としてではなく通常ページとして扱われる）の場合、\n// キー名は親データベースのtitleプロパティ名（'Name'等）ではなく、固定の'title'でなければならない。\nconst notionRequestBody = {\n  parent: { page_id: d.destinationParentPageId },\n  properties: {\n    'title': { title: [{ text: { content: `【n8nエラー】${d.workflowName} (${d.occurredAtJst})` } }] }\n  },\n  children\n};\n\nreturn [{ json: { notionRequestBody } }];\n"
+      }
+    },
+    {
+      "id": "com002-http-notion-create",
+      "name": "Notion - エラー通知ページ作成（フォールバック）",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1620, 200],
+      "notes": "POST /v1/pages・authentication=predefinedCredentialType・nodeCredentialType=notionApiは、本インスタンスの既存ワークフロー（Googleカレンダー→Notion同期のNotion - Create Page等）の実例に基づく。credentialsは実IDを埋め込まず未割当のまま（インポート後に手動割当、[要ユーザー承認]）。【2026-08-10更新】リクエストボディの`parent`が`page_id`形式（`com002-build-notion-page`ノード参照）に変更されたことに伴い、properties内のselectプロパティ（旧`種別`等）は廃止したため、『対象Notion DBに未登録のselect値でAPI呼び出しが失敗する』というリスクは解消された（parent=page_idの場合、properties内にselect等のデータベース固有プロパティを指定すること自体が不可であり、それに合わせてリクエスト構築側も修正済みのため）。格納先ページ（`destinationParentPageId`）はジンが社長の正式承認を経ずに作成したページであり、恒久的な採用には社長の正式承認が別途必要な点は残る（Sticky Note参照）。",
+      "continueOnFail": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.notionRequestBody }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "com002-noop-notified",
+      "name": "NoOp: 完了（フォールバック：Notion通知試行済み）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1860, 200],
+      "notes": "[要インスタンス確認] Notion書き込み自体も失敗した場合でもcontinueOnFail=trueのためここまで到達する。その場合、LINE・Notionいずれの通知も実質的に失敗しており、現状これ以上の代替通知手段が無いため、この設計上のリスクは未解消のまま残る。",
+      "parameters": {}
+    },
+    {
+      "id": "com002-noop-skip",
+      "name": "NoOp: 完了（重複スキップ）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [180, -140],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [[{ "node": "エラー情報整形＋冪等性チェック", "type": "main", "index": 0 }]]
+    },
+    "エラー情報整形＋冪等性チェック": {
+      "main": [[{ "node": "IF: 重複チェック", "type": "main", "index": 0 }]]
+    },
+    "IF: 重複チェック": {
+      "main": [
+        [{ "node": "NoOp: 完了（重複スキップ）", "type": "main", "index": 0 }],
+        [{ "node": "設定：通知先（Notionフォールバック格納先は暫定値・社長の正式承認は未了）", "type": "main", "index": 0 }]
+      ]
+    },
+    "設定：通知先（Notionフォールバック格納先は暫定値・社長の正式承認は未了）": {
+      "main": [[{ "node": "LINE通知メッセージ本文生成", "type": "main", "index": 0 }]]
+    },
+    "LINE通知メッセージ本文生成": {
+      "main": [[{ "node": "LINE - Broadcast通知送信", "type": "main", "index": 0 }]]
+    },
+    "LINE - Broadcast通知送信": {
+      "main": [[{ "node": "LINE送信結果判定", "type": "main", "index": 0 }]]
+    },
+    "LINE送信結果判定": {
+      "main": [[{ "node": "IF: LINE送信失敗判定", "type": "main", "index": 0 }]]
+    },
+    "IF: LINE送信失敗判定": {
+      "main": [
+        [{ "node": "Notion通知ページ本文生成（フォールバック）", "type": "main", "index": 0 }],
+        [{ "node": "NoOp: 完了（LINE通知成功）", "type": "main", "index": 0 }]
+      ]
+    },
+    "Notion通知ページ本文生成（フォールバック）": {
+      "main": [[{ "node": "Notion - エラー通知ページ作成（フォールバック）", "type": "main", "index": 0 }]]
+    },
+    "Notion - エラー通知ページ作成（フォールバック）": {
+      "main": [[{ "node": "NoOp: 完了（フォールバック：Notion通知試行済み）", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

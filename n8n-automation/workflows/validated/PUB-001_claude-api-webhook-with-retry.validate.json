@@ -1,0 +1,14 @@
+{
+  "file": "workflows/validated/PUB-001_claude-api-webhook-with-retry.json",
+  "checkedAt": "2026-08-11T18:53:55.062Z",
+  "errors": [],
+  "warnings": [
+    "ノード \"Sticky Note: Overview\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: Step 1\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: Step 2\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: Step 3\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: Step 4\" が他のどのノードとも接続されていません（孤立ノードの可能性）。"
+  ],
+  "info": [],
+  "valid": true
+}

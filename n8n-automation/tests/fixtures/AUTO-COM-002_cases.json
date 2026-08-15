@@ -1,0 +1,29 @@
+{
+  "note": "架空のテストデータ。[実行環境なしのため未テスト]。Error Triggerの実出力構造が未確認のため、入力例はあくまで想定形。",
+  "cases": [
+    {
+      "id": "normal-1",
+      "description": "正常系：通常のワークフロー失敗",
+      "input": { "workflow": { "id": "wf-abc", "name": "架空のワークフロー" }, "execution": { "id": "exec-001", "url": "https://example.com/exec-001", "mode": "trigger", "lastNodeExecuted": "架空のノード", "error": { "message": "架空のエラーメッセージ" } } },
+      "expected": "isDuplicate=falseとなり、Notion通知ページ作成まで進む"
+    },
+    {
+      "id": "duplicate-1",
+      "description": "冪等性：同一execution+ノードで2回目の起動",
+      "input": "normal-1と同一のexecution.id + lastNodeExecutedを再送",
+      "expected": "静的データに既存キーがあるためisDuplicate=trueとなり、NoOp: 完了（重複スキップ）へ分岐する"
+    },
+    {
+      "id": "missing-fields",
+      "description": "境界値：workflow/execution情報が一部欠損",
+      "input": {},
+      "expected": "フォールバック値（'[不明なワークフロー]'等）で埋められ、処理は継続する（throwしない）"
+    },
+    {
+      "id": "notion-write-failure",
+      "description": "異常系：Notion API呼び出し自体が失敗（モック想定）",
+      "input": { "mockNotionStatus": 401 },
+      "expected": "continueOnFail=trueによりNoOp: 完了（通知試行済み）まで到達するが、実質的な通知は失われる（既知のリスク、二次通知手段なし）"
+    }
+  ]
+}

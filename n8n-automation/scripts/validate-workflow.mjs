@@ -170,6 +170,59 @@ for (const node of nodes) {
   }
 }
 
+// --- Sticky Note とノードのレイアウト重なりチェック（キャンバス上の視覚的な重なり防止） ---
+// 通常ノードのフットプリントは実測値ではなく、目視確認で問題ないと分かっている間隔
+// （PUB-001での実機確認、2026-08-10）に基づく推定値。80px未満の間隔は重なって見える
+// リスクが高いため警告する。座標系の都合上、正確なピクセル一致を保証するものではない。
+const NODE_W_ESTIMATE = 180;
+const NODE_H_ESTIMATE = 100;
+const MIN_GAP = 80;
+
+function nodeBox(node) {
+  if (!Array.isArray(node.position) || node.position.length < 2) return null;
+  const [x, y] = node.position;
+  if (node.type === "n8n-nodes-base.stickyNote") {
+    const w = node.parameters?.width;
+    const h = node.parameters?.height;
+    if (typeof w !== "number" || typeof h !== "number") return null;
+    return { x0: x, y0: y, x1: x + w, y1: y + h, label: node.name, sticky: true };
+  }
+  return { x0: x, y0: y, x1: x + NODE_W_ESTIMATE, y1: y + NODE_H_ESTIMATE, label: node.name, sticky: false };
+}
+
+function boxGap(a, b) {
+  const xGap = a.x1 < b.x0 ? b.x0 - a.x1 : b.x1 < a.x0 ? a.x0 - b.x1 : -1;
+  const yGap = a.y1 < b.y0 ? b.y0 - a.y1 : b.y1 < a.y0 ? a.y0 - b.y1 : -1;
+  if (xGap === -1 && yGap === -1) return -1; // 実際に重なっている
+  if (xGap === -1) return yGap; // x方向は重なっており、y方向の間隔のみが実際の隙間
+  if (yGap === -1) return xGap; // y方向は重なっており、x方向の間隔のみが実際の隙間
+  // どちらの軸でも重なっていない（斜めに離れている）場合、2点間の最短距離はユークリッド距離
+  return Math.sqrt(xGap * xGap + yGap * yGap);
+}
+
+const boxes = nodes.map(nodeBox).filter(Boolean);
+const stickyBoxes = boxes.filter((b) => b.sticky);
+const otherBoxes = boxes.filter((b) => !b.sticky);
+
+for (const s of stickyBoxes) {
+  for (const o of otherBoxes) {
+    const g = boxGap(s, o);
+    if (g < MIN_GAP) {
+      const desc = g < 0 ? "実際に重なっています" : `間隔が${g}px（推奨${MIN_GAP}px以上）しかありません`;
+      warnings.push(`レイアウト: Sticky Note "${s.label}" とノード "${o.label}" は${desc}。position/width/heightの見直しを推奨します。`);
+    }
+  }
+}
+for (let i = 0; i < stickyBoxes.length; i++) {
+  for (let j = i + 1; j < stickyBoxes.length; j++) {
+    const g = boxGap(stickyBoxes[i], stickyBoxes[j]);
+    if (g < MIN_GAP) {
+      const desc = g < 0 ? "実際に重なっています" : `間隔が${g}px（推奨${MIN_GAP}px以上）しかありません`;
+      warnings.push(`レイアウト: Sticky Note "${stickyBoxes[i].label}" と "${stickyBoxes[j].label}" は${desc}。`);
+    }
+  }
+}
+
 if (referencePath) {
   if (fs.existsSync(referencePath)) {
     info.push(`参照ファイル ${referencePath} との比較は簡易実装です。詳細な差分は compare-workflows.mjs を使用してください。`);

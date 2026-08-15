@@ -1,0 +1,568 @@
+{
+  "name": "KNW-001_n8n公式テンプレート自動収集・スプレッドシート整理ワークフロー",
+  "active": false,
+  "nodes": [
+    {
+      "id": "knw001-sticky-overview",
+      "name": "Sticky Note: 概要",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-2050, -1400],
+      "parameters": {
+        "width": 5200,
+        "height": 500,
+        "content": "## KNW-001 n8n公式テンプレート自動収集・スプレッドシート整理ワークフロー（ドラフト）\n\n### 位置づけ\nこれは実装前の技術検証を経て作成した**ドラフト**です。2026-08-12、接続先n8nインスタンス（`kohomadha-n8n.top`、セルフホスト、社長より接続情報を共有済み）に対し、**読み取り専用のREST API**（`GET /healthz`・`GET /`・`GET /api/v1/workflows`等）でのみアクセスし、実バージョン・既存ワークフローの実データを確認した。**このワークフロー自体のインポート・登録・実行・デプロイは一切行っていない**（`workflows/draft/`内のファイル更新のみ）。「動作確認済み」ではない。\n\n### 前提（設計書 docs/cases/KNW-001/workflow-design.md より）\n- 出力先：新規作成済みGoogleスプレッドシート（社長より提供されたURL。id=`1cMYGCfzhmWz1SmEcpylkTjjEa2FNTTGeVTOVpS5OeyI`）。このセッションはこのスプレッドシートに対するGoogle Sheets APIへの読み取りアクセス手段を持たないため、実在・列構成の空欄状態はエイト自身の確認ではなく[ユーザー提供情報]として扱う（今回のn8nインスタンス調査とは別軸）。\n- AI要約：AUTO-COM-001（実際にこのインスタンスに登録済み、後述）をExecute Workflowノードから`model:'claude-haiku-4-5'`指定で呼び出す（コード変更不要、設計書で確認済み）。\n- エラー通知：AUTO-COM-002（実際にこのインスタンスに登録済み、後述）をError Workflow設定に割り当てる想定（本JSON内では設定していない。登録後にn8n UI上で割当、要ユーザー承認）。\n\n### 2026-08-12 接続先n8nインスタンスへの読み取り専用API確認で新たに判明した事実\n- **n8nバージョン：2.33.6**［確認済み事実］。`GET https://kohomadha-n8n.top/`（無認証）のHTML内`<meta name=\"n8n:config:sentry\">`のcontent属性（Base64）をデコードすると`{\"dsn\":\"\",\"environment\":\"development\",\"release\":\"n8n@2.33.6\"}`。\n- **AUTO-COM-001の実ワークフローID：`r0IZ2ByR7MX4RWCp`**［確認済み事実、`GET /api/v1/workflows`で確認、`active:true`］。名称は本リポジトリの想定どおり「AUTO-COM-001_共通Claude API呼び出しサブワークフロー」。\n- **AUTO-COM-002の実ワークフローID：`UwHFO598nsx5FAm5`**［確認済み事実、同上、`active:true`］。名称「AUTO-COM-002_共通エラーハンドラー」。\n- 参考：AUTO-CNT-001（`office/state.js`が言及する既存稼働ルーティン）の実ワークフローID`4WQ9jxZeMuJt8MAU`（`active:true`）も確認でき、`office/state.js`の記載と整合した。\n- **Google Sheets typeVersionは2つのデータ点があり、まだ1つに絞れていない**［要インスタンス確認・継続］：①このインスタンスの実バージョン（n8n@2.33.6、コミット`d353e591a90753348b8f247c66053650cd5d083e`）のn8n公式GitHubソース（`packages/nodes-base/nodes/Google/Sheet/GoogleSheets.node.ts`）では`defaultVersion:4.7`＝**新規に配置するノードは今も4.7になるはず**。②一方、このインスタンス上で実際に稼働中のGoogle Sheetsノード（`CRM日次同期`・`CRM週次品質監査`ワークフロー、計6箇所、いずれも`operation:'read'`）は**すべてtypeVersion 4.5**で実際に動いている（作成時点のn8nが古かった可能性。n8nは既存ノードのtypeVersionを自動アップグレードしない）。本ドラフトは①を採用し`4.7`のまま据え置くが、n8n UIで真っさらなGoogle Sheetsノードをキャンバスに置いて実際に表示されるtypeVersionを見る（保存不要・実行不要・書き込み不要の確認）のが最終確認として最も確実。\n- **Credential Type名`googleSheetsOAuth2Api`は実際に稼働中のワークフローで確認済み**［確認済み事実］（`CRM日次同期`・`CRM週次品質監査`が実際にこの型のCredentialで動いている）。resourceLocator形式（`__rl:true, value, mode`）も実例と一致。ただし実際に割り当てるCredentialの選定・割当は今回一切行っていない（要ユーザー承認）。\n- **Execute Workflow（呼び出し側）ノードは重大な未解決リスクが残る**［要インスタンス確認・重要］。このインスタンス上で実際に稼働しているExecute Workflow呼び出し例は、`AUTO-CNT-001`が`AUTO-COM-001`（同じ呼び出し先！）を呼ぶ1箇所のみ確認できたが、それは**typeVersion 1**であり、パラメータは`{\"source\":\"database\",\"workflowId\":\"r0IZ2ByR7MX4RWCp\"}`という単純な文字列ID形式で、`workflowInputs`という概念自体が存在しない（直前ノードの出力アイテムがそのまま丸ごとサブワークフローへ渡される仕様）。このノード自身のコメントに『2026-08-10実機テストで段階的に修正』とあり、最初は`__rl`形式のworkflowIdや`workflowInputs`相当の指定を試みて実際に失敗し、試行錯誤の末typeVersion 1の単純形式にたどり着いた経緯が記録されている。本ドラフトの当該ノード（`knw001-execwf-claude`）はtypeVersion **1.3**（n8n@2.33.6のソースでも対応配列`[1,1.1,1.2,1.3]`に含まれることは確認済み＝ノード自体は存在する）を使い、`__rl`形式のworkflowId＋`workflowInputs.defineBelow`でsystemPrompt/userPrompt/model/maxTokens/temperatureを個別マッピングする設計のままだが、**この形式が実際にこのインスタンスで動くかは一度も確認できていない**。AUTO-COM-001側の受け口（Execute Workflow Triggerノード）は`parameters:{}`（passthroughモード、入力スキーマ未定義）であり、typeVersion 1のシンプルな全渡し方式とも技術的には互換であるため、**実機テストで1.3のresourceLocator＋workflowInputs形式が失敗した場合は、AUTO-CNT-001と同じtypeVersion 1・plain文字列workflowId・全渡し方式へのフォールバックを推奨する**（その場合、本ノードの前段で`systemPrompt`/`userPrompt`/`model`/`maxTokens`/`temperature`をitemのトップレベルに整形しておけば、AUTO-COM-001の`入力検証・デフォルト適用`コードノードがそのまま受け取れることも確認済み＝キー名は完全一致）。\n- **Schedule Trigger typeVersion 1.2は強く裏付けられた**［確認済み事実］。既存14ワークフロー中8件が実際にtypeVersion 1.2で稼働中。本ドラフトの値と一致。\n- **Wait／Split In Batchesは、このインスタンス上の既存14ワークフローのどれも使用しておらず、稼働中の実例では確認できなかった**［要インスタンス確認・継続］。代わりに、実バージョンと厳密一致するn8n公式GitHubタグ`n8n@2.33.6`（コミット`d353e591a90753348b8f247c66053650cd5d083e`）のソースを直接確認し、Wait＝対応配列`[1, 1.1]`（`packages/nodes-base/nodes/Wait/Wait.node.ts`）、Split In Batches＝`defaultVersion:3`（`packages/nodes-base/nodes/SplitInBatches/SplitInBatches.node.ts`）を確認した。これは「masterブランチ」ではなく実バージョンに厳密一致するタグでの確認のため従来より根拠は強いが、稼働中の実例による確認ではない点は変わらないため、ラベルは[要インスタンス確認]のまま維持する。\n\n### 未確認のまま残した項目（本ドラフトでも推測で埋めていない）\n- Google Sheetsの最終typeVersion（4.7 vs 4.5、上記参照）。\n- Execute Workflow（呼び出し側）のtypeVersion 1.3・`__rl`・`workflowInputs.defineBelow`形式が実際にこのインスタンスで動作するか（上記参照。既知の代替案＝typeVersion 1へのフォールバックあり）。\n- Wait／Split In Batchesの、このインスタンス上での実例による動作確認（GitHubソースは実バージョンに厳密一致するタグで確認済みだが、稼働実例なし）。\n\n### 承認が必要な事項（変更なし、設計書と同じ）\nGoogle Sheets接続・Credential割当（今回は未実施・型名の確認のみ）／AUTO-COM-001・AUTO-COM-002のError Workflow設定へのUI上の割当（実ワークフローIDは今回判明済み）／本番Webhook等の変更（本ワークフローは非該当想定）／ワークフローの新規登録・有効化／初回フルバックフィルの実行そのもの。いずれも未実施。"
+      }
+    },
+    {
+      "id": "knw001-sticky-step1",
+      "name": "Sticky Note: Step1 ページ取得・差分収集",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-2050, -750],
+      "parameters": {
+        "width": 1600,
+        "height": 260,
+        "content": "Step 1 — テンプレート一覧の全ページ取得\n\n週次トリガーで起動し、/templates/categories（カテゴリ辞書、今回未使用だが将来拡張用に保持）と /templates/search を page=1,2,3...と1ページずつ取得する。1ページ最大250件（api.n8n.io実アクセスで確認済みの上限）。ページ間にWaitで間隔を空け、hasMore（page*rows < totalWorkflows）がfalseになるまで繰り返す（新着順ソートが確認できなかったため、早期打ち切りはしない）。"
+      }
+    },
+    {
+      "id": "knw001-sticky-step2",
+      "name": "Sticky Note: Step2 差分判定・AI要約",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-350, -750],
+      "parameters": {
+        "width": 1600,
+        "height": 260,
+        "content": "Step 2 — 差分判定・AI要約\n\n収集した全テンプレートを、スプレッドシート既存行（テンプレID・説明文ハッシュ）と突合し、新規・更新のみ抽出。Loop Over Items（Split In Batches）で1件ずつ、AUTO-COM-001をExecute Workflowノードから呼び出しHaiku 4.5で要約する。個別の要約失敗は継続扱い（後日再試行として記録）。"
+      }
+    },
+    {
+      "id": "knw001-sticky-step3",
+      "name": "Sticky Note: Step3 書き込み・完了",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1450, -750],
+      "parameters": {
+        "width": 1600,
+        "height": 260,
+        "content": "Step 3 — Sheets書き込み・サマリー\n\n個人情報を最小化（投稿者は表示名のみ）した行データをGoogle Sheetsへappend/update（テンプレIDを一致キーに追加または更新）。全件処理後、取得件数・エラー件数のサマリーをログとして残す。全体異常時（取得失敗リトライ後もNG等）はthrowし、n8n標準のError Workflow設定（AUTO-COM-002割当、登録後に要設定）へ委譲する想定。"
+      }
+    },
+    {
+      "id": "knw001-schedule-trigger",
+      "name": "Schedule Trigger（週次）",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-2000, 0],
+      "notes": "type/主要typeVersion(1,1.1,1.2,1.3)はn8n公式GitHub（n8n-io/n8n、master、2026-08-12取得、packages/nodes-base/nodes/Schedule/ScheduleTrigger.node.ts）で確認済み。1.2は本リポジトリの既存ドラフト（PUB-003）で実際に使用されている値を踏襲。[確認済み事実・2026-08-12] 接続先インスタンス（kohomadha-n8n.top、n8n 2.33.6、読み取り専用API `GET /api/v1/workflows` で確認）の既存14ワークフロー中8件が実際にtypeVersion 1.2のSchedule Triggerで稼働中であり、この値で問題なく動作することを確認済み。実行曜日・時刻（毎週月曜06:00 JST）はworkflow-design.mdの推奨値であり[要確認/社長]。weeksInterval/triggerAtDay/triggerAtHour/triggerAtMinuteの各キー名も上記GitHubソースで確認済み。",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1],
+              "triggerAtHour": 6,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "knw001-set-config",
+      "name": "設定：スプレッドシートID・実行パラメータ",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-1740, 0],
+      "notes": "typeVersion 3.4は本リポジトリの既存ドラフト（AUTO-COM-002等）で実際に使用されている値を踏襲。spreadsheetIdは社長より本タスクの依頼文で直接提供されたスプレッドシートURLから抽出した実在の値（https://docs.google.com/spreadsheets/d/1cMYGCfzhmWz1SmEcpylkTjjEa2FNTTGeVTOVpS5OeyI/edit）。ただしこのセッションはGoogle Drive/Sheets APIへの読み取り手段を持たないため、実在確認・列構成の空欄確認はエイト自身の検証ではなく[ユーザー提供情報]として扱う。sheetName（タブ名）は既定値の推測であり[要確認/社長]。",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "cfg-spreadsheet-id", "name": "spreadsheetId", "type": "string", "value": "1cMYGCfzhmWz1SmEcpylkTjjEa2FNTTGeVTOVpS5OeyI" },
+            { "id": "cfg-sheet-name", "name": "sheetName", "type": "string", "value": "シート1" },
+            { "id": "cfg-wait-seconds", "name": "waitSeconds", "type": "number", "value": 4 }
+          ]
+        },
+        "includeOtherFields": false
+      }
+    },
+    {
+      "id": "knw001-http-categories",
+      "name": "カテゴリ一覧取得",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1480, 0],
+      "notes": "typeVersion 4.2は本リポジトリの既存ドラフト（AUTO-COM-001／PUB-003）で実際に使用されている値を踏襲。https://api.n8n.io/templates/categories は2026-08-12にcurlで直接アクセスし200 OK・{categories:[{id,name,displayName,icon,parent}]}を確認済み（無認証）。認証不要のため credentials は設定していない。",
+      "continueOnFail": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.n8n.io/templates/categories",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "knw001-code-category-dict",
+      "name": "カテゴリ辞書生成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1220, 0],
+      "notes": "typeVersion 2は本リポジトリの既存ドラフトで確認済みの値を踏襲。2026-08-12の技術検証で判明した重要な制約：/templates/search のレスポンスにはテンプレート単位のカテゴリ情報が含まれないため、この辞書は主要フロー（Sheets書き込み）では現時点で未使用（将来、カテゴリ別絞り込み検索で紐付けを拡張する場合の下地として保持）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const raw = $input.first().json || {};\nconst categories = Array.isArray(raw.categories) ? raw.categories : [];\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData.categoryDict = {};\nfor (const c of categories) {\n  if (c && c.id !== undefined) {\n    staticData.categoryDict[c.id] = { name: c.name, displayName: c.displayName || c.name };\n  }\n}\n\nreturn [{ json: { categoryCount: categories.length } }];\n"
+      }
+    },
+    {
+      "id": "knw001-code-page-init",
+      "name": "ページング初期化",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-960, 0],
+      "notes": "rows=250は2026-08-12にapi.n8n.ioへ直接アクセスして確認済みの上限値（251以上はHTTP 400「Only upto 250 hits can be fetched per page.」）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.allFetchedTemplates = [];\nstaticData.fetchErrors = [];\n\nconst rows = 250; // 確認済み上限値（2026-08-12、api.n8n.io実アクセスで確認）\nreturn [{ json: { page: 1, rows, apiBase: 'https://api.n8n.io/templates' } }];\n"
+      }
+    },
+    {
+      "id": "knw001-wait-interval",
+      "name": "Wait: アクセス間隔",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [-700, 0],
+      "notes": "type/typeVersion(1, 1.1)はn8n公式GitHub（n8n-io/n8n、master、2026-08-12取得、packages/nodes-base/nodes/Wait/Wait.node.ts）で確認済み。[2026-08-12追加確認] 接続先インスタンスの実バージョン（n8n 2.33.6）と厳密に一致するGitHubタグ`n8n@2.33.6`（コミット`d353e591a90753348b8f247c66053650cd5d083e`）の同ファイルでも対応配列`[1, 1.1]`を確認済み（masterではなく実バージョン一致タグでの確認のため従来より根拠が強い）。ただし接続先インスタンス上の既存14ワークフローにWaitノードの稼働実例が1件も無いため、稼働実例による確認はできておらず[要インスタンス確認]のまま。待機秒数（waitSeconds、既定4秒）はリサ調査の推奨（3〜5秒）に基づく[仮定]。このノードはページ取得前の待機に加え、次ページ取得ループの合流点にもなっている（下記IF: 次ページあり？のtrue分岐がここへ戻る）。",
+      "parameters": {
+        "amount": "={{ $json.waitSeconds || 4 }}",
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "knw001-http-search",
+      "name": "テンプレート検索",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-440, 0],
+      "notes": "typeVersion 4.2は本リポジトリの既存実績値。page/rowsパラメータはdocs.n8n.io「Configure a custom workflow templates library」ページで公式に文書化されている4パラメータ（page/rows/category/search）のうちの2つであり、かつ2026-08-12にcurlで実際に page=1 と page=2 で異なる結果が返ることを確認済み（機能している）。waitBetweenTries=5000msは、api.n8n.ioがレート制限を明記していない（リサ調査）ことを踏まえ、AUTO-COM-001の2000msより保守的な値を設計書の指示どおり採用。",
+      "continueOnFail": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.apiBase }}/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "rows", "value": "={{ $json.rows }}" },
+            { "name": "page", "value": "={{ $json.page }}" }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "knw001-if-fetch-ok",
+      "name": "IF: 取得成功判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-180, 0],
+      "notes": "typeVersion 2.2は本リポジトリの既存実績値。continueOnFail=true時、HTTP Requestノードの失敗出力がjson.errorに置き換わる挙動は、AUTO-COM-002の実機テスト（2026-08-10、execution id 47）で確認済みの挙動を踏襲。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "knw001-cond-fetch-ok",
+              "leftValue": "={{ $json.error ? 'error' : 'ok' }}",
+              "rightValue": "ok",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "knw001-code-accumulate",
+      "name": "ページ結果蓄積・hasMore判定",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 0],
+      "notes": "HTTP Requestノードの出力はレスポンス本文でjsonが置き換わり、ページ番号等の呼び出し文脈が失われるため、AUTO-COM-002の実機確認（2026-08-10、continueOnFail時のjson置換挙動）と同じ理由で文脈を直前ノード（Wait: アクセス間隔）から明示的に取り直している。hasMore判定は新着順ソートが確認できなかったことを踏まえ、早期打ち切りをしない安全側の設計。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const resp = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\n// HTTP Requestノードの出力はレスポンス本文でjson全体が置き換わるため、\n// ページ番号等の文脈は直前の「Wait: アクセス間隔」ノードから明示的に取り直す\n// （AUTO-COM-002の実機確認2026-08-10と同じ理由・同じ対処パターン）。\nconst ctx = $('Wait: アクセス間隔').first().json;\nconst currentPage = ctx.page;\nconst rows = ctx.rows;\nconst apiBase = ctx.apiBase;\n\n// 入力値検証：workflowsが配列であること、id/nameが存在することを確認（設計書「入力値検証」節）\nconst workflows = Array.isArray(resp.workflows) ? resp.workflows : [];\nlet skippedCount = 0;\nfor (const w of workflows) {\n  if (!w || w.id === undefined || w.id === null || !w.name) { skippedCount++; continue; }\n  staticData.allFetchedTemplates.push(w);\n}\nif (skippedCount > 0) {\n  staticData.fetchErrors.push({ page: currentPage, skippedCount, note: 'missing id/name, skipped' });\n}\n\nconst totalWorkflows = typeof resp.totalWorkflows === 'number' ? resp.totalWorkflows : null;\n\n// hasMore判定：[未確認]新着順ソートが確認できなかったため（2026-08-12の技術検証で複数のsort_by\n// 値を試したが順序に変化がないことを確認）、早期打ち切り最適化は採用せず、\n// page*rows が totalWorkflows に達するまで全ページを走査する（workflow-design.mdの\n// 「設計を止める情報」の分岐点に対する回答：安全側＝全件走査を採用）。\nlet hasMore;\nif (totalWorkflows !== null) {\n  hasMore = (currentPage * rows) < totalWorkflows;\n} else {\n  // totalWorkflowsが取得できない異常系は安全側でhasMore=falseとし、致命的エラーにはせず\n  // 現時点までの取得結果で処理を継続する（該当週は不完全収集になり得る旨をログに残す）\n  hasMore = false;\n  staticData.fetchErrors.push({ page: currentPage, note: 'totalWorkflows missing from response' });\n}\n\nreturn [{\n  json: {\n    page: currentPage + 1,\n    rows,\n    apiBase,\n    waitSeconds: ctx.waitSeconds,\n    hasMore,\n    totalWorkflows,\n    fetchedSoFar: staticData.allFetchedTemplates.length\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "knw001-if-has-more",
+      "name": "IF: 次ページあり？",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [340, 0],
+      "notes": "true分岐は「Wait: アクセス間隔」ノードへ戻り、次ページを取得するループを形成する（n8nの標準的なページネーション用ループパターン。Split In Batchesは既知件数配列のバッチ処理向けであり外部APIの未知件数ページングには不向きと判断し、今回はIFノードによる自己ループを採用）。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "knw001-cond-has-more",
+              "leftValue": "={{ $json.hasMore }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "knw001-code-fetch-fail-log",
+      "name": "取得失敗ログ記録",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 240],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const raw = $input.first().json;\nconst ctx = $('Wait: アクセス間隔').first().json;\nreturn [{\n  json: {\n    page: ctx.page,\n    error: raw.error || raw\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "knw001-code-fetch-fatal",
+      "name": "致命的エラー送出（取得失敗）",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 240],
+      "notes": "意図的にthrowしてこのワークフローの実行自体を失敗させる。AUTO-COM-001の失敗時エラー送出ノードと同じ設計パターン。本番登録時にError Workflow設定へAUTO-COM-002を割り当てておけば自動通知される想定（要ユーザー承認、未実施）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const d = $input.first().json;\nthrow new Error('KNW-001: api.n8n.io/templates/search の取得がリトライ後も失敗しました。page=' + d.page + ' detail=' + JSON.stringify(d.error).slice(0, 500));\n"
+      }
+    },
+    {
+      "id": "knw001-code-collected-to-items",
+      "name": "収集結果をitems化",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0],
+      "notes": "全ページ取得完了後、静的データに蓄積したテンプレート一覧をn8nのitem配列へ変換する。同一実行内での重複防止のため処理済みIDをSetで管理（設計書「冪等性」節）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst templates = staticData.allFetchedTemplates || [];\n\n// 同一実行内での重複防止（設計書の冪等性節：処理済みIDをメモリ上のSetで管理）\nconst seen = new Set();\nconst unique = [];\nfor (const t of templates) {\n  const idStr = String(t.id);\n  if (seen.has(idStr)) continue;\n  seen.add(idStr);\n  unique.push(t);\n}\n\nreturn unique.map((t) => ({ json: t }));\n"
+      }
+    },
+    {
+      "id": "knw001-gsheet-read-existing",
+      "name": "既存シート読み取り（差分判定用）",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [860, 0],
+      "notes": "[要インスタンス確認・継続] type文字列(n8n-nodes-base.googleSheets)・operation値('read')は n8n公式GitHub（n8n-io/n8n、master、2026-08-12取得、packages/nodes-base/nodes/Google/Sheet/v2/actions/sheet/Sheet.resource.ts）のソースコードで確認済み。typeVersionは4.7としているが未確定（詳細はSticky Note: 概要参照）：接続先インスタンス実バージョン一致タグのソースでは`defaultVersion:4.7`（新規ノードはこの値になるはず）である一方、このインスタンス上で実際に稼働中のGoogle Sheetsノード6件（CRM日次同期／CRM週次品質監査ワークフロー）はいずれもtypeVersion 4.5で動いている。どちらか一方には確定できていない。documentId/sheetNameのresourceLocator形式（`__rl:true, value, mode`）は、[2026-08-12確認済み] 接続先インスタンス上の稼働中Google Sheetsノード（読み取り専用APIで確認）と一致する形式であることを確認済み。credentials（Credential Type: `googleSheetsOAuth2Api`）は[2026-08-12確認済み事実] 接続先インスタンス上で実際にこの型のCredentialでGoogle Sheetsノードが稼働していることを確認したが、実IDは埋め込まず未割当のまま（インポート後にn8n UI上で手動割当、要ユーザー承認）。列名（テンプレID・説明文ハッシュ）はGoogle Sheetsの1行目ヘッダーに依存するため、実際のシート作成後に確認が必要。",
+      "continueOnFail": true,
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('設定：スプレッドシートID・実行パラメータ').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('設定：スプレッドシートID・実行パラメータ').first().json.sheetName }}",
+          "mode": "list",
+          "cachedResultName": "[要確認/社長]"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "knw001-code-diff",
+      "name": "新規・更新判定（差分検出）",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 0],
+      "notes": "SHA-256等の暗号ハッシュ関数がこのn8nインスタンスのCodeノード実行環境で利用可能か（Node.js cryptoモジュールのサンドボックス許可状況）は[要インスタンス確認]のため、本ドラフトでは簡易フィンガープリント（文字列長＋簡易ハッシュ値）で代替している。本番投入前にcrypto.createHash('sha256')が使えるか確認し、使えればそちらに置き換えることを推奨する。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// 収集した全テンプレートと、スプレッドシート既存行を突合し、新規・更新のみを抽出する。\nconst fetchedItems = $('収集結果をitems化').all().map((i) => i.json);\nconst existingRows = $input.all().map((i) => i.json);\n\n// [要インスタンス確認] cryptoモジュールの利用可否が未確認のため、簡易フィンガープリントで代替。\nfunction simpleFingerprint(str) {\n  const s = String(str || '');\n  let hash = 0;\n  for (let i = 0; i < s.length; i++) {\n    hash = (hash * 31 + s.charCodeAt(i)) | 0;\n  }\n  return s.length + ':' + hash;\n}\n\nconst existingMap = new Map();\nfor (const row of existingRows) {\n  const id = row['テンプレID'] !== undefined && row['テンプレID'] !== null ? String(row['テンプレID']) : null;\n  if (id) existingMap.set(id, row);\n}\n\nconst toProcess = [];\nfor (const t of fetchedItems) {\n  const idStr = String(t.id);\n  const fp = simpleFingerprint(t.description);\n  const existing = existingMap.get(idStr);\n  if (!existing) {\n    toProcess.push({ ...t, changeType: 'new', descriptionFingerprint: fp });\n  } else if (existing['説明文ハッシュ'] !== fp) {\n    toProcess.push({ ...t, changeType: 'update', descriptionFingerprint: fp });\n  }\n  // 変化なしはスキップ（AI要約コストを抑える、設計書の方針どおり）\n}\n\nreturn toProcess.map((t) => ({ json: t }));\n"
+      }
+    },
+    {
+      "id": "knw001-splitinbatches-summarize",
+      "name": "Loop Over Items: 要約対象",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1380, 0],
+      "notes": "type/typeVersionはn8n公式GitHub（n8n-io/n8n、master、2026-08-12取得、packages/nodes-base/nodes/SplitInBatches/SplitInBatches.node.ts、defaultVersion:3）で確認済み。[2026-08-12追加確認] 接続先インスタンスの実バージョン（n8n 2.33.6）と厳密に一致するGitHubタグ`n8n@2.33.6`（コミット`d353e591a90753348b8f247c66053650cd5d083e`）の同ファイルでも`defaultVersion:3`（version 1/2/3のVersionedNodeType構成）を確認済み。ただし接続先インスタンス上の既存14ワークフローにSplit In Batchesノードの稼働実例が1件も無いため、稼働実例による確認はできておらず[要インスタンス確認]のまま。出力は['done','loop']の順（index0=done, index1=loop、同ソースのoutputNamesで確認済み）。公式のbuilderHint（同ソース内）が明記する標準パターン「connect splitInBatches → per-item work → back to splitInBatches」をそのまま採用し、空配列input時もno-opする（IFゲート不要）ことも確認済み。",
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "knw001-code-build-prompt",
+      "name": "プロンプト生成（カテゴリ名解決）",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1640, 0],
+      "notes": "systemPrompt/userPromptの文面は workflow-design.md「AI要約ステップの設計」節の方針をそのまま実装。カテゴリ名の解決は行っていない（Sticky Note: 概要のとおり、テンプレート単位のカテゴリがAPIレスポンスに含まれないため）。ノード名に「カテゴリ名解決」と付いているが実質は保留であることをここに明記する。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const d = $input.first().json;\n\nconst nodesList = Array.isArray(d.nodes) ? d.nodes.map((n) => n.displayName || n.name).filter(Boolean) : [];\nconst nodesText = nodesList.length ? nodesList.join('、') : '(使用ノード情報なし)';\n\nconst systemPrompt = 'あなたはn8nワークフローテンプレートの要約担当です。渡されたテンプレート名・説明文・使用ノード一覧をもとに、社内メンバーが一読して「これは何をするテンプレートで、どう使えるか」が分かる日本語の要約を作成してください。説明文に書かれていない機能や効果を推測で付け加えないでください。';\n\nconst userPrompt = [\n  `テンプレート名: ${d.name}`,\n  `使用ノード: ${nodesText}`,\n  '説明文（原文）:',\n  d.description || '(説明文なし)',\n  '',\n  '以下の3点セットで、日本語で出力してください。',\n  '1. 何をするテンプレートか（1〜2文）',\n  '2. 主な使用ノード',\n  '3. 使い方・活用イメージ（1〜2文）',\n].join('\\n');\n\nreturn [{\n  json: {\n    ...d,\n    summarySystemPrompt: systemPrompt,\n    summaryUserPrompt: userPrompt,\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "knw001-execwf-claude",
+      "name": "Execute Workflow: Claude要約（AUTO-COM-001）",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [1900, 0],
+      "notes": "[要インスタンス確認・重要・継続] type文字列(n8n-nodes-base.executeWorkflow)・displayName('Execute Sub-workflow')・対応typeVersion配列([1,1.1,1.2,1.3])はn8n公式GitHub（n8n-io/n8n、master、2026-08-12取得、packages/nodes-base/nodes/ExecuteWorkflow/ExecuteWorkflow/ExecuteWorkflow.node.ts）のソースコードで確認済みで、接続先インスタンス実バージョン一致タグ（n8n@2.33.6、コミットd353e591a90753348b8f247c66053650cd5d083e）の同ファイルでも同じ配列を確認した（ノード自体は存在する）。同ソースには「'Run once for each item' is deprecated...To run the sub-workflow once per item, add a 'Loop Over Items' node before this node and use 'Run once with all items'」という明記があり、本ドラフトの設計（Split In Batchesで1件ずつに分割した上でmode='once'を使う）はこの公式推奨パターンと一致している。\n\n[2026-08-12・最重要の未確認事項] workflowId.valueは実ワークフローID r0IZ2ByR7MX4RWCp（AUTO-COM-001、active:true、読み取り専用APIで確認済み）に更新した。ただしtypeVersion 1.3での__rl形式workflowId・workflowInputs.defineBelowによるsystemPrompt/userPrompt/model/maxTokens/temperatureの個別マッピングが実際にこのインスタンスで動作するかは未確認のまま[仮定]である。根拠：このインスタンス上で唯一確認できた稼働中のExecute Workflow呼び出し例（AUTO-CNT-001がAUTO-COM-001を呼ぶノード）はtypeVersion 1であり、パラメータは{source:'database', workflowId:'r0IZ2ByR7MX4RWCp'}という単純な文字列ID形式のみで、workflowInputsという概念自体が存在しない（直前ノードの出力アイテムがそのまま丸ごと渡される全渡し方式）。そのノード自身のコメントに『2026-08-10実機テストで段階的に修正（__rl形式やworkflowInputsを試みて実際に失敗し、typeVersion1の単純形式に落ち着いた）』という記録があり、typeVersionによる形式差でこの組織が過去に実際につまずいた実例が存在する。本ノードをworkflows/validatedへ進める前に、n8n UI上で実際にtypeVersion 1.3のexecuteWorkflowノードを配置し__rl／workflowInputsの実際の入力欄・保存後のJSON構造を確認することを強く推奨する。もし1.3形式が動作しない場合の代替案：AUTO-CNT-001と同じtypeVersion 1・plain文字列workflowId・全渡し方式へフォールバックする（AUTO-COM-001側のExecute Workflow Triggerはparameters:{}のpassthroughモードのため技術的に互換。その場合、本ノード直前の『プロンプト生成（カテゴリ名解決）』ノードの出力に含まれるsummarySystemPrompt/summaryUserPromptのキー名を、AUTO-COM-001が期待するsystemPrompt/userPrompt/model/maxTokens/temperatureへ合わせて整形し直す変更が必要）。model='claude-haiku-4-5'はworkflow-design.mdの第一候補どおり（AUTO-COM-001は未指定時'claude-sonnet-5'をデフォルトとするコードを2026-08-12に確認したが、本ドラフトは明示的に上書きしているため影響なし）。continueOnFail=trueとし、個別テンプレートの要約失敗はワークフロー全体を停止させない設計（設計書の方針）。",
+      "continueOnFail": true,
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "r0IZ2ByR7MX4RWCp",
+          "mode": "list",
+          "cachedResultName": "AUTO-COM-001_共通Claude API呼び出しサブワークフロー"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "systemPrompt": "={{ $json.summarySystemPrompt }}",
+            "userPrompt": "={{ $json.summaryUserPrompt }}",
+            "model": "claude-haiku-4-5",
+            "maxTokens": 700,
+            "temperature": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "knw001-if-summary-ok",
+      "name": "IF: 要約成功判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2160, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "knw001-cond-summary-ok",
+              "leftValue": "={{ $json.error ? 'error' : 'ok' }}",
+              "rightValue": "ok",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "knw001-code-row-success",
+      "name": "行データ整形（成功時）",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2420, -120],
+      "notes": "URL構築パターン（https://n8n.io/workflows/<id>）は workflow-design.md「Google Sheetsへの書き込み設計」節に記載のとおり[要公式確認]（リサ調査時点で個別検証されていない一般的な推測）。カテゴリ列は前述のとおり空欄。投稿者情報は表示名のみ転記（自己紹介文・アバターURL・認証バッジは転記しない、設計書「投稿者個人情報の扱い」節どおり）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const resp = $input.first().json; // AUTO-COM-001の戻り値 {success, text, model, stopReason, usage}\nconst ctx = $('プロンプト生成（カテゴリ名解決）').first().json; // 元テンプレート情報を復元\n\nconst nodesList = Array.isArray(ctx.nodes) ? ctx.nodes.map((n) => n.displayName || n.name).filter(Boolean) : [];\n\nlet fetchedAtJst;\ntry {\n  fetchedAtJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\n} catch (e) {\n  fetchedAtJst = new Date().toISOString() + ' (UTC, JST変換失敗)';\n}\n\nreturn [{\n  json: {\n    'テンプレID': String(ctx.id),\n    'タイトル': ctx.name,\n    'URL': `https://n8n.io/workflows/${ctx.id}`, // [要公式確認]\n    'カテゴリ': '', // [未確認] Sticky Note: 概要 参照\n    '使用ノード一覧': nodesList.join('、'),\n    '特徴要約（AI）': resp.text || '',\n    '価格区分': (ctx.price === 0 || ctx.price === null || ctx.price === undefined) ? '無料' : '有料',\n    '投稿者表示名': (ctx.user && ctx.user.name) || '',\n    '初回登録日（n8n側）': ctx.createdAt || '',\n    '取得日（JST）': fetchedAtJst,\n    '説明文ハッシュ': ctx.descriptionFingerprint || '',\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "knw001-code-row-fail",
+      "name": "行データ整形（要約失敗時）",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2420, 120],
+      "notes": "要約失敗時も行自体は書き込み、特徴要約欄に「要約失敗（後日再試行）」を記録する（設計書の方針）。次週の差分判定で説明文ハッシュが一致すれば「変化なし」とみなされ再要約されない点に注意（意図的な仕様。もし失敗行を毎回再試行対象にしたい場合は、説明文ハッシュではなく別の『要約済みフラグ』列を追加する設計変更が必要——この点は本ドラフトでは未実装のため次工程で要検討）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const ctx = $('プロンプト生成（カテゴリ名解決）').first().json;\nconst nodesList = Array.isArray(ctx.nodes) ? ctx.nodes.map((n) => n.displayName || n.name).filter(Boolean) : [];\n\nlet fetchedAtJst;\ntry {\n  fetchedAtJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\n} catch (e) {\n  fetchedAtJst = new Date().toISOString() + ' (UTC, JST変換失敗)';\n}\n\nreturn [{\n  json: {\n    'テンプレID': String(ctx.id),\n    'タイトル': ctx.name,\n    'URL': `https://n8n.io/workflows/${ctx.id}`,\n    'カテゴリ': '',\n    '使用ノード一覧': nodesList.join('、'),\n    '特徴要約（AI）': '要約失敗（後日再試行）',\n    '価格区分': (ctx.price === 0 || ctx.price === null || ctx.price === undefined) ? '無料' : '有料',\n    '投稿者表示名': (ctx.user && ctx.user.name) || '',\n    '初回登録日（n8n側）': ctx.createdAt || '',\n    '取得日（JST）': fetchedAtJst,\n    '説明文ハッシュ': ctx.descriptionFingerprint || '',\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "knw001-gsheet-write",
+      "name": "Google Sheets: 追加・更新書き込み",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [2680, 0],
+      "notes": "[要インスタンス確認・継続][仮定] operation値'appendOrUpdate'はn8n公式GitHub（同上Sheet.resource.ts、value:'appendOrUpdate'、description:'Append a new row or update an existing one (upsert)'）で確認済み。テンプレIDを一致キーとするための`canBeUsedToMatch:true`はGoogleSheets.node.tsのbuilderHint内サンプルコードに実在するキー名（同ファイルcodex.builderHint.extraTypeDefContentのpatternサンプルで確認）。ただしこの構造が実際のUI操作結果として生成されるJSONと完全一致するかは実例が無く未検証[仮定]。typeVersionは既存シート読み取りノードと同じ理由で4.7としているが未確定（詳細はSticky Note: 概要参照）：接続先インスタンス実バージョン一致タグのソースでは`defaultVersion:4.7`である一方、このインスタンス上で実際に稼働中のGoogle Sheetsノード6件はいずれもtypeVersion 4.5で動いている。credentials（`googleSheetsOAuth2Api`）は[2026-08-12確認済み事実] このインスタンス上で実際にこの型のCredentialでGoogle Sheetsノードが稼働していることを確認したが、実IDは埋め込まず未割当のまま（要ユーザー承認）。継続的失敗時の補償：書き込み失敗した行は次週の差分判定で『既存行に見つからない＝新規』として再度処理対象になるため、追加のリトライ機構は設けていない（設計書『補償処理』節どおり）。",
+      "continueOnFail": true,
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('設定：スプレッドシートID・実行パラメータ').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('設定：スプレッドシートID・実行パラメータ').first().json.sheetName }}",
+          "mode": "list",
+          "cachedResultName": "[要確認/社長]"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "テンプレID": "={{ $json['テンプレID'] }}",
+            "タイトル": "={{ $json['タイトル'] }}",
+            "URL": "={{ $json['URL'] }}",
+            "カテゴリ": "={{ $json['カテゴリ'] }}",
+            "使用ノード一覧": "={{ $json['使用ノード一覧'] }}",
+            "特徴要約（AI）": "={{ $json['特徴要約（AI）'] }}",
+            "価格区分": "={{ $json['価格区分'] }}",
+            "投稿者表示名": "={{ $json['投稿者表示名'] }}",
+            "初回登録日（n8n側）": "={{ $json['初回登録日（n8n側）'] }}",
+            "取得日（JST）": "={{ $json['取得日（JST）'] }}",
+            "説明文ハッシュ": "={{ $json['説明文ハッシュ'] }}"
+          },
+          "schema": [
+            { "id": "テンプレID", "displayName": "テンプレID", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "タイトル", "displayName": "タイトル", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "URL", "displayName": "URL", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "カテゴリ", "displayName": "カテゴリ", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "使用ノード一覧", "displayName": "使用ノード一覧", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "特徴要約（AI）", "displayName": "特徴要約（AI）", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "価格区分", "displayName": "価格区分", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "投稿者表示名", "displayName": "投稿者表示名", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "初回登録日（n8n側）", "displayName": "初回登録日（n8n側）", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "取得日（JST）", "displayName": "取得日（JST）", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false },
+            { "id": "説明文ハッシュ", "displayName": "説明文ハッシュ", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "knw001-code-summary",
+      "name": "実行サマリー生成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1640, 320],
+      "notes": "設計書『ログ方針』のとおり、外部サービスへの転送は行わずn8n標準実行ログに残す簡易サマリーのみ生成する。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst totalFetched = (staticData.allFetchedTemplates || []).length;\nconst fetchErrorCount = (staticData.fetchErrors || []).length;\n\nlet nowJst;\ntry {\n  nowJst = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\n} catch (e) {\n  nowJst = new Date().toISOString();\n}\n\nreturn [{\n  json: {\n    summaryGeneratedAtJst: nowJst,\n    totalFetchedThisRun: totalFetched,\n    fetchErrorCount,\n    note: 'このサマリーはn8n標準実行ログに加えて記録される簡易サマリー（外部サービスへの転送は行わない）',\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "knw001-noop-done",
+      "name": "NoOp: 完了（正常終了）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1900, 320],
+      "notes": "本リポジトリの既存ドラフト（AUTO-COM-001/002）で実際に使用されているtypeVersion 1を踏襲。",
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Schedule Trigger（週次）": {
+      "main": [[{ "node": "設定：スプレッドシートID・実行パラメータ", "type": "main", "index": 0 }]]
+    },
+    "設定：スプレッドシートID・実行パラメータ": {
+      "main": [[{ "node": "カテゴリ一覧取得", "type": "main", "index": 0 }]]
+    },
+    "カテゴリ一覧取得": {
+      "main": [[{ "node": "カテゴリ辞書生成", "type": "main", "index": 0 }]]
+    },
+    "カテゴリ辞書生成": {
+      "main": [[{ "node": "ページング初期化", "type": "main", "index": 0 }]]
+    },
+    "ページング初期化": {
+      "main": [[{ "node": "Wait: アクセス間隔", "type": "main", "index": 0 }]]
+    },
+    "Wait: アクセス間隔": {
+      "main": [[{ "node": "テンプレート検索", "type": "main", "index": 0 }]]
+    },
+    "テンプレート検索": {
+      "main": [[{ "node": "IF: 取得成功判定", "type": "main", "index": 0 }]]
+    },
+    "IF: 取得成功判定": {
+      "main": [
+        [{ "node": "ページ結果蓄積・hasMore判定", "type": "main", "index": 0 }],
+        [{ "node": "取得失敗ログ記録", "type": "main", "index": 0 }]
+      ]
+    },
+    "ページ結果蓄積・hasMore判定": {
+      "main": [[{ "node": "IF: 次ページあり？", "type": "main", "index": 0 }]]
+    },
+    "IF: 次ページあり？": {
+      "main": [
+        [{ "node": "Wait: アクセス間隔", "type": "main", "index": 0 }],
+        [{ "node": "収集結果をitems化", "type": "main", "index": 0 }]
+      ]
+    },
+    "取得失敗ログ記録": {
+      "main": [[{ "node": "致命的エラー送出（取得失敗）", "type": "main", "index": 0 }]]
+    },
+    "収集結果をitems化": {
+      "main": [[{ "node": "既存シート読み取り（差分判定用）", "type": "main", "index": 0 }]]
+    },
+    "既存シート読み取り（差分判定用）": {
+      "main": [[{ "node": "新規・更新判定（差分検出）", "type": "main", "index": 0 }]]
+    },
+    "新規・更新判定（差分検出）": {
+      "main": [[{ "node": "Loop Over Items: 要約対象", "type": "main", "index": 0 }]]
+    },
+    "Loop Over Items: 要約対象": {
+      "main": [
+        [{ "node": "実行サマリー生成", "type": "main", "index": 0 }],
+        [{ "node": "プロンプト生成（カテゴリ名解決）", "type": "main", "index": 0 }]
+      ]
+    },
+    "プロンプト生成（カテゴリ名解決）": {
+      "main": [[{ "node": "Execute Workflow: Claude要約（AUTO-COM-001）", "type": "main", "index": 0 }]]
+    },
+    "Execute Workflow: Claude要約（AUTO-COM-001）": {
+      "main": [[{ "node": "IF: 要約成功判定", "type": "main", "index": 0 }]]
+    },
+    "IF: 要約成功判定": {
+      "main": [
+        [{ "node": "行データ整形（成功時）", "type": "main", "index": 0 }],
+        [{ "node": "行データ整形（要約失敗時）", "type": "main", "index": 0 }]
+      ]
+    },
+    "行データ整形（成功時）": {
+      "main": [[{ "node": "Google Sheets: 追加・更新書き込み", "type": "main", "index": 0 }]]
+    },
+    "行データ整形（要約失敗時）": {
+      "main": [[{ "node": "Google Sheets: 追加・更新書き込み", "type": "main", "index": 0 }]]
+    },
+    "Google Sheets: 追加・更新書き込み": {
+      "main": [[{ "node": "Loop Over Items: 要約対象", "type": "main", "index": 0 }]]
+    },
+    "実行サマリー生成": {
+      "main": [[{ "node": "NoOp: 完了（正常終了）", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

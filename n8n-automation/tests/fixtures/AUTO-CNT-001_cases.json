@@ -1,0 +1,41 @@
+{
+  "note": "架空のテストデータ。[実行環境なしのため未テスト]。",
+  "cases": [
+    {
+      "id": "config-not-set",
+      "description": "異常系：sourcePageOrDbId/destinationPageIdが未設定（プレースホルダーのまま）",
+      "input": "Set設定ノードの既定値のまま実行",
+      "expected": "設定値の検証ノードでthrow、ワークフロー失敗（意図した安全装置）"
+    },
+    {
+      "id": "first-run-no-previous",
+      "description": "正常系：初回実行（前回版マニュアルが存在しない）",
+      "input": { "sourcePageOrDbId": "架空のID-A", "destinationPageId": "架空のID-B（空ページ）" },
+      "expected": "前回版取得がcontinueOnFailで空扱いになり、Claudeが新規マニュアルを生成、hasChanged=trueとなり追記される"
+    },
+    {
+      "id": "no-change",
+      "description": "冪等性：生成結果が前回版と正規化後に同一",
+      "input": "情報源に変化が無いケース（モック想定）",
+      "expected": "hasChanged=falseとなり、NoOp: 完了（変更なしのためスキップ）へ分岐、Notion書き込みは行われない"
+    },
+    {
+      "id": "source-empty",
+      "description": "境界値：情報源ページのブロックが空",
+      "input": { "sourcePageOrDbId": "架空のID-C（空ページ）" },
+      "expected": "sourceTextが空文字となり、プロンプトに「情報源が空でした」という代替文言が入る。Claudeの出力は情報源が無い旨を反映したものになると期待されるが、実際の挙動は生成AI依存のため未検証"
+    },
+    {
+      "id": "claude-call-failure",
+      "description": "異常系：AUTO-COM-001呼び出しが失敗",
+      "input": "AUTO-COM-001側でuserPrompt検証エラー等が発生するケース（モック想定）",
+      "expected": "IF: 生成成功判定でエラー分岐、失敗時エラー送出ノードでthrow"
+    },
+    {
+      "id": "over-100-blocks",
+      "description": "既知の制約：情報源または生成結果のブロック数が100件を超える",
+      "input": "長大な情報源／長大な生成結果",
+      "expected": "情報源側はpage_size=100超過分が取得漏れになる。追記側は children.slice(0,100)で切り詰められる（いずれも既知の制約としてドキュメント記載済み、テスト未実施）"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "file": "workflows/draft/AUTO-CNT-002_line-approval-gdocs-sync.json",
+  "checkedAt": "2026-08-10T11:26:49.358Z",
+  "errors": [],
+  "warnings": [
+    "ノード \"Sticky Note: 概要\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: Phase2（LINE Webhook受信・承認判定・反映）\" が他のどのノードとも接続されていません（孤立ノードの可能性）。"
+  ],
+  "info": [],
+  "valid": true
+}

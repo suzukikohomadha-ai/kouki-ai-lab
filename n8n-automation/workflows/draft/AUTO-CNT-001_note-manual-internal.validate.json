@@ -1,0 +1,10 @@
+{
+  "file": "workflows/draft/AUTO-CNT-001_note-manual-internal.json",
+  "checkedAt": "2026-08-10T11:26:48.323Z",
+  "errors": [],
+  "warnings": [
+    "ノード \"Sticky Note: 概要（v2・下書き分離方式）\" が他のどのノードとも接続されていません（孤立ノードの可能性）。"
+  ],
+  "info": [],
+  "valid": true
+}

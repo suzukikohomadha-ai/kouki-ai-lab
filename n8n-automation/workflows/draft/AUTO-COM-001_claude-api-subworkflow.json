@@ -1,0 +1,166 @@
+{
+  "name": "AUTO-COM-001_共通Claude API呼び出しサブワークフロー",
+  "active": false,
+  "nodes": [
+    {
+      "id": "com001-sticky-overview",
+      "name": "Sticky Note: 概要",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-620, -480],
+      "parameters": {
+        "width": 1180,
+        "height": 360,
+        "content": "## AUTO-COM-001 共通Claude API呼び出しサブワークフロー（ドラフト）\n\n### 目的\n各ワークフロー（note運用マニュアル等）からExecute Workflowノードで呼び出し、Claude(Anthropic) APIを共通ロジックで呼び出す。プロンプト整形・APIコール・レスポンス整形・エラー時の失敗伝播を一箇所に集約する。\n\n### 呼び出し方法（呼び出し元ワークフロー側の実装メモ）\nExecute Workflowノードから、以下をJSONで渡す想定：\n- systemPrompt（string, 任意）\n- userPrompt（string, 必須）\n- model（string, 任意。省略時 'claude-sonnet-5'）\n- maxTokens（number, 任意。省略時 4000）\n- temperature（number, 任意。省略時 1）\n\n### Credential（このドラフトには実IDを埋め込んでいません）\nanthropicApi 種別のCredentialが必要。実在するCredential名「Anthropic - n8n」への割当はn8nインポート後にUIで手動実施してください（[要ユーザー承認]、docs/cases/AUTO-COM-001/workflow-design.md のCredentialマッピング表を参照）。\n\n### 未確認事項\n- Execute Workflow Triggerノードのtype/typeVersion/入力パラメータ定義UIの正確な形は本ドラフト作成時点で未確認（[要インスタンス確認]）\n- httpRequestノードのtimeout/retryOnFail等のオプションキー名は本インスタンスでの実例が無く未確認（[要インスタンス確認]）\n\n### エラー時の挙動\n入力検証失敗・API呼び出し失敗（リトライ後も失敗）の場合、このワークフローの実行自体を失敗させる（throw）。呼び出し元・本ワークフローに共通エラーハンドラー（AUTO-COM-002）をError Workflow設定として割り当てておくことで、失敗時に自動通知される想定（設定は本番登録時に別途実施、[要確認/社長]）。"
+      }
+    },
+    {
+      "id": "com001-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [-400, 0],
+      "notes": "[要インスタンス確認] type文字列はn8n公式ドキュメントのURLスラッグ（n8n-nodes-base.executeworkflowtrigger）とこのインスタンスで確認済みの他ノードの命名規則（camelCase）から類推した値であり、本インスタンスでの実例確認はできていない。typeVersionも未確認のため暫定値1とした。出典：https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.executeworkflowtrigger/（2026-08-09参照、詳細パラメータ仕様はページに記載なし）",
+      "parameters": {}
+    },
+    {
+      "id": "com001-validate",
+      "name": "入力検証・デフォルト適用",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 0],
+      "notes": "typeVersion 2は本インスタンスの既存ワークフローで実際に使用されているのを確認済み（出典：n8n実環境監査 2026-08-09、Diff Analysis等のCodeノード）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const input = $input.first().json || {};\n\nconst userPrompt = (input.userPrompt || '').toString().trim();\nif (!userPrompt) {\n  throw new Error('AUTO-COM-001: userPrompt is required but was empty or missing. Caller must pass a non-empty userPrompt.');\n}\n\nconst systemPromptCaller = (input.systemPrompt || '').toString();\n// 共通ガードレール（[仮定/推奨]：全呼び出し元に一律で軽量な事実確認ガードレールを付与する設計判断。\n// 案件固有のハルシネーション防止指示は呼び出し元のsystemPromptで別途付与すること）\nconst commonGuardrail = '\\n\\n[共通ガードレール]事実と推測を明確に分けて記述してください。確認できない情報は断定せず、不確実である旨を明記してください。実在しない法令・制度・統計・実績・固有名詞を作成しないでください。';\nconst systemPrompt = (systemPromptCaller + commonGuardrail).trim();\n\nconst model = (input.model || 'claude-sonnet-5').toString();\nconst maxTokens = Number.isFinite(input.maxTokens) ? input.maxTokens : 4000;\nconst temperature = Number.isFinite(input.temperature) ? input.temperature : 1;\n\nreturn [{\n  json: {\n    systemPrompt,\n    userPrompt,\n    model,\n    maxTokens,\n    temperature\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "com001-build-request",
+      "name": "リクエストボディ生成",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 0],
+      "notes": "Anthropic Messages APIのリクエスト形式（model/max_tokens/system/messages）は本インスタンスの既存ワークフロー『CRM週次品質監査』のClaude - Write Reportノードの実例に基づく（出典：n8n実環境監査 2026-08-09、GET /api/v1/workflows/adQ8yRIUqZYWoVu5 の読み取り結果）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const d = $input.first().json;\n\nconst body = {\n  model: d.model,\n  max_tokens: d.maxTokens,\n  temperature: d.temperature,\n  messages: [\n    { role: 'user', content: d.userPrompt }\n  ]\n};\nif (d.systemPrompt) {\n  body.system = d.systemPrompt;\n}\n\nreturn [{ json: body }];\n"
+      }
+    },
+    {
+      "id": "com001-http-claude",
+      "name": "Claude API呼び出し",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 0],
+      "notes": "type/typeVersion(4.2)・authentication=predefinedCredentialType・nodeCredentialType=anthropicApi・anthropic-versionヘッダーの付与方法は、本インスタンスの既存ワークフロー『CRM週次品質監査』のClaude - Write Reportノードの実例をそのまま踏襲（出典：同上）。timeout/retryOnFail/maxTries/waitBetweenTriesの各オプションキー名は本インスタンスでの実例が無いため[要インスタンス確認]。credentialsは実IDを埋め込まず未割当のまま（インポート後に手動割当、[要ユーザー承認]）。",
+      "continueOnFail": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "com001-if-success",
+      "name": "IF: 呼び出し成功判定",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [560, 0],
+      "notes": "typeVersion 2.2は本インスタンスの既存ワークフロー『Googleカレンダー→Notion同期』のNew or Existing?ノードで実例確認済み。continueOnFail=trueのHTTP Requestノードが失敗した場合、n8nはitem.json.errorに情報を格納する挙動を前提としている（一般的なn8nの仕様と認識しているが、本インスタンスでの実例では未確認のため[要インスタンス確認]）。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "com001-cond-1",
+              "leftValue": "={{ $json.error ? 'error' : 'ok' }}",
+              "rightValue": "ok",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "com001-set-success",
+      "name": "成功レスポンス整形",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, -140],
+      "notes": "Anthropic Messages APIのレスポンス形式（content配列・type='text'のtextブロック）は、本インスタンスの既存ワークフロー『CRM週次品質監査』のBuild Notion Page Bodyノードの実装（claudeResp.contentからtextブロックを抽出する処理）に基づく（出典：同上）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const resp = $input.first().json;\nconst textBlock = (resp.content || []).find(b => b.type === 'text');\nconst text = (textBlock && textBlock.text) || '';\n\nreturn [{\n  json: {\n    success: true,\n    text,\n    model: resp.model || null,\n    stopReason: resp.stop_reason || null,\n    usage: resp.usage || null\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "com001-noop-success",
+      "name": "NoOp: 完了（成功）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1040, -140],
+      "notes": "[要インスタンス確認] このインスタンスでの実例は未確認だが、n8nの標準コアノードとして広く存在すると認識（DEMO-001と同様の扱い）。サブワークフローの終端。呼び出し元Execute Workflowノードはこのノードの出力を受け取る。",
+      "parameters": {}
+    },
+    {
+      "id": "com001-throw-error",
+      "name": "失敗時エラー送出",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 140],
+      "notes": "意図的にthrowしてこのワークフローの実行自体を失敗させる。これにより（本番登録時にError Workflow設定でAUTO-COM-002を割り当てておけば）共通エラーハンドラーが自動発火する想定。呼び出し元のExecute Workflowノード側でも、そのノードにcontinueOnFail等を設定していれば失敗を検知できる。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const err = $input.first().json.error || {};\nconst detail = typeof err === 'string' ? err : JSON.stringify(err);\nthrow new Error('AUTO-COM-001: Claude API call failed after retries. detail=' + detail);\n"
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [[{ "node": "入力検証・デフォルト適用", "type": "main", "index": 0 }]]
+    },
+    "入力検証・デフォルト適用": {
+      "main": [[{ "node": "リクエストボディ生成", "type": "main", "index": 0 }]]
+    },
+    "リクエストボディ生成": {
+      "main": [[{ "node": "Claude API呼び出し", "type": "main", "index": 0 }]]
+    },
+    "Claude API呼び出し": {
+      "main": [[{ "node": "IF: 呼び出し成功判定", "type": "main", "index": 0 }]]
+    },
+    "IF: 呼び出し成功判定": {
+      "main": [
+        [{ "node": "成功レスポンス整形", "type": "main", "index": 0 }],
+        [{ "node": "失敗時エラー送出", "type": "main", "index": 0 }]
+      ]
+    },
+    "成功レスポンス整形": {
+      "main": [[{ "node": "NoOp: 完了（成功）", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
