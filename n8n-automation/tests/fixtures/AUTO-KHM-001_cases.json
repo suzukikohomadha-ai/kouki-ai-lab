@@ -1,0 +1,89 @@
+{
+  "note": "架空のテストデータです。実在する人物・企業・行政機関のRSS配信内容ではありません。すべてのURLは .example ドメイン（RFC 2606により実在解決しない予約ドメイン）または example.com を使用しています。これらは n8n へインポート・実行して確認したものではなく、[実行環境なしのため未テスト] です。実インスタンスでの検証時に、n8nのPin Data機能等で代用データとして使うことを想定しています。",
+
+  "configInput": {
+    "note": "Set: Config ノードに設定する想定の値（デモ用）。実案件では[ユーザー設定]の箇所を実際の値に置き換える。",
+    "source1Name": "[サンプル機関A]",
+    "source1Url": "https://example-government-source-1.example/rss",
+    "source2Name": "[サンプル機関B]",
+    "source2Url": "https://example-government-source-2.example/rss",
+    "source3Name": "[サンプル機関C]",
+    "source3Url": "https://example-government-source-3.example/rss",
+    "lookbackDays": 7,
+    "slackChannel": "#regulatory-digest-placeholder",
+    "digestLanguage": "en",
+    "digestRecipientEmail": "placeholder-recipient@example.com",
+    "createGmailDraft": false,
+    "appendToNotion": false,
+    "editedBySubjectLabel": "Demo Test Operator"
+  },
+
+  "rssFeedReadMockOutputs": {
+    "note": "RSS Feed Read ノードが返すと想定される項目の形（フィールド名は[要インスタンス確認]・推定）。架空の記事です。",
+    "source1Items": [
+      {
+        "title": "[サンプル記事A-1] 架空の制度改正に関するお知らせ（デモ）",
+        "link": "https://example-government-source-1.example/news/demo-a-1",
+        "guid": "https://example-government-source-1.example/news/demo-a-1",
+        "pubDate": "2026-08-12T09:00:00+09:00",
+        "contentSnippet": "[架空の要約テキスト。実在の制度・記事ではありません。]"
+      },
+      {
+        "title": "[サンプル記事A-2] 架空の説明会開催案内（デモ・期間外）",
+        "link": "https://example-government-source-1.example/news/demo-a-2",
+        "guid": "https://example-government-source-1.example/news/demo-a-2",
+        "pubDate": "2026-07-01T09:00:00+09:00",
+        "contentSnippet": "[lookbackDays=7の範囲外になるよう、意図的に古い日付にしたテストケース]"
+      }
+    ],
+    "source2Items": [
+      {
+        "title": "[サンプル記事B-1] 架空の届出様式変更（デモ）",
+        "link": "https://example-government-source-2.example/news/demo-b-1",
+        "guid": "https://example-government-source-2.example/news/demo-b-1",
+        "pubDate": "2026-08-13T10:30:00+09:00",
+        "contentSnippet": "[架空の要約テキスト]"
+      }
+    ],
+    "source3Items": []
+  },
+
+  "distributionLogMockRows": {
+    "note": "Google Sheets『既読ログ』シートに既に存在すると想定する行（重複排除のテスト用）。demo-a-1 と同一URLを既読済みにして、重複排除で除外されることを確認する意図。",
+    "rows": [
+      { "articleUrl": "https://example-government-source-1.example/news/demo-a-1", "sourceName": "[サンプル機関A]", "distributedAt": "2026-08-05T00:10:00.000Z" },
+      { "articleUrl": "https://example-government-source-9.example/news/old-unrelated", "sourceName": "[サンプル機関(過去分・現在は対象外)]", "distributedAt": "2026-07-01T00:10:00.000Z" }
+    ]
+  },
+
+  "expectedDedupeResult": {
+    "note": "上記入力から想定される『Code: Deduplicate Against Log』の出力（手計算による期待値。実行して確認したものではない）。",
+    "expectedNewArticleUrls": [
+      "https://example-government-source-2.example/news/demo-b-1"
+    ],
+    "reasoning": "source1Items[0]（demo-a-1）はlookback内だが既読ログに一致するため除外。source1Items[1]（demo-a-2）はlookbackDays=7の範囲外のためFilterノードの時点で除外。source2Items[0]（demo-b-1）はlookback内かつ未読のため新着として残る。source3Itemsは0件。"
+  },
+
+  "aiResponseMock": {
+    "note": "HTTP Request『AI Summarize & Translate』が返すと想定するJSON配列（OpenAI互換chat completion形式のcontent部分を想定・プロバイダにより異なる）。[要公式確認]",
+    "choices_0_message_content_example": "[{\"title\":\"[サンプル記事B-1] 架空の届出様式変更（デモ）\",\"url\":\"https://example-government-source-2.example/news/demo-b-1\",\"publishedAt\":\"2026-08-13T10:30:00+09:00\",\"sourceName\":\"[サンプル機関B]\",\"summaryTranslated\":\"[DEMO] A fictional notice about a filing form change, for testing purposes only.\",\"language\":\"en\"}]"
+  },
+
+  "boundaryCases": {
+    "zeroNewArticlesCase": {
+      "note": "全ソースが0件、または全件が既読ログに一致するケース。If: New Articles Found? がfalse分岐（NoOp: End）へ進むことを確認する意図。",
+      "expectedNewArticleCount": 0
+    },
+    "malformedAiResponseCase": {
+      "note": "AI応答のcontentがJSON配列としてパースできない文字列の場合。Code: Parse AI Responseが例外を投げてワークフローを停止させることを確認する意図（不完全なダイジェスト配信の防止）。",
+      "choices_0_message_content_example": "これはJSONではない自由記述テキストです（デモ用の異常系データ）。"
+    },
+    "missingPubDateCase": {
+      "note": "RSS項目にpubDateもisoDateも無い場合。Filter: Within Lookback PeriodのnewDate(undefined).getTime()はNaNとなり、gte比較でfalse（除外）になると想定されるが、実インスタンスでの挙動は未確認。",
+      "item": {
+        "title": "[サンプル記事X] pubDate欠損のテストケース（デモ）",
+        "link": "https://example-government-source-1.example/news/demo-x-missing-date"
+      }
+    }
+  }
+}

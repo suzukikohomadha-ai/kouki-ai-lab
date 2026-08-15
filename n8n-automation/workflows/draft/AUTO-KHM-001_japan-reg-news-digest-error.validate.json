@@ -1,0 +1,10 @@
+{
+  "file": "workflows/draft/AUTO-KHM-001_japan-reg-news-digest-error.json",
+  "checkedAt": "2026-08-15T02:30:09.496Z",
+  "errors": [],
+  "warnings": [
+    "ノード \"Sticky Note: Error Workflow Setup\" が他のどのノードとも接続されていません（孤立ノードの可能性）。"
+  ],
+  "info": [],
+  "valid": true
+}

@@ -1,5 +1,5 @@
 window.AI_STATE = {
-  updatedAt: "2026-08-15T14:45:00+09:00",
+  updatedAt: "2026-08-15T15:30:00+09:00",
 
   setup: {
     completed: true,
@@ -86,7 +86,7 @@ window.AI_STATE = {
     { id: "T58", title: "日本進出n8nワークフロー案：外国企業の日本市場参入における業務課題整理（コホマダ）", owner: "レン", status: "review", progress: 100, hint: "kohomada-business-context（日本進出支援）を踏まえ、法人設立・許認可・現地調査・商談後フォロー・規制モニタリングの5領域で一般化した業務課題を整理。特定の実案件データは使用していない仮説ベースの整理。社長のご確認をお願いします", cmd: "T58を確認しました", log: [ { time: "now", text: "ジンより依頼を受け、コホマダの日本進出支援領域の業務課題を5領域に整理。統合レポートに反映" } ], deliverables: [ { title: "日本進出n8nワークフロー案（統合レポート）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v1.md" } ] },
     { id: "T59", title: "日本進出n8nワークフロー案：ワークフロー設計方針・自動化アイデア具体化（コホマダAI）", owner: "メイ", status: "review", progress: 100, hint: "T58の業務課題を踏まえ5案を概念設計（トリガー・ノード構成・連携サービスの概要）。ノードの正式名称・typeVersion・料金プランは未確認のため[要公式確認]。実装（JSON化）はまだ行っていない", cmd: "T59を確認しました", log: [ { time: "now", text: "T58を受け、5件のワークフロー概念設計を作成。費用対効果・承認ポイントの観点も付記" } ], deliverables: [ { title: "日本進出n8nワークフロー案（統合レポート）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v1.md" } ] },
     { id: "T60", title: "日本進出n8nワークフロー案：実装可能性の技術フィードバック（コホマダAI）", owner: "エイト", status: "review", progress: 60, hint: "メイの5案について実現可能性の一次見立てのみ実施（フル実装は次フェーズ）。本セッションはWebSearchが使えずn8n公式ノード仕様を確認できていないため、正式なtype/typeVersion確認とn8n-automation/配下のn8n-schema-researcherによる仕様検証が実装着手前に必須", cmd: "T60を確認しました", log: [ { time: "now", text: "5案とも一般的なn8n標準ノード（Schedule Trigger/Webhook/RSS Read/HTTP Request/AI Agent等）の組み合わせで概ね実現可能と見立てたが、正式仕様は未確認のまま" } ], deliverables: [ { title: "日本進出n8nワークフロー案（統合レポート）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v1.md" } ] },
-    { id: "T65", title: "案A：n8nワークフロードラフトJSON実装（本番接続・提出は行わない）", owner: "エイト", status: "doing", progress: 10, hint: "社長より『エイトに実装だけ進めて』とご指示。メイの設計書（T62）に沿って、n8n-automation/workflows/draft/にドラフトJSONを作成中。ノードのtype/typeVersion、収集元サイト、利用規約の最終確認はすべて未了のまま進める前提。本番Credential登録・有効化・n8n公式への提出は一切行わない", cmd: "", log: [ { time: "now", text: "T62設計書・T64法務論点整理を踏まえ、実装のみ先行させる社長判断でエイトに依頼" } ], deliverables: [] },
+    { id: "T65", title: "案A：n8nワークフロードラフトJSON実装（本番接続・提出は行わない）", owner: "エイト", status: "review", progress: 85, hint: "実装完了＋アイが検証スクリプト3種を実行済み（重大な問題なし）。メイン40ノード＋エラーハンドラー、実URLは一切ハードコードせず.exampleプレースホルダーのみ。DeepL専用ノードは不採用でAI要約と翻訳を1回のLLM呼び出しに統合。ノードのtype/typeVersionは今回もWebFetch不可のため未確認のまま。実n8nインスタンスへのインポート検証はまだ未実施", cmd: "アオイの監査に回してください／実インスタンスでのインポート検証を先に／規約確認を先にやります", log: [ { time: "now", text: "エイトがメインワークフロー・エラーハンドラー・テストデータ・案件ドキュメントを実装。logs/…_実装メモ_v1.mdを作成" }, { time: "now", text: "アイがcheck-secrets.mjs／validate-workflow.mjs／sanitize-workflow.mjsを実行。プレースホルダーメール1件の誤検知のみ、重大な問題は検出されず。実装メモに追記" } ], deliverables: [ { title: "案A メインワークフロー（ドラフトJSON）", type: "json", at: "now", path: "n8n-automation/workflows/draft/AUTO-KHM-001_japan-reg-news-digest.json" }, { title: "案A エラーハンドラー（ドラフトJSON）", type: "json", at: "now", path: "n8n-automation/workflows/draft/AUTO-KHM-001_japan-reg-news-digest-error.json" }, { title: "実装メモ（検証結果含む）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案A_実装メモ_v1.md" } ] },
     { id: "T64", title: "案A：官公庁RSS利用規約の論点整理（AI要約・第三者配信・テンプレート再配布）", owner: "リョウ", status: "review", progress: 60, hint: "論点整理完了。テンプレート反復配布は政府標準利用規約2.0/PDL1.0のオープンライセンス設計とはおそらく整合的（原文未読のため推測）。JETRO除外は妥当（独立行政法人で規約体系が異なる可能性）。★新たな重要論点：n8n公式Creator Hub自体の提出規約（IP表明保証条項の有無）が全く未確認のまま。原文一次確認と最終的な弁護士確認が必須", cmd: "n8n提出規約も確認して／原文確認は自分でやります／この内容でエイトに進めて", log: [ { time: "now", text: "政府標準利用規約2.0版・PDL1.0・JETRO規約・著作権法13条の論点整理を実施。テンプレート経由の反復利用という構造自体を扱った規約は見当たらず、新たにn8n公式Creator Hub提出規約の未確認という論点を提起。logs/…_法務論点整理_v1.mdを作成" } ], deliverables: [ { title: "案A 法務論点整理（官公庁RSS利用規約×テンプレート配布）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案A_法務論点整理_v1.md" } ] },
     { id: "T63", title: "案A：収集元（JETRO・官公庁等）のRSS提供・利用規約調査", owner: "リサ", status: "review", progress: 70, hint: "経産省・中小企業庁・消費者庁・出入国在留管理庁（法務省）はRSS存在確認＋PDL1.0準拠で出典明記なら自由利用可の可能性（二次情報）。JETROはRSS実在未確認・規約が厳格寄りのため収集元候補から一旦除外を推奨。いずれも原文未読のため、社長ご自身での最終確認、またはリョウへの論点整理依頼が必要", cmd: "この4機関で進めてください／リョウに論点整理を頼んで／自分で原文確認します", log: [ { time: "now", text: "JETRO・経産省・中小企業庁・消費者庁・出入国在留管理庁・その他官公庁のRSS提供・利用規約をWebSearchで調査。logs/…_収集元調査_v1.mdを作成" } ], deliverables: [ { title: "案A 収集元調査（JETRO・官公庁のRSS・利用規約）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案A_収集元調査_v1.md" } ] },
     { id: "T62", title: "n8n公式提出用：案A（日本の規制・行政ニュース多言語ダイジェスト）詳細設計", owner: "メイ", status: "review", progress: 80, hint: "設計完了。トリガー→収集→重複排除→AI要約→DeepL翻訳→複数チャネル配信→既読ログ更新の7段階＋別建てエラーワークフローで設計。著作権対策（RSS提供元限定・出典常時保持・免責文言）とSticky Note配置方針も整理。ただしノードの正式type/typeVersion・収集元サイトの具体候補は未確定。メイは実装（エイト）へ進める前に社長の承認を求めている", cmd: "この方針で実装に進めてください／収集元のリサーチを先に／修正したい点がある", log: [ { time: "now", text: "T61(v3)の優先候補を受けて、業務フロー・ノード構成・著作権対策・Sticky Note方針・費用感・エイトへの引き継ぎ内容を設計。logs/kohomada_2026-08-15_日本進出n8nワークフロー案A_設計書_v1.mdを作成" } ], deliverables: [ { title: "案A 業務自動化アーキテクチャ設計書", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案A_設計書_v1.md" } ] },
@@ -98,7 +98,7 @@ window.AI_STATE = {
     { name: "ジン", status: "review", taskId: "T61" },
     { name: "リサ", status: "review", taskId: "T63" },
     { name: "リョウ", status: "review", taskId: "T64" },
-    { name: "エイト", status: "doing", taskId: "T65" },
+    { name: "エイト", status: "review", taskId: "T65" },
     { name: "メイ", status: "review", taskId: "T62" },
     { name: "レン", status: "review", taskId: "T58" },
     { name: "サトル", status: "review", taskId: "T41" },
@@ -181,6 +181,8 @@ window.AI_STATE = {
   ],
 
   activity: [
+    { time: "now", who: "アイ", text: "✅ T65検証：エイトのドラフト（メインワークフロー40ノード＋エラーハンドラー）にcheck-secrets/validate-workflow/sanitize-workflowを実行しました。プレースホルダーメールの誤検知1件のみで、重大な問題はありませんでした" },
+    { time: "now", who: "エイト", text: "🔧 T65実装：案Aのドラフトワークフローを実装しました。収集元の実URLは一切ハードコードせず、プレースホルダーのみです。ノードのtype/typeVersionは今回も一次確認できず未確定のままです" },
     { time: "now", who: "リョウ", text: "⚖️ T64完了：テンプレート経由の反復配布は政府標準利用規約のオープンライセンス設計と整合的とみられますが、新たに『n8n公式Creator Hub自体の提出規約（IP表明保証等）が未確認』という重要な論点を見つけました。原文の一次確認と最終的な弁護士確認が必須です" },
     { time: "now", who: "リサ", text: "🔍 T63完了：経産省・中小企業庁・消費者庁・出入国在留管理庁はRSS存在確認＋出典明記なら自由利用可の可能性（二次情報）。JETROはRSS未確認・規約厳格寄りのため収集元候補から一旦除外を推奨します。いずれも原文未読なので最終確認をお願いします" },
     { time: "now", who: "アイ", text: "🔍 T63起票：社長より『実装より先に収集元の調査を』とご指示。JETRO・官公庁等のRSS提供・利用規約調査をリサに依頼しました" },

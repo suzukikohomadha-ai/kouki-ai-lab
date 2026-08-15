@@ -1,0 +1,15 @@
+{
+  "file": "workflows/draft/AUTO-KHM-001_japan-reg-news-digest.json",
+  "checkedAt": "2026-08-15T02:30:04.427Z",
+  "errors": [],
+  "warnings": [
+    "ノード \"Sticky Note: Overview & Setup\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: 1. Collect\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: 2. Dedupe & Filter\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: 3. Summarize & Translate\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: 4. Distribute\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",
+    "ノード \"Sticky Note: Copyright & Compliance\" が他のどのノードとも接続されていません（孤立ノードの可能性）。"
+  ],
+  "info": [],
+  "valid": true
+}

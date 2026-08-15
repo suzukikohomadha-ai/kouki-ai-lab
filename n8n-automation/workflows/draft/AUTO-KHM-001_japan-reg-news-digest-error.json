@@ -1,0 +1,77 @@
+{
+  "name": "AUTO-KHM-001 Japan Regulatory & Government News Digest - Error Handler (Draft - Not Deployed)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "khm001err-sticky-overview",
+      "name": "Sticky Note: Error Workflow Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [40, 40],
+      "notes": "[要インスタンス確認]",
+      "parameters": {
+        "width": 900,
+        "height": 260,
+        "color": 3,
+        "content": "## Error Handler for the Japan Reg News Digest workflow\n\nThis is a companion error-handling workflow. It does nothing on its own.\n\n**Setup:**\n1. Import this workflow.\n2. Open the main digest workflow (AUTO-KHM-001_japan-reg-news-digest.json) and go to Settings > Error Workflow. Select this workflow.\n3. From now on, if the main workflow fails at any node, n8n will automatically start this workflow and pass error details to the Error Trigger node below.\n4. Set the Slack channel in the \"Slack: Notify Admin (Error)\" node to your own alerts channel, and register your own Slack credential.\n\nManual execution / test triggers will NOT invoke this workflow (Error Trigger only fires on n8n-detected failures)."
+      }
+    },
+    {
+      "id": "khm001err-error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [80, 400],
+      "notes": "[要再確認] type文字列は2026-07-28のT27（logs/kohomada_2026-07-28_T27n8nワークフロー設計書_v1.md）でn8n公式ドキュメントにて確認済みですが、今回のセッションでは再確認していません。typeVersionは暫定値で[要インスタンス確認]です。Settings > Error Workflow で対象ワークフローからこのワークフローを指定すると、対象が失敗した際に自動起動します（手動実行では発火しません）。",
+      "parameters": {}
+    },
+    {
+      "id": "khm001err-set-format",
+      "name": "Set: Format Error Notification",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [320, 400],
+      "notes": "[要インスタンス確認][要公式確認] Error Trigger実行時に渡されるJSON構造（workflow.name / execution.error.message 等）は本セッションで一次確認していません。実インスタンスでの手動失敗テストによる構造確認が必要です（フィールド名が異なる場合、下記の値は空/undefinedになります）。",
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "efmt-1", "name": "failedWorkflowName", "type": "string", "value": "={{ $json.workflow?.name || '[unknown workflow]' }}" },
+            { "id": "efmt-2", "name": "failedNodeName", "type": "string", "value": "={{ $json.trigger?.node || $json.execution?.lastNodeExecuted || '[unknown node]' }}" },
+            { "id": "efmt-3", "name": "errorMessage", "type": "string", "value": "={{ $json.execution?.error?.message || $json.trigger?.error?.message || JSON.stringify($json).slice(0, 500) }}" },
+            { "id": "efmt-4", "name": "executionUrl", "type": "string", "value": "={{ $json.execution?.url || '[unknown]' }}" },
+            { "id": "efmt-5", "name": "notificationText", "type": "string", "value": "=Automation failure: workflow \"{{ $json.failedWorkflowName }}\" failed at node \"{{ $json.failedNodeName }}\".\nError: {{ $json.errorMessage }}\nExecution: {{ $json.executionUrl }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "khm001err-slack-notify",
+      "name": "Slack: Notify Admin (Error)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [560, 400],
+      "notes": "[要インスタンス確認][要公式確認] Slackノードのresource/operation・channelIdのresourceLocator構造は今回未確認です。チャンネル・Credentialは実運用開始前にユーザーが設定してください。",
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": { "mode": "name", "value": "#automation-alerts-placeholder" },
+        "text": "={{ $json.notificationText }}",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": { "id": "PLACEHOLDER_SLACK_ERROR_NOTIFICATION_CREDENTIAL_ID", "name": "[要設定] Slack 認証情報（エラー通知用・未登録）" }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": { "main": [[{ "node": "Set: Format Error Notification", "type": "main", "index": 0 }]] },
+    "Set: Format Error Notification": { "main": [[{ "node": "Slack: Notify Admin (Error)", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Tokyo"
+  }
+}
