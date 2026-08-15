@@ -5,7 +5,7 @@
     {
       "parameters": {
         "content": "## Japan Regulatory & Government News Digest (Multi-language)\n\n**Who this is for:** Teams and consultants supporting foreign companies entering the Japanese market, who need a lightweight way to track Japanese regulatory/government announcements without reading Japanese daily.\n\n**What this workflow does:**\n1. On a schedule, reads RSS feeds YOU configure (no source URLs are pre-filled)\n2. Filters to recent items and removes already-distributed articles using a log (Google Sheets)\n3. Summarizes new articles with an AI/LLM provider and translates the summary (default target: English)\n4. Builds a digest that always keeps the source title, source URL, and publish date, plus a disclaimer\n5. Posts the digest to Slack (default) and optionally creates a Gmail draft / appends to Notion\n6. Updates the distribution log to avoid duplicates next run\n\n**Setup steps (required before running):**\n1. Open \"Set: Config (Sources & Distribution Options)\" and replace the placeholder RSS URLs with sources YOU have personally verified (RSS feed exists, and reuse/attribution terms are acceptable for your use case). This template ships with NO real source URLs.\n2. Create credentials: Google Sheets (distribution log), your AI/LLM provider (HTTP Header Auth), Slack, and optionally Gmail / Notion.\n3. Create a Google Sheet with columns: articleUrl, sourceName, distributedAt - this is your distribution log.\n4. Read the \"Copyright & Compliance\" note before activating.\n5. This workflow has a companion Error Workflow (see the -error.json file). After importing both, set this workflow's Settings > Error Workflow to point at the imported error workflow.\n6. Test with a manual execution and inspect the output before enabling the schedule.\n\n**IMPORTANT:** This template is provided as-is. You are solely responsible for verifying that your chosen RSS sources and your use (AI summarization, translation, automated redistribution) comply with each source's terms of use and applicable law. This template does not warrant legal compliance for any specific source.",
-        "height": 340,
+        "height": 250,
         "width": 1300,
         "color": 4
       },
@@ -100,7 +100,7 @@
       "typeVersion": 1,
       "position": [
         0,
-        1568
+        2068
       ],
       "notes": "[要インスタンス確認]"
     },
@@ -124,7 +124,7 @@
       "typeVersion": 1.2,
       "position": [
         48,
-        560
+        1060
       ],
       "notes": "[要インスタンス確認] Schedule Triggerのparameters構造（rule.interval配下のフィールド名）は今回のセッションで一次確認していません（WebFetchブロックのため）。既定値は毎週月曜9:00を想定した記述ですが、実インスタンスでGUI設定→エクスポートしての確認が必要です。タイムゾーンはワークフロー設定(settings.timezone)またはn8nインスタンスの既定設定に依存します。"
     },
@@ -220,7 +220,7 @@
       "typeVersion": 3.4,
       "position": [
         288,
-        560
+        1060
       ],
       "notes": "[要インスタンス確認] assignments構造はT28(2026-07-28)で確認したパターンを踏襲していますが今回未再確認です。【2026-08-15更新】3つのRSSソースを実在確認済みの値に置き換えた：①経済産業省（METI）ニュースリリースAtomフィード（`https://www.meti.go.jp/ml_index_release_atom.xml`）②法務省 新着・更新情報RSS（`https://www.moj.go.jp/news.xml`）③内閣府 報道発表新着情報RSS（`https://www.cao.go.jp/rss/news.rdf`）。いずれも2026-08-15にcurlで実アクセスし200 OK・直近日付のエントリを確認済み。利用規約はいずれも「公共データ利用規約（PDL1.0）」準拠を確認済み（出典元URLを明記した上での編集・要約・再配布が許容される規約）：METI（`https://www.meti.go.jp/main/rules.html`）・法務省（`https://www.moj.go.jp/hisho06_00280.html`）・内閣府（`https://www.cao.go.jp/notice/rule.html`）、いずれも2026-08-15参照。**検討したが採用しなかった候補**：JETRO（ジェトロ）はコホマダの事業領域と直結し魅力的だが、利用規約（`https://www.jetro.go.jp/biznews/faq/article_use.html`）が「転載・複製・編集・加工…をご遠慮いただいております」と明記し事前許諾を求めているため、AI要約・自動再配布との適合性が不明。追加するならJETRO側へ事前確認を推奨（本ドラフトでは意図的に含めていない）。★残る要ユーザー設定項目★：`slackChannel`（実際のSlackチャンネル名）・`digestRecipientEmail`（Gmail下書き作成をONにする場合の想定表示先）は、コホマダの実運用先が未確定のため引き続きプレースホルダーのまま。"
     },
@@ -235,7 +235,7 @@
       "typeVersion": 1,
       "position": [
         528,
-        352
+        852
       ],
       "notes": "[要インスタンス確認][要公式確認] RSS Feed Readの正式type文字列・typeVersion・パラメータキー名は今回のセッションで一次確認できていません（WebFetchが EGRESS_BLOCKED のため）。n8n-schema-researcherによる公式ドキュメント確認、または実インスタンスでのGUI設定→エクスポートでの確認が必須です。URLは前段のSet:Configノードの値を参照します（実URLはユーザー入力）。"
     },
@@ -265,7 +265,7 @@
       "typeVersion": 3.4,
       "position": [
         768,
-        352
+        852
       ],
       "notes": "[要インスタンス確認] RSS Feed Read通過後は$jsonがRSS項目（title/link/pubDate等）に変わるため、ソース名はSet:Configノードを$('...')で直接参照します。includeOtherFieldsのキー名は未確認。"
     },
@@ -280,7 +280,7 @@
       "typeVersion": 1,
       "position": [
         528,
-        560
+        1060
       ],
       "notes": "[要インスタンス確認][要公式確認] Source 1と同様の未確認事項。"
     },
@@ -310,7 +310,7 @@
       "typeVersion": 3.4,
       "position": [
         768,
-        560
+        1060
       ],
       "notes": "[要インスタンス確認] Source 1と同様の設計。"
     },
@@ -325,7 +325,7 @@
       "typeVersion": 1,
       "position": [
         528,
-        784
+        1284
       ],
       "notes": "[要インスタンス確認][要公式確認] Source 1と同様の未確認事項。"
     },
@@ -355,7 +355,7 @@
       "typeVersion": 3.4,
       "position": [
         768,
-        784
+        1284
       ],
       "notes": "[要インスタンス確認] Source 1と同様の設計。"
     },
@@ -377,7 +377,7 @@
       "typeVersion": 4.5,
       "position": [
         528,
-        1008
+        1508
       ],
       "notes": "[要インスタンス確認][要公式確認] Google Sheetsノードのresource/operation/documentId(resourceLocator)構造は今回のセッションで一次確認していません。ユーザーは事前にarticleUrl/sourceName/distributedAtの列を持つシートを用意する必要があります（Sticky Note参照）。"
     },
@@ -401,7 +401,7 @@
       "typeVersion": 3.4,
       "position": [
         768,
-        1008
+        1508
       ],
       "notes": "[要インスタンス確認] 重複排除用にレコード種別をタグ付け。"
     },
@@ -413,7 +413,7 @@
       "typeVersion": 3,
       "position": [
         1008,
-        464
+        964
       ],
       "notes": "[要インスタンス確認] Mergeノードのparameters構造・mode名（\"append\"想定）は未確認。目的は2つのRSS結果を単純結合すること（キー突合ではない）。"
     },
@@ -425,7 +425,7 @@
       "typeVersion": 3,
       "position": [
         1248,
-        624
+        1124
       ],
       "notes": "[要インスタンス確認] Source数を増やす場合は同様のMergeノードを連結してください（多入力対応のnumberOfInputsパラメータが実際に使えるかは未確認のため、あえて2入力ずつの連結にしています）。"
     },
@@ -459,7 +459,7 @@
       "typeVersion": 2,
       "position": [
         1488,
-        624
+        1124
       ],
       "notes": "[要インスタンス確認][要公式確認] RSS Feed Read出力のフィールド名（pubDate/isoDate等）・Filterノードのconditionsスキーマは未確認。$('ノード名').first()構文で前段Setノードのlookback設定を参照します。実インスタンスで出力フィールド名を確認後に調整が必要です。"
     },
@@ -501,7 +501,7 @@
       "typeVersion": 3.4,
       "position": [
         1728,
-        624
+        1124
       ],
       "notes": "[要インスタンス確認] RSSのフィールド名（link/guid/title/pubDate）は未確認。重複排除・ダイジェスト整形で使う共通の名前(articleUrl等)に正規化しています。"
     },
@@ -513,7 +513,7 @@
       "typeVersion": 3,
       "position": [
         1968,
-        816
+        1316
       ],
       "notes": "[要インスタンス確認] RSS項目（_recordType=rss_item）とログ項目（_recordType=log_entry）を1つのリストに単純結合し、次のCodeノードで突合します。"
     },
@@ -527,7 +527,7 @@
       "typeVersion": 2,
       "position": [
         2208,
-        816
+        1316
       ],
       "notes": "[要インスタンス確認] $input.all() 等のCode ノードAPIは一般的な想定であり、本セッションでは実インスタンスでの実行確認はしていません。"
     },
@@ -541,7 +541,7 @@
       "typeVersion": 2,
       "position": [
         2448,
-        816
+        1316
       ],
       "notes": "[要インスタンス確認] runOnceForAllItemsモードのCodeノードは入力0件でも1回実行される、という一般的な理解に基づく実装です（本セッションで未検証）。Ifノードは入力0件だと評価自体が発生しない（＝新着0件の分岐が実行されない）というn8nの一般的な既知の挙動を避けるため、必ず1件の「件数」アイテムに変換してからIfノードへ渡す設計にしています。"
     },
@@ -575,7 +575,7 @@
       "typeVersion": 2.2,
       "position": [
         2688,
-        816
+        1316
       ],
       "notes": "[要インスタンス確認] conditions内部スキーマはT27/T28(2026-07-28)のパターンを踏襲していますが今回未再確認です。"
     },
@@ -587,7 +587,7 @@
       "typeVersion": 1,
       "position": [
         2928,
-        1024
+        1524
       ],
       "notes": "新着0件の場合の終端ノード。通知は行わない設計（設計書どおり）。"
     },
@@ -601,7 +601,7 @@
       "typeVersion": 2,
       "position": [
         2928,
-        672
+        1172
       ],
       "notes": "【2026-08-15更新】AUTO-COM-001（共通Claude API呼び出しサブワークフロー）が期待する入力キー名（systemPrompt/userPrompt/model/maxTokens/temperature）に合わせて出力を変更した（KNW-001の設計書で確認済みのキー名パターンを踏襲）。modelはclaude-sonnet-5を選択：規制・行政ニュースの翻訳は誤訳が実害につながりうるため、要約・分類向けの軽量モデル（Haiku）よりも品質を優先。temperatureは0.3とし、事実に基づく要約でハルシネーションのリスクを抑える方向に倒した（いずれも推奨値であり、要約品質を見ながら調整可）。"
     },
@@ -616,7 +616,7 @@
       "typeVersion": 1,
       "position": [
         3168,
-        672
+        1172
       ],
       "notes": "【2026-08-15更新】プレースホルダーのHTTP Requestを廃し、コホマダの既存共通サブワークフロー（AUTO-COM-001、実ワークフローID`r0IZ2ByR7MX4RWCp`、2026-08-15に読み取り専用API `GET /api/v1/workflows` で`active:true`を確認済み）をExecute Workflowノードから呼び出す形に変更した。typeVersionは1（`source:'database'`・プレーン文字列のworkflowId・直前アイテムの全渡し方式）を採用：これはAUTO-CNT-002が2026-08-10の実機テストで確認した『唯一実際に動作を確認できている形式』であり、KNW-001が採用した未検証のtypeVersion1.3（`__rl`形式・`workflowInputs.defineBelow`）よりも確実性が高いと判断した。Credential自体はAUTO-COM-001側に既に割当済み（Anthropic - n8n）のため、このノード自体はCredential不要。"
     },
@@ -630,7 +630,7 @@
       "typeVersion": 2,
       "position": [
         3408,
-        672
+        1172
       ],
       "notes": "【2026-08-15更新】AUTO-COM-001の実際の戻り値形式（`{success, text, model, stopReason, usage}`、KNW-001・AUTO-CNT-002の既存実装で確認済みの契約）に合わせてレスポンス解析ロジックを変更した。success!==trueまたはtext欠落時は即座にthrowし、不完全なダイジェスト配信を防ぐ。"
     },
@@ -644,7 +644,7 @@
       "typeVersion": 2,
       "position": [
         3648,
-        672
+        1172
       ],
       "notes": "[要インスタンス確認] 出典（タイトル・URL・発行日）を常に保持し、AI生成・編集主体を明示する免責文言を付与する設計（メイの設計書3節、リョウの推奨案4を反映）。単一のダイジェストアイテムを返すことで、後続のSlack/Gmail/Notionが記事数分重複実行されないようにしています。"
     },
@@ -664,7 +664,7 @@
       "typeVersion": 2.2,
       "position": [
         3888,
-        464
+        964
       ],
       "webhookId": "cd8a914e-dd4e-4929-93fe-ac29d79291e1",
       "notes": "[要インスタンス確認][要公式確認] Slackノードのresource/operation名（\"message\"/\"post\"想定）・channelIdのresourceLocator構造は今回未確認です。既定の配信先（設計書どおり）。"
@@ -699,7 +699,7 @@
       "typeVersion": 2.2,
       "position": [
         3888,
-        672
+        1172
       ],
       "notes": "[要インスタンス確認] 既定はfalse（設計書どおり、メール出力は任意）。"
     },
@@ -716,7 +716,7 @@
       "typeVersion": 2.1,
       "position": [
         4128,
-        624
+        1124
       ],
       "webhookId": "4d084228-05bc-4b1e-9a7b-9f5dff602549",
       "notes": "resource=draft, operation=create は T28(2026-07-28)のn8n公式ドキュメント確認済みパターン（Gmail Draft作成＝送信しない）を踏襲。typeVersion・添付方法は今回未再確認のため[要インスタンス確認]。送信は行わず、下書きの作成のみ。"
@@ -729,7 +729,7 @@
       "typeVersion": 1,
       "position": [
         4128,
-        720
+        1220
       ],
       "notes": "createGmailDraft=falseの場合の分岐終端。"
     },
@@ -763,7 +763,7 @@
       "typeVersion": 2.2,
       "position": [
         3888,
-        864
+        1364
       ],
       "notes": "[要インスタンス確認] 既定はfalse（設計書どおり、Notion出力は任意）。"
     },
@@ -786,7 +786,7 @@
       "typeVersion": 2.2,
       "position": [
         4128,
-        816
+        1316
       ],
       "notes": "[要インスタンス確認][要公式確認] Notionノードのresource/operation/プロパティ設定キー（propertiesUi等）はn8nバージョンにより差異が大きく、今回一次確認できていません。既定OFF（低リスク）。本番化時は必ず実インスタンスで構造確認してください。"
     },
@@ -798,7 +798,7 @@
       "typeVersion": 1,
       "position": [
         4128,
-        928
+        1428
       ],
       "notes": "appendToNotion=falseの場合の分岐終端。"
     },
@@ -810,7 +810,7 @@
       "typeVersion": 3,
       "position": [
         4368,
-        560
+        1060
       ],
       "notes": "[要インスタンス確認] 3つの並列配信ブランチ（Slack/Gmail/Notion）が個別に既読ログ更新ノードへ直結すると、ログ更新が最大3回重複実行されてしまう（二重実行防止・冪等性の観点で問題）ため、Mergeノードで同期させてから既読ログ更新に進む設計にしています。"
     },
@@ -822,7 +822,7 @@
       "typeVersion": 3,
       "position": [
         4608,
-        672
+        1172
       ],
       "notes": "[要インスタンス確認] 上記と同じ理由。3ブランチ目（Notion）も合流させてから1回だけ既読ログを更新します。"
     },
@@ -836,7 +836,7 @@
       "typeVersion": 2,
       "position": [
         4848,
-        672
+        1172
       ],
       "notes": "[要インスタンス確認] Merge後のアイテムはSlack/Gmail/Notion各ノードのレスポンスで上書きされている可能性があるため、記事一覧は\"Code: Assemble Digest\"ノードの出力を$('...')で直接参照します（Mergeノードは同期タイミングの制御にのみ使用）。"
     },
@@ -867,7 +867,7 @@
       "typeVersion": 4.5,
       "position": [
         5088,
-        672
+        1172
       ],
       "notes": "[要インスタンス確認][要公式確認] append操作のresource/columns(mappingMode)構造は今回未確認。1回の実行で新着記事の数だけ行を追加する想定。"
     }
