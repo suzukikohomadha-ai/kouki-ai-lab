@@ -363,7 +363,7 @@
       "parameters": {
         "documentId": {
           "mode": "list",
-          "value": "[ユーザー設定] Google SheetのドキュメントID"
+          "value": "1pnoT8HksEVvwt_jEulHk-bg_ikTQ20L0ECyBS1tCgSw"
         },
         "sheetName": {
           "mode": "list",
@@ -379,7 +379,7 @@
         528,
         1508
       ],
-      "notes": "[要インスタンス確認][要公式確認] Google Sheetsノードのresource/operation/documentId(resourceLocator)構造は今回のセッションで一次確認していません。ユーザーは事前にarticleUrl/sourceName/distributedAtの列を持つシートを用意する必要があります（Sticky Note参照）。"
+      "notes": "[要インスタンス確認][要公式確認] Google Sheetsノードのresource/operation/documentId(resourceLocator)構造は今回のセッションで一次確認していません。【2026-08-15更新・実機テスト用】documentIdを実機テスト用に新規作成したスプレッドシート（`articleUrl,sourceName,distributedAt`のヘッダー行のみ、Google Drive連携で作成済み）の実IDに差し替えた。sheetName（現在の値`DistributionLog`）は新規作成時の既定タブ名（`Sheet1`または`シート1`等）と一致しない可能性が高い。n8n UI上でCredential割当後、実際のタブ名をドロップダウンから選択し直すか、スプレッドシート側のタブ名を`DistributionLog`に変更してください。"
     },
     {
       "parameters": {
@@ -866,7 +866,7 @@
         "operation": "append",
         "documentId": {
           "mode": "list",
-          "value": "[ユーザー設定] Google SheetのドキュメントID"
+          "value": "1pnoT8HksEVvwt_jEulHk-bg_ikTQ20L0ECyBS1tCgSw"
         },
         "sheetName": {
           "mode": "list",
