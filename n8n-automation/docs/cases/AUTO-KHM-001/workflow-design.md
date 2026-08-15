@@ -80,17 +80,50 @@
 ## 未確認事項（本書作成時点でこのセッションからは解消できないもの）
 
 - このワークフローがいつ・誰によって・どのような経緯で作成されたか
-- 実際にどのRSSソースを使う想定か（プレースホルダーのみで実ソース未設定）
-- AI/LLMプロバイダとして何を使う想定か（Anthropic API・AUTO-COM-001経由の想定になっていない点を含む）
-- Slackチャンネル・Gmail送信先・Notion DB等、実際の配信先
+- Slackチャンネル・Gmail送信先・Notion DB等、実際の配信先（下記「①内製運用の進捗」参照。社長確認が必須）
 - コンパニオンError Workflowの本体への割当状況（n8n UI上の確認が必要）
 - レイアウト警告11件の解消（機能に影響しない見た目上の課題）
 
+## 2026-08-15：①②を並行して進めた記録
+
+社長より①コホマダ内製運用②Creator Hub提出、の両方を目的とすると確認が取れたため、`AUTO-KHM-001`から2つの派生ファイルを作成した。
+
+### ①内製運用向け：`workflows/draft/AUTO-KHM-001_japan-regulatory-news-digest.internal.json`
+
+**実RSSソース3件を調査・実アクセスで確認済み**（2026-08-15、curlで直接アクセスしHTTP 200・直近日付のエントリを確認）：
+
+| ソース | フィードURL | 利用規約 |
+|---|---|---|
+| 経済産業省（METI）ニュースリリース | `https://www.meti.go.jp/ml_index_release_atom.xml` | 公共データ利用規約（PDL1.0）準拠を確認（`https://www.meti.go.jp/main/rules.html`）。出典明記の上での編集・要約・再配布が可能 |
+| 法務省 新着・更新情報 | `https://www.moj.go.jp/news.xml` | PDL1.0準拠を確認（`https://www.moj.go.jp/hisho06_00280.html`）。同上 |
+| 内閣府 報道発表新着情報 | `https://www.cao.go.jp/rss/news.rdf` | PDL1.0準拠を確認（`https://www.cao.go.jp/notice/rule.html`）。同上 |
+
+**検討したが採用しなかった候補**：JETRO（ジェトロ）はコホマダの事業領域（貿易・海外展開支援）と直結し内容面では最も魅力的だが、利用規約（`https://www.jetro.go.jp/biznews/faq/article_use.html`）が「転載・複製・編集・加工…をご遠慮いただいております」と明記し事前許諾を原則必須としているため、AI要約・自動再配布との適合性が不明。追加を希望する場合はJETRO側への事前確認を推奨（本ドラフトでは意図的に含めていない）。いずれもPDLと異なり本セッションでは実務上の許諾可否を確認できていない点に留意。
+
+**AI/LLM呼び出しをAUTO-COM-001（共通Claude API呼び出しサブワークフロー、実ID`r0IZ2ByR7MX4RWCp`、2026-08-15に`active:true`を再確認）経由に変更**：プレースホルダーのHTTP Requestを廃し、Execute Workflowノード（typeVersion 1、AUTO-CNT-002が実機確認済みの「プレーンworkflowId・全渡し」形式を踏襲）に置き換えた。モデルは`claude-sonnet-5`（翻訳精度を優先）、temperatureは0.3（事実ベースの要約でハルシネーションを抑制）を初期値として設定。
+
+**引き続き社長確認が必要な項目（実配信先）**：
+- `slackChannel`（実際のSlackワークスペース・チャンネル名）
+- `digestRecipientEmail`（Gmail下書き機能をONにする場合の想定表示用ラベル。実際の送信先は下書き作成者＝Gmail Credentialの持ち主のアカウントになる点に注意）
+- `appendToNotion`をONにする場合のNotion DB ID
+
+これらが確定すればCredential作成（要承認）→`n8n-quality-auditor`監査→本番登録、に進められる状態。
+
+### ②Creator Hub提出向け：`workflows/draft/PUB-004_japan-regulatory-news-digest.json`
+
+元のプレースホルダーのみの汎用版を`PUB-004`として複製（内容は無改変、ワークフロー名のみPUB命名規則に合わせて`Summarize Japan regulatory and government news with Claude and distribute the digest`に変更）。**現時点では`workflows/draft/`に留め置き、`workflows/validated/`へは格上げしていない**（PUB-001〜003は実インスタンスへの登録・実機テストを経てから`validated/`へ格上げされているが、`PUB-004`はまだ登録・実機テストを一切行っていないため、同列に扱うと実態と異なる）。
+
+**提出前に検討が必要な点**：
+- `PUB-003`（RSS要約→Slack投稿）と機能領域が重なる。`PUB-004`の差別化点は、複数ソース対応・Google Sheetsでの重複排除・翻訳機能・Slack/Gmail/Notionの複数配信先・「日本の規制・行政ニュース」という特定ニッチへの特化、と考えられるが、Creator Hub提出の価値があるかは社長判断。
+- レイアウト警告11件（Sticky Noteの重なり・間隔不足）の解消。
+- 実機登録・実機テストの実施（要承認）を経てから`workflows/validated/`への格上げと`*.creator-hub-submission.md`の作成を検討する。
+
+### 静的検証結果（両ファイルとも2026-08-15実施）
+
+- `AUTO-KHM-001_japan-regulatory-news-digest.internal.json`：`validate-workflow.mjs`0エラー・警告17件（既存のレイアウト警告のみ、AI呼び出し変更による新規警告なし）。ノード数40・接続の整合性（孤立参照なし）をスクリプトで確認済み。`check-secrets.mjs`は実government URLの誤検知7件＋プレースホルダーemail1件のみ（実値の混入なし、目視確認済み）。
+- `PUB-004_japan-regulatory-news-digest.json`：元のプレースホルダー版から名称のみ変更のため、検証結果は committed 済みの`AUTO-KHM-001_japan-regulatory-news-digest.json`と同一（0エラー・警告17件、check-secrets 1件＝プレースホルダーemail誤検知のみ）。
+
 ## 次のフェーズ
 
-`n8n-automation/CLAUDE.md`のPhase 0〜10に沿えば、本ワークフローは実質「Phase 3（設計）〜Phase 4（実装）」相当まで進んだ状態で見つかったが、**要件定義（Phase 2）に相当する正式なヒアリングを経ていない**。
-
-2026-08-15、社長より①コホマダ内製運用②Creator Hub提出、の両方を目的とすると確認が取れたため、今後は2系統で並行して進める：
-
-- **内製運用に向けて**：実RSSソース・AI/LLMプロバイダ・実配信先（Slack/Gmail/Notion）の選定について社長へのヒアリングを行い、Credential作成・割当（要承認）→`n8n-quality-auditor`監査（AUTO-CNT-002と同様の観点）→本番登録、の順で進める。
-- **Creator Hub提出に向けて**：現状のプレースホルダーのみの状態は提出用途にはむしろ適しているため、PUB-001〜003と同様の手順（`PUB`番号の採番、`workflows/validated/`への格上げ、実機テスト、`*.creator-hub-submission.md`の作成）を検討する。ただし提出前に、レイアウト警告11件の解消と、AI呼び出しがAUTO-COM-001のような社内共通サブワークフローに依存していないか（依存していれば汎用テンプレートとして提出前に切り離す必要がある）の確認が必要。
+- **内製運用**：上記「引き続き社長確認が必要な項目」の確定 → Credential作成・割当（要承認）→ `n8n-quality-auditor`監査 → 本番登録（要承認）。
+- **Creator Hub提出**：`PUB-003`との差別化について社長判断 → レイアウト調整 → 実機登録・テスト（要承認）→ `workflows/validated/`格上げ・提出資料作成。
