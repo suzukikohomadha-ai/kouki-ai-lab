@@ -1,5 +1,5 @@
 window.AI_STATE = {
-  updatedAt: "2026-08-15T12:15:00+09:00",
+  updatedAt: "2026-08-15T13:00:00+09:00",
 
   setup: {
     completed: true,
@@ -86,7 +86,7 @@ window.AI_STATE = {
     { id: "T58", title: "日本進出n8nワークフロー案：外国企業の日本市場参入における業務課題整理（コホマダ）", owner: "レン", status: "review", progress: 100, hint: "kohomada-business-context（日本進出支援）を踏まえ、法人設立・許認可・現地調査・商談後フォロー・規制モニタリングの5領域で一般化した業務課題を整理。特定の実案件データは使用していない仮説ベースの整理。社長のご確認をお願いします", cmd: "T58を確認しました", log: [ { time: "now", text: "ジンより依頼を受け、コホマダの日本進出支援領域の業務課題を5領域に整理。統合レポートに反映" } ], deliverables: [ { title: "日本進出n8nワークフロー案（統合レポート）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v1.md" } ] },
     { id: "T59", title: "日本進出n8nワークフロー案：ワークフロー設計方針・自動化アイデア具体化（コホマダAI）", owner: "メイ", status: "review", progress: 100, hint: "T58の業務課題を踏まえ5案を概念設計（トリガー・ノード構成・連携サービスの概要）。ノードの正式名称・typeVersion・料金プランは未確認のため[要公式確認]。実装（JSON化）はまだ行っていない", cmd: "T59を確認しました", log: [ { time: "now", text: "T58を受け、5件のワークフロー概念設計を作成。費用対効果・承認ポイントの観点も付記" } ], deliverables: [ { title: "日本進出n8nワークフロー案（統合レポート）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v1.md" } ] },
     { id: "T60", title: "日本進出n8nワークフロー案：実装可能性の技術フィードバック（コホマダAI）", owner: "エイト", status: "review", progress: 60, hint: "メイの5案について実現可能性の一次見立てのみ実施（フル実装は次フェーズ）。本セッションはWebSearchが使えずn8n公式ノード仕様を確認できていないため、正式なtype/typeVersion確認とn8n-automation/配下のn8n-schema-researcherによる仕様検証が実装着手前に必須", cmd: "T60を確認しました", log: [ { time: "now", text: "5案とも一般的なn8n標準ノード（Schedule Trigger/Webhook/RSS Read/HTTP Request/AI Agent等）の組み合わせで概ね実現可能と見立てたが、正式仕様は未確認のまま" } ], deliverables: [ { title: "日本進出n8nワークフロー案（統合レポート）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v1.md" } ] },
-    { id: "T62", title: "n8n公式提出用：案A（日本の規制・行政ニュース多言語ダイジェスト）詳細設計", owner: "メイ", status: "doing", progress: 10, hint: "T61(v3)で優先候補に確定した案Aの詳細設計に着手。T27/T28で確認済みのノード仕様、および既存公開テンプレ（DeepL翻訳ダイジェスト等）の先例を踏まえた業務自動化アーキテクチャを設計中", cmd: "", log: [ { time: "now", text: "社長より『進めてください』と承認を得て、案Aの詳細設計に着手" } ], deliverables: [] },
+    { id: "T62", title: "n8n公式提出用：案A（日本の規制・行政ニュース多言語ダイジェスト）詳細設計", owner: "メイ", status: "review", progress: 80, hint: "設計完了。トリガー→収集→重複排除→AI要約→DeepL翻訳→複数チャネル配信→既読ログ更新の7段階＋別建てエラーワークフローで設計。著作権対策（RSS提供元限定・出典常時保持・免責文言）とSticky Note配置方針も整理。ただしノードの正式type/typeVersion・収集元サイトの具体候補は未確定。メイは実装（エイト）へ進める前に社長の承認を求めている", cmd: "この方針で実装に進めてください／収集元のリサーチを先に／修正したい点がある", log: [ { time: "now", text: "T61(v3)の優先候補を受けて、業務フロー・ノード構成・著作権対策・Sticky Note方針・費用感・エイトへの引き継ぎ内容を設計。logs/kohomada_2026-08-15_日本進出n8nワークフロー案A_設計書_v1.mdを作成" } ], deliverables: [ { title: "案A 業務自動化アーキテクチャ設計書", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案A_設計書_v1.md" } ] },
     { id: "T61", title: "日本進出n8nワークフロー案：統合レポート作成（コホマダ・n8n公式提出前のアイデア出し）", owner: "ジン", status: "review", progress: 97, hint: "v3完成：社長のご指示で「提出済みワークフロー」をWebSearchで調査したところ、規制・コンプライアンス監視×AI要約×多言語（DeepL翻訳）という、案Aとほぼ同型の先例が複数見つかった。優先順位を案A（規制・行政ニュース多言語ダイジェスト）に引き上げ。ただし全てWebSearchスニペット経由で原文未読のため、社長ご自身でURLを開いて内容一致を確認いただく必要あり。creators.n8n.ioの審査基準原文はまだ未確認", cmd: "URLを開いて確認しました、案Aで進めてください／他の案がいい／原文確認できる環境を待つ", log: [ { time: "now", text: "社長より『提出済みのワークフローを確認して参考にしてください』と指示。n8n.io本体もEGRESS_BLOCKEDのためWebFetchは使えず、WebSearchで規制監視・多言語ダイジェスト・複数ツール統合系の既存テンプレート事例を検索" }, { time: "now", text: "規制コンプライアンス監視系3件、英語→日本語DeepL翻訳ダイジェスト1件、Notion/Slack/Gmail等の複数ツール統合系3件のURL・特徴を収集。案Aに直接近い先例が最多と判明し、優先順位をv2から更新したv3を作成" } ], deliverables: [ { title: "日本進出n8nワークフロー案（統合レポートv1）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v1.md" }, { title: "リサ調査（二次情報）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_リサ調査_v1.md" }, { title: "日本進出n8nワークフロー案（統合レポートv2・過去案件の知見反映）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v2.md" }, { title: "日本進出n8nワークフロー案（統合レポートv3・既存公開テンプレ事例反映）", type: "md", at: "now", path: "logs/kohomada_2026-08-15_日本進出n8nワークフロー案_v3.md" } ] },
   ],
   proposals: [],
@@ -94,7 +94,7 @@ window.AI_STATE = {
   employees: [
     { name: "ジン", status: "review", taskId: "T61" },
     { name: "リサ", status: "review", taskId: "T57" },
-    { name: "メイ", status: "doing", taskId: "T62" },
+    { name: "メイ", status: "review", taskId: "T62" },
     { name: "レン", status: "review", taskId: "T58" },
     { name: "サトル", status: "review", taskId: "T41" },
     { name: "カエデ", status: "review", taskId: "T47" },
@@ -177,6 +177,7 @@ window.AI_STATE = {
   ],
 
   activity: [
+    { time: "now", who: "メイ", text: "🏗️ T62完了：案A（規制・行政ニュース多言語ダイジェスト）の業務自動化アーキテクチャを設計しました。著作権対策（RSS提供元限定・出典常時保持・免責文言）まで整理済みです。実装（エイト）に進める前に、社長のご承認をお願いします" },
     { time: "now", who: "アイ", text: "🔍 T61 v3更新：社長のご指示で既存の公開n8nテンプレートを検索したところ、規制コンプライアンス監視×AI要約×多言語翻訳という、案Aとほぼ同型の先例が複数見つかりました。優先候補を案Aに引き上げました。全て検索結果ベースのため、URLを開いての内容確認をお願いしたいです" },
     { time: "now", who: "アイ", text: "📋 T61 v2更新：n8n公式サイトへのアクセスがEGRESS_BLOCKEDで確認できなかったため、社長のご指示で過去案件（T27/T28）を確認したところ、当時一次確認済みのノード仕様（Gmail下書き作成・Send and Wait for Approval等）が見つかりました。これを反映し、案C’（商談リード多言語フォロー下書き）・案B’（法人設立進捗トラッカー）を優先候補に再設計しました。n8n公式の審査基準そのものは引き続き未確認です" },
     { time: "now", who: "リサ", text: "🔍 T57：n8n公式サイトへの直接アクセス（WebFetch）が本セッションで全面ブロックされ、WebSearchの要約のみ取得できました。提出窓口（creators.n8n.io）は特定できましたが、審査基準の核心部分は個人ブログ由来の弱い情報にとどまり未確定です" },
