@@ -153,7 +153,6 @@
           '<div class="of-dlg of-dlg-office">' +
             '<span class="of-tag" style="background:' + AI_COLOR + ';color:#FFFDF5">' + esc((C().secretary || {}).name || "アイ") + '</span>' +
             '<p data-dlgai>社長、いまの状況をご案内しますね。</p>' +
-            '<span class="of-nxt">▼</span>' +
           '</div>' +
           // 会社の動き（ティッカー）：秘書の吹き出しの隣（下部）に配置
           '<button class="of-tick of-tick-floor" data-act="activity" title="クリックで会社の動きの履歴">' +
@@ -296,18 +295,64 @@
   }
 
   // ===== 部屋移動 =====
+  // トラック（.of-trk）が表示枠（.of-vp）よりどれだけ幅広いか＝はみ出し量ぶんだけ左へ寄せると、
+  // 2部屋目（社長室）がちょうど表示枠の右端に揃う。この量はCSSの部屋幅比率（デスクトップ＝社長室が
+  // オフィスの1/2幅／スマホ＝styles内のメディアクエリで同幅に変更）にそのまま追従するため、
+  // 画面幅ごとに違う比率をJS側で数値のまま持たなくてよい（%のマジックナンバーをやめ、実測pxで揃える）。
+  function applyRoomTransform(instant) {
+    var trk = q("[data-trk]");
+    var vp = q("[data-vp]");
+    if (!trk) return;
+    if (instant) trk.style.transition = "none";
+    if (curRoom && vp) {
+      var overflowPx = trk.getBoundingClientRect().width - vp.getBoundingClientRect().width;
+      trk.style.transform = "translateX(-" + Math.max(0, overflowPx) + "px)";
+    } else {
+      trk.style.transform = "translateX(0)";
+    }
+    if (instant) setTimeout(function () { trk.style.transition = ""; }, 30);
+  }
+  // 画面回転・ウィンドウ幅変更で部屋幅比率（メディアクエリ）が切り替わったときも揃え直す
+  window.addEventListener("resize", function () { applyRoomTransform(true); placeQuickMenuForViewport(); });
+
+  // クイックメニューの置き場所：デスクトップでは of-vp（非スクロールの外枠）基準で浮かせ、
+  // 中に見えている壁の高さを実測して「壁のすぐ下」に来るよう毎回位置を計算し直している
+  // （updateQuickMenuPos）。これは壁が短いデスクトップでは機能するが、壁を縦積みにした
+  // スマホでは壁が非常に背高になり、中身（壁＋床）だけが独自にスクロールする一方で
+  // クイックメニューは外枠に固定されたままになるため、スクロール位置によって社員や
+  // タスク吹き出しと重なって見えてしまう（実機で確認）。
+  // 同じ問題は以前アイの吹き出し・会社の動きでも起きており、床(.of-floor)の中の通常の
+  // コンテンツにすることで解決している（build()内のコメント参照）。クイックメニューにも
+  // 同じ解決策を適用し、スマホでは表示中の部屋の床の先頭へ実際にDOM移動させ、
+  // スクロールに追従する通常のコンテンツにする。デスクトップでは元の浮遊表示のまま。
+  function placeQuickMenuForViewport() {
+    var qm = q("[data-quickmenu]");
+    if (!qm) return;
+    var mobile = window.innerWidth <= 480;
+    if (!mobile) {
+      var vp = q("[data-vp]");
+      var navwrap = q("[data-navwrap]");
+      if (vp && qm.parentNode !== vp) vp.insertBefore(qm, navwrap);
+      qm.classList.remove("of-quickmenu-inflow");
+      return;
+    }
+    // 社長室では非表示（.hidden-room）にするため、置き場所もオフィスの床のみでよい
+    if (curRoom) return;
+    var floorEl = q(".of-room.of-ws .of-floor");
+    if (floorEl && qm.parentNode !== floorEl) floorEl.insertBefore(qm, floorEl.firstChild);
+    qm.classList.add("of-quickmenu-inflow");
+  }
+
   function go(n, instant) {
     curRoom = n ? 1 : 0;
-    // クイックメニューは両部屋で表示（横向き・上部固定なので◀ボタンと被らない）
+    // クイックメニューはオフィスのみで表示。社長室には決裁トレイ・資料棚など専用の導線が
+    // 別にあるため、クイックメニューは出さない（ご要望により削除）。
     var qm = q("[data-quickmenu]");
-    if (qm) { qm.classList.remove("hidden-room"); qm.classList.remove("open"); }
-    var trk = q("[data-trk]");
-    if (trk) {
-      if (instant) trk.style.transition = "none";
-      // 社長室は1/2幅：右隣に並ぶ形でスライド（左半分にオフィスの続きが見える）
-      trk.style.transform = curRoom ? "translateX(-33.333%)" : "translateX(0)";
-      if (instant) setTimeout(function () { trk.style.transition = ""; }, 30);
+    if (qm) {
+      qm.classList.toggle("hidden-room", curRoom === 1);
+      qm.classList.remove("open");
     }
+    applyRoomTransform(instant);
     qa("[data-tab]").forEach(function (t) {
       t.classList.toggle("on", +t.getAttribute("data-tab") === curRoom);
     });
@@ -321,6 +366,7 @@
     if (nav) { nav.setAttribute("data-act", act); nav.title = curRoom ? "オフィスへ" : "社長室へ"; }
     if (ar) ar.textContent = curRoom ? "◀" : "▶";
     if (tx) tx.textContent = curRoom ? "オフィス" : "社長室";
+    placeQuickMenuForViewport();
   }
 
   // ===== クリック（イベント委譲） =====
@@ -365,10 +411,28 @@
   // ① 常駐の移動タイプ（wander / patrol / look / stay）
   // ② グリッドベースの1マス移動＋衝突判定＋許可範囲（考えて歩かない。サイコロ＋判定だけ）
   // ③ イベント時のスクリプト上書き（ミーティング招集 → 終わったら自律移動に復帰）
-  var GRID = {
+  var GRID_DESKTOP = {
     0: { x0: 4, y0: 8, cols: 12, rows: 8, tw: 4.2, th: 6.6 },   // オフィスの歩行グリッド（単位:%・細かめ）
     1: { x0: 10, y0: 12, cols: 10, rows: 8, tw: 4.8, th: 6.2 }, // 社長室
   };
+  // スマホ幅用：歩行マスの当たり判定は固定px（約66×94px、キャラ＋名札ぶん）なのに対し、
+  // マス自体は部屋の%指定のため、部屋が狭いほどマスが実寸で詰まり、隣り合う社員の名札や
+  // タスク吹き出しが重なって見えてしまう（実機で確認）。列数（横）は減らして1マスの横幅を
+  // 広げるが、行数（縦）は減らさない。floorの実測高さは社員数（＝床の縦の長さ）で決まり
+  // 上限が無いため、行数を減らすと1マスの縦幅（th）が実測pxで際限なく巨大化し、歩き回る
+  // 社員同士が数百px単位で離れて配置される事故になった（実機で確認・行数4→8に戻して解消）。
+  // 当たり判定は横幅約66px（コメント参照）。隣接マス（差1）は配置禁止なので、実際に
+  // 2人が同時に存在しうる最小間隔は「2マスぶんの実測px」になる。cols:6（1マス約31px）
+  // だと2マスでも63px弱にしかならず、当たり判定の66pxを下回って見た目には重なって
+  // しまっていた（実機で確認）。横の総幅(x0〜x0+cols*tw)は変えず、列数だけさらに絞り、
+  // 2マスぶんが確実に66pxを超えるようにする。
+  var GRID_MOBILE = {
+    0: { x0: 4, y0: 8, cols: 4, rows: 8, tw: 12.6, th: 6.6 },
+    1: { x0: 10, y0: 12, cols: 4, rows: 8, tw: 12.0, th: 6.2 },
+  };
+  var GRID = {};
+  Object.defineProperty(GRID, "0", { get: function () { return (window.innerWidth <= 480 ? GRID_MOBILE : GRID_DESKTOP)[0]; } });
+  Object.defineProperty(GRID, "1", { get: function () { return (window.innerWidth <= 480 ? GRID_MOBILE : GRID_DESKTOP)[1]; } });
   // 社員indexごとの移動タイプ（リサ:歩行 コトハ:歩行 サトル:その場で回転 ハック:巡回 ミク:歩行 …）
   var MOVE_TYPES = ["wander", "wander", "look", "patrol", "wander", "look"];
   var PATROL_ROUTE = [{ d: 2, n: 3 }, { d: 1, n: 2 }, { d: 0, n: 3 }, { d: 3, n: 2 }]; // 右3→下2→左3→上2
@@ -469,6 +533,11 @@
   function updateQuickMenuPos() {
     var qm = q("[data-quickmenu]");
     if (!qm) return;
+    // スマホ幅では壁ダッシュボード（タスク／為替／予定）を縦積みにしているため壁の実測高さが
+    // 非常に大きくなることがあり、素直に追従させると画面下の方（社員フロアや秘書の吹き出し・
+    // ティッカーのあたり）までクイックメニューが押し出されて重なってしまう。狭い画面では
+    // 壁の高さを追いかけるのをやめ、CSS側の固定位置（縦中央・左端）に任せる。
+    if (window.innerWidth <= 480) { qm.style.top = ""; return; }
     var wallEl = q(".of-room.of-ws .of-wall");
     var h = wallEl ? wallEl.getBoundingClientRect().height : 240;
     qm.style.top = (Math.max(h, 240) + 12) + "px";

@@ -419,7 +419,7 @@ a.row:hover { background: #F1ECDF; transform: translateY(-1px); }
 /* 1fr は「0まで縮んでよい」ではなく、既定では列内の中身の最小コンテンツ幅（＝折り返し無しの役職名の文字幅）
    より縮まない。minmax(0,1fr) にして初めて本当に縮められるようになる。これが無かったため、
    部屋が狭いとき、社員の役職名の分だけデスク一式が部屋の外へはみ出していた（横スクロールバーの原因）。 */
-.of-desks { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+.of-desks { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px 10px; align-items: end; max-width: 482px; margin-inline: auto; }
 .of-side { width: 230px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
 /* 壁のダッシュボード：左[タスク｜売上＋ティッカー]／右[今日の予定]の2カラム。
@@ -730,7 +730,8 @@ a.row:hover { background: #F1ECDF; transform: translateY(-1px); }
 .of-cols { display: flex; gap: 6px; }
 .of-col { flex: 1; text-align: center; background: #F7F3EA; border-radius: 12px; padding: 8px 2px 7px; }
 .of-col b { display: block; font-size: 19px; color: var(--ink); line-height: 1.1; }
-.of-col label { font-size: 10px; color: var(--ink-2); cursor: pointer; font-weight: 700; }
+.of-col label { display: block; font-size: 10px; color: var(--ink-2); cursor: pointer; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .of-col.rev { background: var(--caution-t); }
 .of-col.rev b { color: var(--caution-ink); }
 .of-bhint { display: block; margin-top: 9px; background: var(--caution-t); color: var(--caution-ink);
@@ -981,6 +982,90 @@ a.row:hover { background: #F1ECDF; transform: translateY(-1px); }
   .of-side .of-board { flex: 1.4; }
   .of-side .of-minis { flex: 1; }
   .of-secdesk { right: 2px; }
+}
+
+/* スマホ幅：社長室はデスクトップでは「オフィスの1/2幅」で右に半分だけ見える演出だが、
+   スマホ幅でそれをやると社長室内の什器（社長机・秘書机・紋章・決裁トレイ・本棚）が
+   詰まって重なってしまう。スマホでは社長室もオフィスと同じ全幅にし、1部屋ずつ
+   フルスクリーンで切り替える通常のスライド画面にする（トラック幅・部屋幅比率のみ変更。
+   実際にスライドさせる量は office.js 側で実測pxから自動計算しているので、ここを
+   変えるだけで自動的に揃う）。 */
+@media (max-width: 600px) {
+  .of-trk { width: 200%; }
+  .of-ws, .of-boss { width: 50%; }
+}
+
+/* スマホ幅：床下部に絶対配置している「秘書アイの吹き出し」「会社の動き（ティッカー）」
+   「提案箱・納品BOXの棚」は、横並び前提のpx固定オフセット（left/right同時指定）のため、
+   画面が狭いと確保幅がマイナスになって潰れる／重なる。狭い画面では横並びをやめて
+   縦に積み、確保領域（.of-ws .of-floor の下余白）も広げる。 */
+@media (max-width: 480px) {
+  /* 縦積みの間隔：アイの吹き出し(.of-dlg-office 高さ約82px)と会社の動き(.of-tick-floor 高さ約81px)を
+     bottom:172px / bottom:92px で積んでいたが、172-92=80pxしか無く、それぞれの実高さ(約81〜82px)を
+     ほぼ吸収しきれず隙間が1px程度しか残らなかった（実機で常に密着＝重なって見える、として報告あり）。
+     各要素の実測高さを踏まえ、明確な余白（14px以上）が残るよう間隔を取り直す。 */
+  .of-ws .of-floor { padding-bottom: 300px; }
+  .of-dlg-office { left: 10px; right: 10px; bottom: 190px; width: auto; max-width: none; }
+  .of-ws .of-tick-floor { left: 10px; right: 10px; bottom: 90px; width: auto; }
+  .of-wallshelf { left: 10px; right: 10px; bottom: 14px; justify-content: center; }
+
+  /* タスク一覧の行：アイコン・ステータス・担当者バッジがどれも縮まない固定幅のため、
+     横並びのままだとタイトル（.tl-ttl）に残る幅がほぼ0になり、日本語が1文字ずつ縦に
+     折り返される事故が起きる（実機で確認）。狭い画面では3段（アイコン／タイトル／バッジ列）
+     に積み直し、タイトルには行の全幅を渡す。 */
+  .tl-row { flex-wrap: wrap; row-gap: 6px; }
+  .tl-mark { order: 0; }
+  .tl-ttl { order: 1; flex-basis: 100%; }
+  .tl-clip, .tl-st, .tl-owner, .tl-chev { order: 2; }
+  .tl-detail { padding-left: 8px; }
+
+  /* 壁ダッシュボード（タスクボード／為替／今日の予定）：flex-basis:0の子同士は
+     flex-wrapが実質効かず、常に3列に収まるまで押し縮められる。結果、為替の数値
+     （例：163.93円）が実機で「1.」まで潰れて読めなくなっていた。狭い画面では
+     素直に縦積みにし、それぞれに壁の全幅を渡す。 */
+  .of-ws .of-wallpanel { flex-direction: column; }
+  .of-ws .of-wallmain, .of-ws .of-wallpanel > .of-calboard { flex-basis: auto; width: 100%; }
+  .of-ws .of-dashrow { flex-direction: column; }
+  .of-ws .of-dashrow > .of-board, .of-ws .of-dashrow > .of-dashcol { width: 100%; }
+
+  /* クイックメニュー：of-vp（非スクロールの外枠）基準で浮かせたまま位置だけ変えても、
+     中身（壁＋床）は独自にスクロールするため、スクロール位置次第で社員やタスク吹き出しと
+     重なってしまう（実機で確認・縦中央固定でも解決しなかった）。office.js側で表示中の部屋の
+     床（.of-floor）へ実際にDOM移動させ、他の要素と同じ「床の中の通常コンテンツ」にしている。
+     ここではその移動後の見た目だけを整える（浮遊配置を解除し、床の先頭に収まる通常表示に）。 */
+  .of-quickmenu.of-quickmenu-inflow {
+    position: static;
+    transform: none;
+    margin: 0 0 14px;
+    align-self: flex-start;
+  }
+
+  /* 待機中に歩き回る社員が重なって見える件（実機で確認）：キャラ本体だけを縮小する対処は
+     いったん試したが、机に着席中の社員（縮小なし）とサイズが不揃いになってしまうため撤回。
+     根本原因である歩行マス目の詰まりは office.js 側（GRID_MOBILE）でマス数を減らして
+     1マスの実寸を広げる方向で対応している。ここでは何もしない。 */
+
+  /* 道具アイコン4つ（ルーティン／事業開発／メール／ニュース）：以前は3列に押し込まれた
+     壁の中で場所を作るためキャプションを消して小さくしていたが、壁が全幅になったことで
+     十分な余白ができたので、4等分で揃えてキャプションも復活させる。 */
+  .of-tool-row { justify-content: space-between; }
+  .of-tool-ic { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 18px; gap: 3px; }
+  .of-tool-cap { display: block; font-size: 9px; }
+
+  /* 社員一覧（3列化はPC版と共通のベース定義に反映済み）：スマホでは列がさらに狭いため
+     余白とラベルだけ詰める。 */
+  .of-desks { gap: 10px 6px; max-width: 100%; }
+  .of-unit .of-np { max-width: 92px; font-size: 10.5px; padding: 2px 10px; }
+
+  /* 「間隔が広すぎる」の正体：待機中で席を外している社員（.is-away）は、キャラ・名札・役職名を
+     visibility:hidden で見えなくしているだけで、レイアウト上の場所（キャラ本体ぶん約62px＋
+     役職名ぶん＋名札用のpadding-top:26px）は空席のまま丸ごと確保され続けていた。
+     結果、机アイコン（高さ30px）だけがぽつんと見え、その上下は「何も無いのに確保されている」
+     余白になっていた（実機で確認・複数人が同時に離席しているとより顕著）。
+     スマホでは離席中のキャラ・役職名を display:none にしてレイアウトからも外し、
+     名札ぶんの上余白も詰めて、机アイコンだけの分だけコンパクトな行にする。 */
+  .of-unit.is-away { padding-top: 4px; }
+  .of-unit.is-away .of-chr, .of-unit.is-away .of-role { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
