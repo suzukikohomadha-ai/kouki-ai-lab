@@ -1,6 +1,6 @@
 {
   "file": "workflows/draft/KNW-001_n8n-template-digest.json",
-  "checkedAt": "2026-08-12T13:09:35.156Z",
+  "checkedAt": "2026-08-15T07:57:21.232Z",
   "errors": [],
   "warnings": [
     "ノード \"Sticky Note: 概要\" が他のどのノードとも接続されていません（孤立ノードの可能性）。",

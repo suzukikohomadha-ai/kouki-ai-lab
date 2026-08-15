@@ -1,0 +1,71 @@
+{
+  "note": "架空のテストデータ。[実行環境なしのため未テスト]。api.n8n.io/templates/search・/categoriesの実レスポンス構造は2026-08-12にリサ・エイトが実アクセスで確認済みだが、以下の入力例はその確認済みフィールド構成をもとに作成した架空のサンプルであり、実際のワークフロー実行結果ではない。",
+  "cases": [
+    {
+      "id": "normal-1",
+      "description": "正常系：1ページで収まる件数・新規テンプレート1件が要約・書き込みまで到達",
+      "input": {
+        "search_page1": { "workflows": [ { "id": 9001, "name": "架空テンプレートA", "description": "架空の説明文A", "nodes": [ { "displayName": "HTTP Request" } ], "createdAt": "2026-08-01T00:00:00.000Z", "price": 0, "user": { "name": "架空ユーザーA" } } ], "totalWorkflows": 1 },
+        "existingSheetRows": []
+      },
+      "expected": "hasMore=falseで1ページのみ取得、差分判定で新規（changeType='new'）と判定、Execute Workflow経由で要約成功、行データ整形（成功時）を通ってGoogle Sheets書き込みまで到達する"
+    },
+    {
+      "id": "pagination-2page",
+      "description": "ページネーション：totalWorkflowsがrows上限（250）を超え2ページ目まで取得が必要",
+      "input": {
+        "search_page1": { "workflows": "250件の架空データ（省略）", "totalWorkflows": 300 },
+        "search_page2": { "workflows": "50件の架空データ（省略）", "totalWorkflows": 300 }
+      },
+      "expected": "1ページ目でhasMore=true（250*1 < 300）となりWait経由で2ページ目を取得、2ページ目でhasMore=false（250*2 >= 300）となりループを抜けて収集結果をitems化へ進む"
+    },
+    {
+      "id": "diff-unchanged",
+      "description": "差分判定：既存シートに同一テンプレIDかつ説明文ハッシュも一致する行がある",
+      "input": {
+        "fetched": { "id": 9002, "description": "変化なしの説明文" },
+        "existingSheetRows": [ { "テンプレID": "9002", "説明文ハッシュ": "={{simpleFingerprintOf('変化なしの説明文')}}" } ]
+      },
+      "expected": "既存かつフィンガープリント一致のため『新規・更新判定』のtoProcessに含まれず、Loop Over Itemsに渡らない（AI要約コストが発生しない）"
+    },
+    {
+      "id": "diff-updated",
+      "description": "差分判定：既存テンプレIDだが説明文が変化している（changeType='update'）",
+      "input": {
+        "fetched": { "id": 9003, "description": "更新後の説明文" },
+        "existingSheetRows": [ { "テンプレID": "9003", "説明文ハッシュ": "旧フィンガープリント（不一致想定）" } ]
+      },
+      "expected": "フィンガープリント不一致のためchangeType='update'としてtoProcessに含まれ、再要約・再書き込み（appendOrUpdateでの上書き）まで到達する"
+    },
+    {
+      "id": "missing-id-name",
+      "description": "境界値：workflows配列内にidまたはnameが欠損した要素が混在",
+      "input": { "search_page1": { "workflows": [ { "id": 9004, "name": "正常な要素" }, { "description": "id/nameなしの壊れた要素" } ], "totalWorkflows": 2 } },
+      "expected": "壊れた要素はskippedCountとしてカウントされfetchErrorsに記録されるが、正常な要素の処理は継続する（全体は失敗させない）"
+    },
+    {
+      "id": "fetch-fail-retry-exhausted",
+      "description": "異常系：テンプレート検索の3回リトライがすべて失敗",
+      "input": { "search_page1_mockStatus": 500, "retryCount": 3 },
+      "expected": "IF: 取得成功判定でerror分岐に入り、致命的エラー送出（取得失敗）ノードでthrowされる。本番投入後はError Workflow設定（AUTO-COM-002割当想定、未割当）に委譲される"
+    },
+    {
+      "id": "total-workflows-missing",
+      "description": "境界値：レスポンスにtotalWorkflowsフィールド自体が含まれない",
+      "input": { "search_page1": { "workflows": [ { "id": 9005, "name": "架空テンプレートB" } ] } },
+      "expected": "totalWorkflows===nullとなりhasMore=falseの安全側フォールバックが適用され、fetchErrorsに'totalWorkflows missing from response'が記録される。致命的エラーにはせず、その時点までの取得結果で処理を継続する"
+    },
+    {
+      "id": "summary-fail",
+      "description": "異常系：Execute Workflow（AUTO-COM-001呼び出し）がcontinueOnFailでエラーを返す",
+      "input": { "execWorkflowResult": { "error": "架空のAnthropic APIエラー" } },
+      "expected": "IF: 要約成功判定のerror分岐に入り、行データ整形（要約失敗時）で特徴要約列に「要約失敗（後日再試行）」を記録した行が、それでもGoogle Sheets書き込みまで到達する（ワークフロー全体は継続）"
+    },
+    {
+      "id": "sheets-write-fail",
+      "description": "異常系：Google Sheets書き込みノード自体がcontinueOnFailでエラー",
+      "input": { "gsheetWriteMockStatus": 403 },
+      "expected": "continueOnFail=trueによりLoop Over Itemsへ処理は継続するが、当該行はシートに反映されない。設計書の補償方針どおり、次週の差分判定で『既存行に見つからない＝新規』として再度処理対象になる想定（追加リトライ機構は無し、既知のリスクとして記録）"
+    }
+  ]
+}

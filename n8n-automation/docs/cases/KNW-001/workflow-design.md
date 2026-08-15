@@ -28,7 +28,7 @@
 - 成功条件：`api.n8n.io`から正常にテンプレート一覧を取得でき、新規・更新分がスプレッドシートに反映されること。
 - KPI：`[要確認/社長]`
 - ロールバック方法：Schedule Triggerを無効化する。誤った内容が書き込まれた場合はGoogle Sheetsのバージョン履歴機能で直近正常な状態へ手動で戻す。
-- 変更履歴：2026-08-12 v1（設計書作成、メイ。リサの技術調査`logs/common_2026-08-12_n8n公式テンプレート取得手段調査_v1.md`と、社長の確定事項（前提・出力先・頻度・全カテゴリ・社内限定用途）に基づく）
+- 変更履歴：2026-08-12 v1（設計書作成、メイ。リサの技術調査`logs/common_2026-08-12_n8n公式テンプレート取得手段調査_v1.md`と、社長の確定事項（前提・出力先・頻度・全カテゴリ・社内限定用途）に基づく）／2026-08-15 v2（「次のフェーズ」節を実装進捗に合わせて更新。テストケース新規作成、`workflows/README.md`にKNW-001を追記）
 
 ## 案の比較（最低2案）
 
@@ -235,17 +235,26 @@
 - **現在の仮定**：1テンプレートあたりの要約入力トークン数（約300）・出力トークン数（約150）、週次差分の新規・更新件数（約50件/週）はいずれも実測に基づかない`[仮定]`であり、費用対効果分析はあくまで概算である。`api.n8n.io`のURL構築パターン（`https://n8n.io/workflows/<id>`）は一般的な推測であり個別に検証していない。
 - **未確認事項**：`/templates/search`の正確なページングパラメータ名・`rows`上限値・ソート順（新着順取得の可否）（`[要公式確認]`）。テンプレート単位のカテゴリ紐付け方法（`[未確認][要追加調査]`）。`description`フィールドの書式（Markdown/HTML/プレーンテキスト）（`[未確認]`）。Google Sheetsノードの正確なtype/typeVersion、Execute Workflow（呼び出し側）ノードの正確なtype/typeVersion、Wait・Split In Batches等のノードの正確なtype/typeVersion（いずれも`[要インスタンス確認]`）。Anthropic API・Google Sheets APIの正確なレート制限値（`[未確認]`）。実行データの保存期間・監視方針・許容遅延・KPI（`[要確認/社長]`）。
 
-## 次のフェーズ（エイトへの実装依頼内容）
+## 次のフェーズ（2026-08-15更新：進捗を反映）
 
-本設計書は要件定義・設計までであり、実際のn8nワークフローJSON実装は行っていない。`n8n-automation-lead`経由でエイトへ以下を依頼する。
+本設計書作成後、エイトが`workflows/draft/KNW-001_n8n-template-digest.json`として実装を進め、以下は完了済み。
 
-1. **事前検証（`n8n-schema-researcher`と連携）**：
-   - `/templates/search`のページングパラメータ・ソート順（新着順取得可否）を実機検証。
-   - テンプレート単位のカテゴリ紐付け方法を検証。
-   - Google Sheetsノード・Execute Workflow（呼び出し側）ノード・Wait・Split In Batches等のtype/typeVersionを、接続先n8nインスタンスで確認。
-   - `description`サンプルを少数取得し、書式（Markdown/HTML/プレーンテキスト）を確認。
-   - 少数サンプル（20〜50件）でHaiku要約の実測トークン数を測定し、「費用対効果分析」の試算を更新。
-2. **実装（`n8n-build`）**：本設計書（トリガー設計・API呼び出し設計・差分更新設計・AI要約設計・エラー処理・Sheets書き込み設計）に基づき、`workflows/draft/KNW-001_<スラッグ>.json`を作成。AUTO-COM-001をExecute Workflowノードから`model: 'claude-haiku-4-5'`指定で呼び出す形で再利用し、AUTO-COM-002をError Workflow設定として割り当てる。
-3. **新規スプレッドシートの作成**：社長承認のもと、新規Googleスプレッドシートを作成し、シートIDをワークフロー内の設定ノードに反映（プレースホルダーとして実装し、インポート後に確定）。
-4. **静的検証・テスト（`n8n-review`／`n8n-test`）**：`scripts/validate-workflow.mjs`によるレイアウト検証、正常系・異常系（`api.n8n.io`応答異常・レート制限・Google Sheets書き込み失敗等）のテストケース作成・実行。
-5. **本番移行（`n8n-deploy`、要承認）**：Credential割当・Error Workflow割当・Schedule Trigger有効化について、事前に社長の承認を得てから実施。初回フルバックフィルの実行タイミング・想定コストも承認事項に含める。
+- **事前検証**：接続先n8nインスタンス（`kohomadha-n8n.top`、n8n 2.33.6）へ読み取り専用APIでアクセスし、AUTO-COM-001／AUTO-COM-002の実ワークフローID、Schedule Trigger・HTTP Request等の主要typeVersionを確認済み（詳細は`workflows/draft/KNW-001_n8n-template-digest.json`内の「Sticky Note: 概要」参照）。`/templates/search`のページングパラメータ（`page`/`rows`、上限250件）・新着順ソート不可なこと・テンプレート単位のカテゴリ紐付け不可なことも実アクセスで確認済み。
+- **実装**：全24ノード・接続を実装済み（ページング取得・差分判定・AI要約・Sheets書き込み・エラー送出まで一通り接続されている）。
+- **新規スプレッドシート**：社長より実スプレッドシートURL（id=`1cMYGCfzhmWz1SmEcpylkTjjEa2FNTTGeVTOVpS5OeyI`）の提供を受け、設定ノードに反映済み。ただしこのセッションはGoogle Sheets APIへの読み取り手段を持たないため、実在・列構成はエイト自身の検証ではなく[ユーザー提供情報]のまま。
+- **静的検証・テストケース**：`scripts/validate-workflow.mjs`で0エラー（孤立ノード警告4件＝Sticky Noteのみ、想定内）を2026-08-15に再確認。テストケース9件を`tests/cases/KNW-001_test-cases.md`・`tests/fixtures/KNW-001_cases.json`として新規作成（いずれも`[実行環境なしのため未テスト]`、架空データによる設計検証のみ）。
+
+**未解決のまま残っている項目（n8n UI上での実機確認が必須、このセッションでは検証手段が無い）**：
+
+1. Google Sheetsノードのtypeversion（GitHubソース上の`defaultVersion:4.7`と、このインスタンス上の稼働実績`4.5`が食い違ったまま）。
+2. Execute Workflow（呼び出し側）ノードのtypeVersion 1.3・`__rl`形式・`workflowInputs.defineBelow`が実際にこのインスタンスで動作するか（唯一確認できた稼働実例はtypeVersion 1のプレーン形式）。フォールバック案は設計書・JSON内に明記済み。
+3. Wait／Split In Batchesの稼働実績（GitHubソースでの存在確認のみ、稼働実例なし）。
+4. Codeノードでの`crypto`モジュール利用可否（現状は簡易フィンガープリントで代替）。
+5. `sheetName`（タブ名）の実際の値（現状「シート1」を仮置き）。
+
+**まだ着手していない項目**：
+
+- `n8n-quality-auditor`による正式監査（未実施）。
+- `description`サンプルでの書式確認・Haiku要約の実測トークン数測定（「費用対効果分析」は`[仮定]`の試算のまま）。
+
+**引き続き承認が必要な事項（変更なし）**：Google Sheets／Anthropic Credentialの割当、AUTO-COM-002のError Workflow割当、ワークフローの新規登録・Schedule Trigger有効化、初回フルバックフィルの実行そのもの（いずれも本ドラフト・本セッションでは未実施）。

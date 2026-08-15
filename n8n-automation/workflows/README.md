@@ -4,7 +4,7 @@
 個々の詳細設計は `docs/cases/<管理ID>/workflow-design.md`、詳しい経緯は `../../logs/` の該当ログ
 （`logs/common_2026-08-10_n8n自動化_進捗まとめ・整理_v1.md` から辿れます）を参照してください。
 
-最終更新：2026-08-12
+最終更新：2026-08-15（KNW-001の状態を追記）
 
 ## ⚠️ ローカルの状態とn8n本体の実際の状態にズレがあります
 
@@ -29,6 +29,7 @@ Notion／Google／LINE Credentialが割り当て済み**でした（レイアウ
 | `PUB-001` | Generate text with Claude and post it to Slack via a validated webhook | **`validated`** | 稼働中（実機テスト目的で意図的に登録・有効化） | 実機テスト完了（`tests/results/2026-08-10_PUB-001_result.md`） | **Creator Hub 2回目提出・審査中**（1回目は2026-08-11にSticky Note文字切れで差し戻し→修正し2026-08-12再提出。詳細：`validated/PUB-001_claude-api-webhook-with-retry.creator-hub-submission.md`）。審査結果待ち |
 | `PUB-002` | Notify Slack on workflow errors, with a Discord fallback | **`validated`** | 実機テスト目的で意図的に登録・有効化（テスト用の使い捨てワークフローは削除済み） | 実機テスト完了、不具合1件発見・修正済み（`tests/results/2026-08-12_PUB-002_result.md`） | Creator Hub提出待ち（PUB-001審査中のため新規提出不可の可能性、詳細：`validated/PUB-002_error-notifier-with-fallback.creator-hub-submission.md`） |
 | `PUB-003` | Summarize an RSS feed with Claude and post the digest to Slack | **`validated`** | 実機テスト目的で意図的に登録（手動実行のみ、Schedule Triggerは無効化のまま） | 実機テスト完了、不具合1件発見・修正済み（`tests/results/2026-08-12_PUB-003_result.md`） | Creator Hub提出待ち（PUB-001審査中のため新規提出不可の可能性、詳細：`validated/PUB-003_rss-digest-with-claude.creator-hub-submission.md`） |
+| `KNW-001` | n8n公式テンプレート自動収集・スプレッドシート整理ワークフロー | `draft` | 未登録（ローカルのみ、実機への読み取り専用API確認は実施済み） | 静的検証のみ実施（`validate-workflow.mjs`0エラー、テストケース`tests/cases/KNW-001_test-cases.md`作成済みだが`[実行環境なしのため未テスト]`）。監査未実施 | Google Sheets typeVersion（4.7/4.5）・Execute Workflowのtypeversion1.3形式・Wait/Split In Batchesの稼働実績確認（いずれもn8n UI上での実機確認が必要）／sheetName確定／Google Sheets・Anthropic Credential割当（要承認）／`n8n-quality-auditor`監査／本番登録・Schedule Trigger有効化（要承認） |
 
 ## レイアウト規約（2026-08-10ルール化）
 
