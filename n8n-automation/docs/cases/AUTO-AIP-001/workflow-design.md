@@ -11,7 +11,7 @@
 - トリガー：Webhook（POST、`headerAuth`認証、`responseMode: lastNode`で同期レスポンス）
 - 入力データ：`businessUrl`（string、任意）・`businessDescription`（string、任意）。いずれか一方は必須。
 - 出力データ：Webhook呼び出し元への同期JSONレスポンス（生成されたタスク候補リスト、承認リクエストのNotionページURL・承認キーワード）
-- 前提条件：`AUTO-COM-001`（実インスタンス登録済み、実ID`r0IZ2ByR7MX4RWCp`と2026-08-15複数箇所で確認されているが本セッションでは未再検証）・`AUTO-COM-003`（本ドラフトと同時に新規設計、未登録）が両方とも実インスタンスに登録済みであること。`AUTO-COM-003`が要求する「承認待ちタスク・DB」（Notion）の作成（`docs/cases/AUTO-COM-003/workflow-design.md`参照）。
+- 前提条件：`AUTO-COM-001`（実インスタンス登録済み、実ID`r0IZ2ByR7MX4RWCp`と2026-08-15複数箇所で確認されているが本セッションでは未再検証）・`AUTO-COM-003`（本ドラフトと同時に新規設計、未登録）が両方とも実インスタンスに登録済みであること。`AUTO-COM-003`が要求する「承認待ちタスク・DB」（Notion）の作成（`docs/cases/AUTO-COM-003/workflow-design.md`参照）。**【2026-08-16追記】** aoi-quality-auditorの監査（PASS WITH CONDITIONS）を受け、`AUTO-COM-003`のLINE通知はBroadcast（全友だち）からPush Message（`approverLineUserId`宛）に変更された。本ワークフロー（`aip001-build-approval-request`）は現時点で`approverLineUserId`を明示的に渡していないため、`AUTO-COM-003`側のデフォルト値（`[ユーザー入力待ち]`プレースホルダー）が使われ、`approverLineUserId`の実値が確定するまではLINE通知がスキップされる（Notionページ作成のみ実施）。社長のLINE userIdが確定した場合、本ワークフローから明示的に渡すよう改修するか、`AUTO-COM-003`側のデフォルト値を更新するかを検討する。
 - 利用サービス：Anthropic Claude API（`AUTO-COM-001`経由）、Notion API・LINE Messaging API（`AUTO-COM-003`経由）、任意の事業サイトURL（HTTP GET）
 - 必要Credential：Webhook自体の`httpHeaderAuth`（新規作成が必要）。Anthropic/Notion/LINEは`AUTO-COM-001`/`AUTO-COM-003`側で既存Credentialを再利用する想定（本ワークフロー自身は直接保持しない）。
 - 実行頻度：呼び出し元次第（定期実行トリガーなし）

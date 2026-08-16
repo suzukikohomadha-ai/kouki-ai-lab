@@ -16,18 +16,19 @@
 - 技術責任者：エイト
 - 対象部署：`COM`（共通基盤、`docs/architecture.md`参照）
 - トリガー：Execute Workflow Trigger（他ワークフローから呼び出される。単独では起動しない）
-- 入力データ：`taskId`（string, 必須）／`taskType`（string, 必須）／`title`（string, 必須）／`bodyText`（string, 必須）／`notionDataSourceId`（string, 必須）／`lineMessagePrefix`（string, 任意）
-- 出力データ：成功時 `{ success:true, reviewPageId, reviewUrl, approvalKeyword, taskId, taskType, lineSendSuccess, lineSendDetail }`。失敗時は`{ success:false, error, detail, taskId }`（throwしない設計、呼び出し元が分岐しやすいように統一）。
-- 前提条件：「承認待ちタスク・DB」というNotion databaseの新規作成が必須（下記スキーマ要件参照）。既存の`notionApi`・`httpBearerAuth`（LINE）Credentialの再利用を想定。
-- 利用サービス：Notion API（`POST /v1/data_sources/{id}/query`・`POST /v1/pages`）、LINE Messaging API（Broadcast）
-- 必要Credential：`notionApi`（既存Credential再利用）、`httpBearerAuth`（LINE、既存Credential再利用）
+- 入力データ：`taskId`（string, 必須）／`taskType`（string, 必須）／`title`（string, 必須）／`bodyText`（string, 必須）／`notionDataSourceId`（string, 必須）／`lineMessagePrefix`（string, 任意）／`approverLineUserId`（string, 任意。**【2026-08-16追加】** LINE Push Message送信先（承認者個人のLINE userId）。未指定時は`[ユーザー入力待ち]`で始まるプレースホルダー文字列がデフォルトとして使われ、その場合はLINE送信自体を試みずスキップする）
+- 出力データ：成功時 `{ success:true, reviewPageId, reviewUrl, approvalKeyword, taskId, taskType, lineSendSuccess, lineSendSkipped, lineSendDetail }`。失敗時は`{ success:false, error, detail, taskId }`（throwしない設計、呼び出し元が分岐しやすいように統一）。**【2026-08-16追加】** `lineSendSkipped:true`は「`approverLineUserId`が未確定のためLINE送信自体を試みなかった」ことを示す（`lineSendSuccess:false`かつAPI呼び出し自体は発生していない状態）。
+- 前提条件：「承認待ちタスク・DB」というNotion databaseの新規作成が必須（下記スキーマ要件参照）。既存の`notionApi`・`httpBearerAuth`（LINE）Credentialの再利用を想定。**【2026-08-16追加】** `approverLineUserId`（社長個人のLINE userId）の実値確定が、LINE通知を実際に送るための追加の前提条件になった（下記「個人情報の有無」節参照）。
+- 利用サービス：Notion API（`POST /v1/data_sources/{id}/query`・`POST /v1/pages`）、LINE Messaging API（**【2026-08-16変更】Push Message**、`POST /v2/bot/message/push`。従来のBroadcastから変更、詳細は下記「個人情報の有無」節参照）
+- 必要Credential：`notionApi`（既存Credential再利用）、`httpBearerAuth`（LINE、既存Credential再利用。**【2026-08-16確認】** Push Message・Broadcast Messageともに認証方式は`Authorization: Bearer {channel access token}`で共通であることをLINE公式ドキュメントで確認したため、Broadcastで使っていた既存Credentialをそのまま流用できる。新規Credential作成は不要）
 - 実行頻度：呼び出し元次第
 - 想定件数：呼び出し元1回につき1回のNotionページ作成＋LINE通知
 - エラー時の対応：throwせず`success:false`のJSONを返す（呼び出し元が制御しやすい設計。ただしこの設計のため`AUTO-COM-002`共通エラーハンドラーの対象外になる点は`AUTO-AIP-001`と同じ既知の制約）
 - ログ方針：n8n標準実行ログのみ
-- 個人情報の有無：`bodyText`に呼び出し元が個人情報を含めた場合、Notionページ・LINE Broadcastの両方に転記される。本ワークフローは検閲しない（呼び出し元の責務）。**LINE Broadcastは全友だち宛に送信される**ため、機密性の高い`bodyText`を安易に渡さないよう呼び出し元設計時に注意が必要。
-  - **【2026-08-16追記、aoi-quality-auditor監査PASS WITH CONDITIONSの条件】** この「呼び出し元の努力目標」だけでは技術的な歯止めがなく、`AUTO-AIP-001`が生成した事業タスク候補（案件内容を含みうる）が、コウキAIラボ公式LINEの全友だち（社長個人の別の知人・取引先等を含みうる）に配信されるリスクが実務上大きいという指摘を受けた。**本番登録前に、次のいずれかを選び社長の判断を仰ぐことを必須条件とする**：(a) LINE Messaging APIのPush Message（`/v2/bot/message/push`、宛先を社長個人のuserIdに限定）へ切り替える、(b) 現状のBroadcast方式を維持する場合は「フェーズ1で扱うbodyTextには機密性の高い情報を含めない」という運用ルールを明文化し、社長が明示的にリスクを許容する。本ドラフトは未修正（(a)は`httpBearerAuth`とは別にPush用のuserId取得手段の検討が必要なため、次アクションとして切り出した）。
-- 変更履歴：2026-08-16 v1（ドラフト作成、エイト）
+- 個人情報の有無：`bodyText`に呼び出し元が個人情報を含めた場合、Notionページ・LINE Pushの両方に転記される。本ワークフローは検閲しない（呼び出し元の責務）。**【2026-08-16変更】LINE送信はBroadcast（全友だち宛）からPush Message（`approverLineUserId`で指定した1名宛）に変更済み**のため、「全友だちへの誤配信」リスクは解消した。一方、`approverLineUserId`自体が個人（社長）を特定できるLINE userIdであるため、この値自体の取り扱い（ワークフローJSON・ドキュメントへの実値のハードコード禁止）に注意する。
+  - **【2026-08-16追記、aoi-quality-auditor監査PASS WITH CONDITIONSの条件と対応】** aoi-quality-auditorの監査（`logs/kohomada_2026-08-16_NoimosAI相当自動化_監査_v1.md`）で、`AUTO-AIP-001`が生成した事業タスク候補（案件内容を含みうる）がコウキAIラボ公式LINEの全友だち（社長個人の別の知人・取引先等を含みうる）に配信されるリスクを指摘され、PASS WITH CONDITIONSとなった。指摘は「(a) Push Messageへの切替」「(b) Broadcast維持＋運用ルール明文化」の二択を提示するものだった。**社長が(a) Push方式への切替を選択**したため、本ドラフト（`workflows/draft/AUTO-COM-003_generic-approval-request.json`）を修正し、LINE送信ノードをPush Message（`POST https://api.line.me/v2/bot/message/push`）に変更した。
+  - **【2026-08-16追記②、approverLineUserIdの実値は未確定】** Push Messageの宛先`approverLineUserId`（社長個人のLINE userId）は、本セッションでは取得・確認できていないため、架空の値を生成せず`[ユーザー入力待ち] 承認者のLINE userIdが未確定です`という固定プレースホルダー文言をコード内のデフォルト値として設定した（`n8n-nodes-base.code`ノード「入力検証・承認キーワード生成」）。**実値が確定するまでは、後段のIF分岐（「IF：承認者LINE userId確定済み判定」）でLINE API呼び出し自体を行わずスキップし**、Notionページ作成のみを実施する設計とした（無効な宛先でのAPI呼び出し・エラーログ発生を避けるため）。**本番登録前に、社長ご自身のLINE userIdを確認し、`approverLineUserId`の実値（呼び出し元からの入力、またはこのワークフロー内のデフォルト値）を確定させる必要がある。**LINE userIdの確認方法自体は本セッションでは調査していない（`[要ユーザー入力待ち]`、LINE公式ドキュメント・LINE Official Account Managerでの確認方法は次アクションでの調査対象）。
+- 変更履歴：2026-08-16 v1（ドラフト作成、エイト）／2026-08-16 v2（LINE送信をBroadcastからPush Messageへ変更。aoi-quality-auditor監査PASS WITH CONDITIONS対応、社長が選択肢(a)を承認、エイト）
 
 ## 「承認待ちタスク・DB」（Notion database）のスキーマ要件（新規作成が必要）
 
@@ -114,16 +115,18 @@
 | Notion：承認待ちタスクページ新規作成 | ページ作成 | HTTP | `n8n-nodes-base.httpRequest` / 4.2 | `POST /v1/pages`、`parent.data_source_id` |
 | IF：ページ作成成功判定 | 分岐 | 公式 | `n8n-nodes-base.if` / 2.2 | |
 | レスポンス生成：Notionページ作成失敗（終端） | エラーJSON返却 | Code | `n8n-nodes-base.code` / 2 | |
-| LINEメッセージ本文生成 | 通知文面生成 | Code | `n8n-nodes-base.code` / 2 | |
-| LINE - Broadcast確認送信 | LINE通知 | HTTP | `n8n-nodes-base.httpRequest` / 4.2 | Broadcast（全友だち宛、既知の制約） |
+| LINEメッセージ本文生成 | 通知文面生成 | Code | `n8n-nodes-base.code` / 2 | **【2026-08-16変更】** `lineRequestBody`をPush形式（`to`必須）に変更 |
+| IF：承認者LINE userId確定済み判定 | 分岐 | 公式 | `n8n-nodes-base.if` / 2.2 | **【2026-08-16新設】** `approverLineUserId`がプレースホルダーのままなら送信をスキップ |
+| LINE - Push確認送信 | LINE通知 | HTTP | `n8n-nodes-base.httpRequest` / 4.2 | **【2026-08-16変更】** Broadcastから`POST /v2/bot/message/push`へ変更（1名宛） |
 | レスポンス生成：成功（終端） | 最終JSON返却 | Code | `n8n-nodes-base.code` / 2 | |
+| レスポンス生成：成功・LINE送信スキップ（終端） | 部分成功JSON返却 | Code | `n8n-nodes-base.code` / 2 | **【2026-08-16新設】** `approverLineUserId`未確定時の終端 |
 
 ## Credentialマッピング表
 
 | ワークフロー内の参照名 | 用途 | 実在するCredential名（ユーザー確認後に記入） |
 |---|---|---|
 | `notionApi` | 承認待ちタスクDBへの照会・ページ作成 | 既存Credential「Notion - n8n」の再利用を想定（AUTO-CNT-002と同一を推奨） |
-| `httpBearerAuth` | LINE Broadcast送信 | 既存Credential「Bearer Auth account」の再利用を想定（AUTO-CNT-002と同一） |
+| `httpBearerAuth` | LINE Push送信（**2026-08-16、Broadcastから変更**） | 既存Credential「Bearer Auth account」の再利用を想定（AUTO-CNT-002と同一）。Push/Broadcast間で認証方式は共通のため新規作成不要（LINE公式ドキュメントで確認、出典節参照） |
 
 ## 分類
 
@@ -137,15 +140,33 @@
 - Notion公式ドキュメント「Upgrade guide (2025-09-03)」`https://developers.notion.com/guides/get-started/upgrade-guide-2025-09-03`（2026-08-16参照）
 - `docs/cases/AUTO-CNT-002/workflow-design.md`（LINE Webhook一本化・リレー転送設計の出典）
 - `workflows/draft/AUTO-CNT-002_line-approval-gdocs-sync.json`（Notionブロックchunk処理・LINE Broadcastパターンの実装出典）
+- LINE公式ドキュメント「Send messages」`https://developers.line.biz/en/docs/messaging-api/sending-messages/`（2026-08-16参照。Push Messageエンドポイント`POST /v2/bot/message/push`と、Broadcast含む各Messaging APIエンドポイントが共通して`Authorization: Bearer {channel access token}`を用いることを確認）
 
-## 検証結果（2026-08-16、ジンが別セッションで実施）
+## 検証結果
+
+### 2026-08-16（ジンが別セッションで実施、Push方式切替【前】のBroadcast版に対する結果）
 
 - `validate-workflow.mjs`：エラー0件・警告1件（Sticky Note孤立、想定内。`.validate.json`/`.validate.md`参照）
 - `check-secrets.mjs`（コマンド：`node scripts/check-secrets.mjs workflows/draft/AUTO-COM-003_generic-approval-request.json`）：検出2件（「本番らしきURL」として`https://api.line.me/v2/bot/message/broadcast`・`https://api.notion.com/v1/...`を検出）。目視確認の結果、いずれもLINE Messaging API・Notion APIの**公式公開エンドポイント**であり、Credential実値・シークレットの混入ではない誤検知と判断した。
+
+### 2026-08-16（Push方式切替【後】・ジンが別セッションで実施）
+
+エイトの手作業確認（下記）どおりの結果を、実際にスクリプト実行して確認した。
+
+- 実行コマンド：`node scripts/validate-workflow.mjs workflows/draft/AUTO-COM-003_generic-approval-request.json`
+  結果：エラー0件・警告1件（Sticky Note孤立、想定内。上記Broadcast版と同一の警告のみ）
+- 実行コマンド：`node scripts/check-secrets.mjs workflows/draft/AUTO-COM-003_generic-approval-request.json`
+  結果：検出2件（「本番らしきURL」として`https://api.line.me/v2/bot/message/push`・`https://api.notion.com/v1/...`を検出）。目視確認の結果、いずれもLINE Messaging API・Notion APIの公式公開エンドポイントであり、Credential実値・シークレットの混入ではない誤検知と判断した（Broadcast版から検出パターン・件数に変化なし）。
+
+**手作業での確認（エイトによる、機械検証前の参考情報として記録を残す）**：
+- JSON構文：`Read`ツールで全文を目視確認し、括弧・引用符の対応、ノードid/name の重複なし、`connections`の参照先ノード名がすべて`nodes[]`に実在することを確認した。
+- Sticky Note重なり：新設ノード（`IF：承認者LINE userId確定済み判定` [1400,20]、`LINE - Push確認送信` [1660,-100]、`レスポンス生成：成功（終端）` [1920,-100]、`レスポンス生成：成功・LINE送信スキップ（終端）` [1660,220]）はいずれもSticky Note（x: -900〜600、y: -380〜-120）のx範囲外にあり、重なりは発生しない（`validate-workflow.mjs`のロジック＝80px以上のギャップ判定を手計算で確認）。この手作業確認は、後日の機械実行結果（エラー0件・警告1件＝Sticky Note孤立のみ）と一致した。
 
 ## 次に必要なアクション
 
 1. 社長／ジンへ：「承認待ちタスク・DB」（Notion database）の新規作成依頼（本書のスキーマ要件を渡す）
 2. 社長へ：受信側の一般化（選択肢A）に着手するかどうかの方針確認（本番Webhookロジックの改修を伴うため、独立案件として日程を切ることを推奨）
-3. **社長へ（監査条件・必須）**：上記「個人情報の有無」節に追記したLINE Broadcast配信リスクについて、Push方式への切替（案a）か、運用ルール明文化によるリスク許容（案b）かの判断
-4. n8n-quality-auditorによる監査（未実施。2026-08-16、aoi-quality-auditorによる一般監査でPASS WITH CONDITIONS。詳細は`logs/kohomada_2026-08-16_NoimosAI相当自動化_監査_v1.md`参照）
+3. ~~社長へ（監査条件・必須）：LINE Broadcast配信リスクについて、Push方式への切替（案a）か、運用ルール明文化によるリスク許容（案b）かの判断~~ → **2026-08-16、社長が(a) Push方式への切替を選択、対応完了**
+4. **社長へ（新規・最優先）**：Push Messageの宛先`approverLineUserId`（社長個人のLINE userId）の実値確定。これが確定しない限り、本ワークフローはNotionページ作成のみでLINE通知を送信しない（フェイルセーフとして意図的にスキップする設計のため機能は壊れないが、「ライブワークフィード」のLINE通知体験は完成しない）
+5. ~~`.env`またはBashツールが使えるセッション（ジン側等）で、Push方式切替後の`validate-workflow.mjs`・`check-secrets.mjs`を再実行し、結果を上記「検証結果」節に追記~~ → **2026-08-16、ジンが実施済み**。エラー0件・警告1件（既知）、シークレット混入なし（誤検知2件のみ）
+6. n8n-quality-auditor（aoi-quality-auditor）による再監査：Push方式への切替が監査条件を満たしているかの確認（PASS WITH CONDITIONSからPASSへの格上げ判断）。本番登録前の必須項目として未実施のまま残存

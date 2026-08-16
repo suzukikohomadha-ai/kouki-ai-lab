@@ -1,6 +1,6 @@
 # 静的検証結果: workflows/draft/AUTO-COM-003_generic-approval-request.json
 
-検証日時: 2026-08-16T18:13:30.864Z
+検証日時: 2026-08-16T19:23:15.403Z
 結果: 重大な問題なし
 
 ## エラー (0)
