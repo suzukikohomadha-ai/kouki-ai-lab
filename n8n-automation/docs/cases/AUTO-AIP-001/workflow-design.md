@@ -110,5 +110,5 @@
 1. 社長へ：Webhook呼び出し元・認証方式（`headerAuth`の共有シークレット運用方法）の確認
 2. 社長／ジンへ：`AUTO-COM-003`が要求する「承認待ちタスク・DB」（Notion）の新規作成依頼
 3. `AUTO-COM-001`・`AUTO-COM-003`のワークフローID確定後、本ドラフトの該当箇所（`aip001-call-claude`・`aip001-call-approval`のworkflowId、`aip001-build-approval-request`の`notionDataSourceId`）を実値に更新
-4. `.env`が使えるセッション（社長ご自身の環境等）で`scripts/validate-workflow.mjs`・`scripts/check-secrets.mjs`を実行し、結果を本ディレクトリに追記（本セッションではBashツールが無く未実行、下記参照）
-5. n8n-quality-auditorによる監査（未実施）
+4. ~~`.env`が使えるセッション（社長ご自身の環境等）で`scripts/validate-workflow.mjs`・`scripts/check-secrets.mjs`を実行し、結果を本ディレクトリに追記（本セッションではBashツールが無く未実行）~~ → **2026-08-16、別セッション（ジン、Bashツールあり）で実施済み。** `validate-workflow.mjs`：エラー0件・警告1件（Sticky Note孤立、想定内、`.validate.json`/`.validate.md`参照）。`check-secrets.mjs`（実行日時2026-08-16、コマンド：`node scripts/check-secrets.mjs workflows/draft/AUTO-AIP-001_ai-task-planning.json`）：**検出なし**（Credential実値・APIキー等のハードコードなし）。なおこの実行は`.env`接続の有無に関わらず可能な静的解析であり、n8n本番環境への接続は不要だった。
+5. n8n-quality-auditorによる監査（未実施。2026-08-16、aoi-quality-auditorによる一般監査でPASS WITH CONDITIONS。条件はAUTO-COM-003側のLINE Broadcast配信リスク対応。詳細は`logs/kohomada_2026-08-16_NoimosAI相当自動化_監査_v1.md`参照）

@@ -26,6 +26,7 @@
 - エラー時の対応：throwせず`success:false`のJSONを返す（呼び出し元が制御しやすい設計。ただしこの設計のため`AUTO-COM-002`共通エラーハンドラーの対象外になる点は`AUTO-AIP-001`と同じ既知の制約）
 - ログ方針：n8n標準実行ログのみ
 - 個人情報の有無：`bodyText`に呼び出し元が個人情報を含めた場合、Notionページ・LINE Broadcastの両方に転記される。本ワークフローは検閲しない（呼び出し元の責務）。**LINE Broadcastは全友だち宛に送信される**ため、機密性の高い`bodyText`を安易に渡さないよう呼び出し元設計時に注意が必要。
+  - **【2026-08-16追記、aoi-quality-auditor監査PASS WITH CONDITIONSの条件】** この「呼び出し元の努力目標」だけでは技術的な歯止めがなく、`AUTO-AIP-001`が生成した事業タスク候補（案件内容を含みうる）が、コウキAIラボ公式LINEの全友だち（社長個人の別の知人・取引先等を含みうる）に配信されるリスクが実務上大きいという指摘を受けた。**本番登録前に、次のいずれかを選び社長の判断を仰ぐことを必須条件とする**：(a) LINE Messaging APIのPush Message（`/v2/bot/message/push`、宛先を社長個人のuserIdに限定）へ切り替える、(b) 現状のBroadcast方式を維持する場合は「フェーズ1で扱うbodyTextには機密性の高い情報を含めない」という運用ルールを明文化し、社長が明示的にリスクを許容する。本ドラフトは未修正（(a)は`httpBearerAuth`とは別にPush用のuserId取得手段の検討が必要なため、次アクションとして切り出した）。
 - 変更履歴：2026-08-16 v1（ドラフト作成、エイト）
 
 ## 「承認待ちタスク・DB」（Notion database）のスキーマ要件（新規作成が必要）
@@ -137,9 +138,14 @@
 - `docs/cases/AUTO-CNT-002/workflow-design.md`（LINE Webhook一本化・リレー転送設計の出典）
 - `workflows/draft/AUTO-CNT-002_line-approval-gdocs-sync.json`（Notionブロックchunk処理・LINE Broadcastパターンの実装出典）
 
+## 検証結果（2026-08-16、ジンが別セッションで実施）
+
+- `validate-workflow.mjs`：エラー0件・警告1件（Sticky Note孤立、想定内。`.validate.json`/`.validate.md`参照）
+- `check-secrets.mjs`（コマンド：`node scripts/check-secrets.mjs workflows/draft/AUTO-COM-003_generic-approval-request.json`）：検出2件（「本番らしきURL」として`https://api.line.me/v2/bot/message/broadcast`・`https://api.notion.com/v1/...`を検出）。目視確認の結果、いずれもLINE Messaging API・Notion APIの**公式公開エンドポイント**であり、Credential実値・シークレットの混入ではない誤検知と判断した。
+
 ## 次に必要なアクション
 
 1. 社長／ジンへ：「承認待ちタスク・DB」（Notion database）の新規作成依頼（本書のスキーマ要件を渡す）
 2. 社長へ：受信側の一般化（選択肢A）に着手するかどうかの方針確認（本番Webhookロジックの改修を伴うため、独立案件として日程を切ることを推奨）
-3. `.env`が使えるセッションで`scripts/validate-workflow.mjs`・`scripts/check-secrets.mjs`を実行（本セッションでは未実行）
-4. n8n-quality-auditorによる監査（未実施）
+3. **社長へ（監査条件・必須）**：上記「個人情報の有無」節に追記したLINE Broadcast配信リスクについて、Push方式への切替（案a）か、運用ルール明文化によるリスク許容（案b）かの判断
+4. n8n-quality-auditorによる監査（未実施。2026-08-16、aoi-quality-auditorによる一般監査でPASS WITH CONDITIONS。詳細は`logs/kohomada_2026-08-16_NoimosAI相当自動化_監査_v1.md`参照）
