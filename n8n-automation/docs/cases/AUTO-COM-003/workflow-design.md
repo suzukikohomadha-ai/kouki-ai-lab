@@ -167,6 +167,11 @@
 1. 社長／ジンへ：「承認待ちタスク・DB」（Notion database）の新規作成依頼（本書のスキーマ要件を渡す）
 2. 社長へ：受信側の一般化（選択肢A）に着手するかどうかの方針確認（本番Webhookロジックの改修を伴うため、独立案件として日程を切ることを推奨）
 3. ~~社長へ（監査条件・必須）：LINE Broadcast配信リスクについて、Push方式への切替（案a）か、運用ルール明文化によるリスク許容（案b）かの判断~~ → **2026-08-16、社長が(a) Push方式への切替を選択、対応完了**
-4. **社長へ（新規・最優先）**：Push Messageの宛先`approverLineUserId`（社長個人のLINE userId）の実値確定。これが確定しない限り、本ワークフローはNotionページ作成のみでLINE通知を送信しない（フェイルセーフとして意図的にスキップする設計のため機能は壊れないが、「ライブワークフィード」のLINE通知体験は完成しない）
+4. **社長へ（新規・最優先）**：Push Messageの宛先`approverLineUserId`（社長個人のLINE userId）の実値確定。これが確定しない限り、本ワークフローはNotionページ作成のみでLINE通知を送信しない（フェイルセーフとして意図的にスキップする設計のため機能は壊れないが、「ライブワークフィード」のLINE通知体験は完成しない）。
+   **【2026-08-16追記、確認方法の調査結果（ジン、WebSearch経由。developers.line.bizへの直接WebFetchは本セッションでegressブロックされ不可、公式ページの検索結果スニペット引用に基づく）**：
+   - LINE公式ドキュメント「Get user IDs」（`https://developers.line.biz/en/docs/messaging-api/getting-user-ids/`、本セッションでは検索結果スニペット経由の確認にとどまり直接fetch不可）によれば、userIdはLINE Official Account Manager（管理画面）の通常のチャット一覧には表示されず、**Webhookイベントの`events[].source.userId`からのみ取得できる**（ユーザーがメッセージ送信・友だち追加した際にWebhookへ送られてくる）。管理画面とMessaging APIは別の仕組みであるとする複数の日本語解説記事とも整合する。
+   - **本件に最も実用的な方法（追加実装不要）**：社長は既に「コウキAIラボ」公式LINEに、AUTO-CNT-002の「反映」キーワード等でメッセージを送信した実績がある。その際のWebhookペイロード（`events[0].source.userId`）が、n8n（`kohomadha-n8n.top`）のExecutions（実行履歴）に記録されているはずなので、**AUTO-CNT-002のWebhook実行履歴を開き、過去または新規に送ったメッセージのtrigger dataからuserIdを読み取る**のが最短。新しいコードを書く必要はない。
+   - 代替手段（Executions履歴から見つけにくい場合）：一時的なテスト用ワークフロー（Webhookノード1つ＋Set/NoOpノードのみ）を新規作成し、社長が任意のメッセージを送って`source.userId`を確認する方法もあるが、LINE Webhook URLは1つしか設定できないため、現状の受信口（AUTO-CNT-002）を一時的に切り替える必要が生じ手間が大きい。Executions履歴の確認を先に試すことを推奨する。
+   - `[未確認]` n8nのExecutions画面でトリガーの生JSONペイロードがどこまで見やすく表示されるか（`[要インスタンス確認]`、社長のn8n UI操作が必要）。
 5. ~~`.env`またはBashツールが使えるセッション（ジン側等）で、Push方式切替後の`validate-workflow.mjs`・`check-secrets.mjs`を再実行し、結果を上記「検証結果」節に追記~~ → **2026-08-16、ジンが実施済み**。エラー0件・警告1件（既知）、シークレット混入なし（誤検知2件のみ）
 6. n8n-quality-auditor（aoi-quality-auditor）による再監査：Push方式への切替が監査条件を満たしているかの確認（PASS WITH CONDITIONSからPASSへの格上げ判断）。本番登録前の必須項目として未実施のまま残存
