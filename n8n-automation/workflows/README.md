@@ -4,7 +4,7 @@
 個々の詳細設計は `docs/cases/<管理ID>/workflow-design.md`、詳しい経緯は `../../logs/` の該当ログ
 （`logs/common_2026-08-10_n8n自動化_進捗まとめ・整理_v1.md` から辿れます）を参照してください。
 
-最終更新：2026-08-15（KNW-001の状態を追記、AUTO-KHM-001をn8n本体から持ち帰り追記、内製版・PUB-004への派生を追記）
+最終更新：2026-08-16（NoimosAI相当自動化フェーズ1：AUTO-AIP-001・AUTO-COM-003を新規追記、AUTO-KHM-002/003は意図メモのみでワークフローJSON未作成）
 
 ## ⚠️ ローカルの状態とn8n本体の実際の状態にズレがあります
 
@@ -33,6 +33,13 @@ Notion／Google／LINE Credentialが割り当て済み**でした（レイアウ
 | `AUTO-KHM-001` | Japan Regulatory & Government News Digest（＋コンパニオンError Handler） | n8n本体上に直接作成されていたものを2026-08-15に読み取り専用API経由でこのリポジトリへ持ち帰り（`draft`として保存） | `active: false`（未登録・Credential未割当を確認済み） | 静的検証のみ実施（`validate-workflow.mjs`：本体0エラー・警告6件＝Sticky Note孤立のみ、2026-08-15にレイアウト間隔不足11件を解消済み。コンパニオン0エラー・警告1件）。テストケース未作成。監査未実施 | 誰が・いつ作成したか不明のため経緯確認／Error Workflow割当のn8n UI確認。**2026-08-15、内製運用・Creator Hub提出の2系統へ派生させた（下記`AUTO-KHM-001（内製版）``PUB-004`参照）** |
 | `AUTO-KHM-001`（内製版） | 同上（社内運用版） | `workflows/draft/AUTO-KHM-001_japan-regulatory-news-digest.internal.json`として新規作成（`draft`） | 未登録（ローカルのみ） | 静的検証のみ実施（0エラー・警告6件＝Sticky Note孤立のみ） | 実RSSソース3件（METI/法務省/内閣府、PDL1.0準拠を確認済み）を設定済み、AI呼び出しをAUTO-COM-001経由に変更済み。**2026-08-15、PUB-004の実機テストで発見した不具合5件（`includeOtherFields`未設定・`columns.schema`欠落等、詳細は`docs/cases/AUTO-KHM-001/workflow-design.md`）を本ファイルにも反映済み**。残作業：実配信先（Slackチャンネル・Gmail・Notion DB）の確定（要社長確認）→Credential作成・割当（要承認）→`n8n-quality-auditor`監査→本番登録（要承認） |
 | `PUB-004` | Summarize Japanese regulatory news with Claude and post the digest to Slack | `workflows/draft/PUB-004_japan-regulatory-news-digest.json` | 2026-08-15、社長承認のもと実機登録・**実機テストで完全成功を確認**（実ID`jejKmWHPDWSUifDZ`、実行ID#251：RSS取得→フィルタ→AI要約→Slack投稿→Sheets記録まで全工程成功、詳細は設計書参照）。テスト後、テスト専用の設定値はプレースホルダーへ戻し済み | 静的検証（0エラー・警告6件＝Sticky Note孤立のみ）＋**実機End-to-Endテスト成功**。Creator Hub提出用メタデータ作成済み（`PUB-004_japan-regulatory-news-digest.creator-hub-submission.md`）、Sticky Noteサイズも見直し済み（PUB-001の差し戻し事例を踏まえた予防対応） | **頒布方針を社長確認済み：n8n Creator Hubで無料公開**（n8nplace等の有料販売は不採用）。残作業：n8n画面上でのSticky Note表示の目視確認→`PUB-003`との機能重複を踏まえた提出可否の最終判断→鈴木さん本人によるCreator Hubへの提出→`workflows/validated/`へ格上げ |
+
+| `AUTO-AIP-001` | AIタスク自動プランニング（NoimosAI相当プロジェクト フェーズ1） | `workflows/draft/AUTO-AIP-001_ai-task-planning.json`（`draft`） | 未登録（ローカルのみ） | 静的検証未実施（本セッションはBashツールが無く`validate-workflow.mjs`/`check-secrets.mjs`を実行できていない、[実行環境なしのため未テスト]）。監査未実施 | `AUTO-COM-001`（実IDは前回セッション記録に基づく暫定値、本セッション未再検証）・`AUTO-COM-003`（未登録）への依存あり。Webhook `headerAuth`Credential新規作成（要承認）、`.env`が使えるセッションでの静的検証実行、n8n-quality-auditor監査、本番登録（要承認）が必要 |
+| `AUTO-COM-003` | 汎用承認リクエスト作成サブワークフロー（ライブワークフィード・送信側） | `workflows/draft/AUTO-COM-003_generic-approval-request.json`（`draft`） | 未登録（ローカルのみ） | 静的検証未実施（同上、[実行環境なしのため未テスト]）。監査未実施 | 『承認待ちタスク・DB』（Notion database）の新規作成が前提条件（未着手）。受信側（LINE返信→ルーティング）の一般化は技術検証のみ実施し未実装（`docs/cases/AUTO-COM-003/workflow-design.md`参照、`AUTO-CNT-002`本番Webhookロジックの改修を伴うため別案件として日程を切ることを推奨） |
+
+## AUTO-KHM-002 / AUTO-KHM-003（意図メモのみ・ワークフロー未作成）
+
+`logs/kohomada_2026-08-16_NoimosAI相当自動化設計書_v1.md`フェーズ1・依頼事項4（SEOコンテンツ制作パイプライン試作／競合監視試作）は、時間・スコープの制約により本セッションではワークフローJSON・詳細設計を作成せず、意図（intake相当）のみを`docs/cases/AUTO-KHM-002/intake.md`・`docs/cases/AUTO-KHM-003/intake.md`に文書化した。次フェーズでの着手を推奨する。
 
 ## レイアウト規約（2026-08-10ルール化）
 

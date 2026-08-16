@@ -1,0 +1,112 @@
+{
+  "name": "AUTO-COM-003_汎用承認リクエスト作成サブワークフロー（ライブワークフィード・送信側）",
+  "active": false,
+  "nodes": [
+    {
+      "id": "com003-sticky-overview",
+      "name": "Sticky Note: 概要",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-900, -380],
+      "parameters": {
+        "width": 1500,
+        "height": 260,
+        "content": "## AUTO-COM-003 汎用承認リクエスト作成サブワークフロー（ドラフトv1）\n\n設計元：`logs/kohomada_2026-08-16_NoimosAI相当自動化設計書_v1.md`（フェーズ1・依頼事項3「ライブワークフィードのテンプレート化」）。`AUTO-CNT-002`のPhase1（Notionレビューページ作成→LINE通知）パターンを、他のタスク種別からも呼び出せる形に一般化した『送信側』のみを実装したもの。\n\n### 重要：本ワークフローは『送信側』のみ\n『受信側』（LINEからの返信を受けて承認判定・実際の反映処理を呼び出す部分）は、n8nのWebhook URLがLINE公式アカウント側で1つしか設定できない制約により、既存の`AUTO-CNT-002`のWebhookが事実上の唯一の受信口になっている。汎用的な受信側ルーターの設計・移行方針は`docs/cases/AUTO-COM-003/workflow-design.md`の『技術検証：受信側の一般化』節に文書化した（本ドラフトには未実装、AUTO-CNT-002の本番Webhookロジック変更を伴うため）。\n\n### 前提条件（本番登録前に必須・未整備）\n1. 『承認待ちタスク・DB』（Notion database）の新規作成（プロパティ要件はworkflow-design.md参照、要社長/ジン対応）\n2. `notionApi`・`httpBearerAuth`（LINE）各Credentialの割当（既存Credentialの再利用を想定）\n\n### 呼び出し方法（Execute Workflowノードから渡すJSON）\ntaskId（必須）／taskType（必須）／title（必須）／bodyText（必須）／notionDataSourceId（必須）／lineMessagePrefix（任意）"
+      }
+    },
+
+    { "id": "com003-trigger", "name": "Execute Workflow Trigger", "type": "n8n-nodes-base.executeWorkflowTrigger", "typeVersion": 1, "position": [-900, 20],
+      "notes": "[要インスタンス確認] AUTO-COM-001と同型。type文字列・typeVersionはn8n公式ドキュメントのURLスラッグからの類推（2026-08-09 AUTO-COM-001作成時点の出典を踏襲）、本インスタンスでの実例確認は未実施。",
+      "parameters": {} },
+
+    { "id": "com003-validate", "name": "入力検証・承認キーワード生成", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [-660, 20],
+      "notes": "承認キーワードはtaskType先頭3文字＋簡易ハッシュ4桁で生成する。本インスタンスのCodeノードでは`require('crypto')`が禁止されている（AUTO-CNT-002 Sticky Note参照）ため、暗号学的ハッシュではなく単純な文字コード累積ハッシュを使用（衝突を完全には排除しない簡易実装、既知の制約）。",
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const d = $input.first().json || {};\nconst taskId = (d.taskId || '').toString().trim();\nconst taskType = (d.taskType || '').toString().trim();\nconst title = (d.title || '').toString().trim();\nconst bodyText = (d.bodyText || '').toString();\nconst notionDataSourceId = (d.notionDataSourceId || '').toString().trim();\nconst lineMessagePrefix = (d.lineMessagePrefix || '').toString();\n\nconst missing = [];\nif (!taskId) missing.push('taskId');\nif (!taskType) missing.push('taskType');\nif (!title) missing.push('title');\nif (!bodyText) missing.push('bodyText');\nif (!notionDataSourceId) missing.push('notionDataSourceId');\nconst validationError = missing.length > 0 ? ('必須項目が不足しています: ' + missing.join(', ')) : null;\n\nfunction simpleHash(str) {\n  let h = 0;\n  for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) >>> 0; }\n  return h.toString(36).toUpperCase();\n}\nconst typePrefix = (taskType.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3) || 'TSK').toUpperCase();\nconst approvalKeyword = validationError ? null : (typePrefix + '-' + simpleHash(taskId + '|' + Date.now()).slice(-4));\n\nreturn [{\n  json: {\n    taskId, taskType, title, bodyText, notionDataSourceId, lineMessagePrefix,\n    approvalKeyword, validationError, requestedAt: new Date().toISOString()\n  }\n}];\n" } },
+
+    { "id": "com003-if-valid", "name": "IF：入力検証OK判定", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [-420, 20],
+      "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [
+        { "id": "com003-cond-valid", "leftValue": "={{ $json.validationError ? 'error' : 'ok' }}", "rightValue": "ok", "operator": { "type": "string", "operation": "equals" } }
+      ], "combinator": "and" } } },
+
+    { "id": "com003-build-validation-error", "name": "レスポンス生成：入力検証エラー（終端）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [-420, 260],
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const d = $input.first().json;\nreturn [{ json: { success: false, error: d.validationError, taskId: d.taskId || null } }];\n" } },
+
+    { "id": "com003-notion-query-collision", "name": "Notion：承認キーワード重複確認", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [-160, 20],
+      "notes": "POST /v1/data_sources/{data_source_id}/query（2025-09-03以降の新エンドポイント。AUTO-CNT-002で採用済みの出典＝Notion公式ドキュメント`developers.notion.com/reference/query-a-data-source`を踏襲）。フィルタ対象プロパティ（承認キーワード・ステータス）は本ワークフローが要求する『承認待ちタスク・DB』のスキーマ（workflow-design.md参照）に依存する。credentials未割当（[要ユーザー承認]）。",
+      "continueOnFail": true,
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.notion.com/v1/data_sources/{{$json.notionDataSourceId}}/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { filter: { and: [ { property: '承認キーワード', rich_text: { equals: $json.approvalKeyword } }, { property: 'ステータス', select: { equals: '承認待ち' } } ] } } }}",
+        "options": {}
+      } },
+
+    { "id": "com003-resolve-collision", "name": "衝突解消・最終キーワード確定", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [100, 20],
+      "notes": "既知の制約：完全な再試行ループではなく、1回のクエリ結果件数に応じて連番を付与する簡易的な衝突回避（同時多発的な衝突までは防げない）。クエリ自体が失敗した場合は衝突確認をスキップしてそのまま採番したキーワードを使う（可用性を優先）。",
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const validated = $('入力検証・承認キーワード生成').first().json;\nconst queryResp = $input.first().json;\nlet finalKeyword = validated.approvalKeyword;\nlet collisionNote = null;\n\nif (queryResp && queryResp.error) {\n  collisionNote = '重複確認クエリに失敗しました（detail=' + JSON.stringify(queryResp.error) + '）。衝突確認をスキップしてこのまま採番したキーワードを使用します。';\n} else {\n  const count = (queryResp.results || []).length;\n  if (count > 0) {\n    finalKeyword = finalKeyword + '-' + (count + 1);\n    collisionNote = '同一キーワードの承認待ちタスクが' + count + '件存在したため、末尾に連番を付与しました（簡易的な衝突回避）。';\n  }\n}\n\nreturn [{\n  json: {\n    ...validated,\n    approvalKeyword: finalKeyword,\n    collisionNote\n  }\n}];\n" } },
+
+    { "id": "com003-build-blocks", "name": "Notionページ本文ブロック生成（チャンク化）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [360, 20],
+      "notes": "rich_text 2000字制限に対するchunk処理はAUTO-CNT-002と同じパターンを踏襲。ページ作成時のchildren最大件数もNotion公式ドキュメント（`developers.notion.com/reference/post-page`、2026-08-16参照）で確認したPATCH children追記と同様の上限（実務上100ブロック程度）を踏まえ97件に制限（見出し3ブロック分の余裕を確保）。",
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const d = $input.first().json;\n\nfunction chunk(str, size) {\n  const out = [];\n  for (let i = 0; i < str.length; i += size) out.push(str.slice(i, i + size));\n  return out.length ? out : [''];\n}\nfunction textBlock(content) {\n  return { object: 'block', type: 'paragraph', paragraph: { rich_text: [ { type: 'text', text: { content } } ] } };\n}\n\nconst children = [];\nchildren.push(textBlock('タスク種別: ' + d.taskType));\nchildren.push(textBlock('承認方法: このページの内容を確認し、問題なければLINEに「' + d.approvalKeyword + '」とだけ返信してください。'));\nchildren.push(textBlock('--- 内容 ---'));\nfor (const line of (d.bodyText || '').split('\\n')) {\n  for (const part of chunk(line, 1900)) {\n    children.push(textBlock(part));\n  }\n}\nconst limited = children.slice(0, 97);\n\nconst properties = {\n  'Name': { title: [ { text: { content: d.title } } ] },\n  'タスクID': { rich_text: [ { text: { content: d.taskId } } ] },\n  'タスク種別': { rich_text: [ { text: { content: d.taskType } } ] },\n  'ステータス': { select: { name: '承認待ち' } },\n  '承認キーワード': { rich_text: [ { text: { content: d.approvalKeyword } } ] },\n  '作成日時': { date: { start: d.requestedAt } }\n};\n\nreturn [{\n  json: {\n    ...d,\n    notionPageRequestBody: {\n      parent: { type: 'data_source_id', data_source_id: d.notionDataSourceId },\n      properties,\n      children: limited\n    }\n  }\n}];\n" } },
+
+    { "id": "com003-notion-create-page", "name": "Notion：承認待ちタスクページ新規作成", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [620, 20],
+      "notes": "POST /v1/pages。parent.data_source_id形式は2025-09-03のNotion APIアップグレード（`developers.notion.com/guides/get-started/upgrade-guide-2025-09-03`、2026-08-16参照）に基づき、旧`parent.database_id`ではなく`parent.data_source_id`を使用。properties・childrenを同一リクエストで指定できることはNotion公式ドキュメント（`developers.notion.com/reference/post-page`、2026-08-16参照）で確認済み。credentials未割当（[要ユーザー承認]）。",
+      "continueOnFail": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.notionPageRequestBody }}",
+        "options": {}
+      } },
+
+    { "id": "com003-if-create-ok", "name": "IF：ページ作成成功判定", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [880, 20],
+      "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [
+        { "id": "com003-cond-create-ok", "leftValue": "={{ $json.error ? 'error' : 'ok' }}", "rightValue": "ok", "operator": { "type": "string", "operation": "equals" } }
+      ], "combinator": "and" } } },
+
+    { "id": "com003-build-notion-error", "name": "レスポンス生成：Notionページ作成失敗（終端）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [880, 260],
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const d = $input.first().json;\nconst validated = $('衝突解消・最終キーワード確定').first().json;\nreturn [{ json: { success: false, error: 'Notion承認待ちタスクページの作成に失敗しました。', detail: d.error ? JSON.stringify(d.error) : JSON.stringify(d), taskId: validated.taskId } }];\n" } },
+
+    { "id": "com003-build-line-message", "name": "LINEメッセージ本文生成", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1140, 20],
+      "notes": "reviewUrlはNotionページID（ハイフン付きUUID形式）からハイフンを除去したものをwww.notion.so配下のURLに変換する簡易実装（Notion公式の共有URL生成仕様との厳密な一致は[要公式確認]）。",
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const created = $input.first().json;\nconst d = $('衝突解消・最終キーワード確定').first().json;\nconst pageId = created.id;\nconst reviewUrl = 'https://www.notion.so/' + (pageId || '').replace(/-/g, '');\nconst prefix = d.lineMessagePrefix ? (d.lineMessagePrefix + '\\n') : '';\nconst text = prefix + d.title + '\\n確認: ' + reviewUrl + '\\n\\n内容に問題なければ、このLINEに「' + d.approvalKeyword + '」とだけ返信してください。それ以外の内容は承認とみなしません。';\nreturn [{\n  json: {\n    lineRequestBody: { messages: [ { type: 'text', text } ] },\n    reviewPageId: pageId,\n    reviewUrl,\n    approvalKeyword: d.approvalKeyword,\n    taskId: d.taskId,\n    taskType: d.taskType\n  }\n}];\n" } },
+
+    { "id": "com003-line-send", "name": "LINE - Broadcast確認送信", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1400, 20],
+      "notes": "AUTO-CNT-002・AUTO-COM-002で実機テスト済みのBroadcast Messageパターンを踏襲。credentials未割当（[要ユーザー承認]、既存httpBearerAuth Credentialの再利用を想定）。Broadcastは全友だちに送信される点に留意（1:1返信ではない、AUTO-CNT-002と同じ既知の制約）。",
+      "continueOnFail": true,
+      "parameters": { "method": "POST", "url": "https://api.line.me/v2/bot/message/broadcast", "authentication": "genericCredentialType", "genericAuthType": "httpBearerAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json.lineRequestBody }}", "options": {} } },
+
+    { "id": "com003-build-response", "name": "レスポンス生成：成功（終端）", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [1660, 20],
+      "notes": "LINE送信が失敗してもNotionページ自体は作成済みのため、成功扱い（lineSendSuccess=falseで呼び出し元に通知）とする設計判断。",
+      "parameters": { "mode": "runOnceForAllItems", "language": "javaScript", "jsCode": "const lineResp = $input.first().json;\nconst ctx = $('LINEメッセージ本文生成').first().json;\nconst lineSendSuccess = !(lineResp && lineResp.error);\nreturn [{\n  json: {\n    success: true,\n    reviewPageId: ctx.reviewPageId,\n    reviewUrl: ctx.reviewUrl,\n    approvalKeyword: ctx.approvalKeyword,\n    taskId: ctx.taskId,\n    taskType: ctx.taskType,\n    lineSendSuccess,\n    lineSendDetail: lineSendSuccess ? null : JSON.stringify(lineResp.error)\n  }\n}];\n" } }
+  ],
+
+  "connections": {
+    "Execute Workflow Trigger": { "main": [[{ "node": "入力検証・承認キーワード生成", "type": "main", "index": 0 }]] },
+    "入力検証・承認キーワード生成": { "main": [[{ "node": "IF：入力検証OK判定", "type": "main", "index": 0 }]] },
+    "IF：入力検証OK判定": { "main": [
+      [{ "node": "Notion：承認キーワード重複確認", "type": "main", "index": 0 }],
+      [{ "node": "レスポンス生成：入力検証エラー（終端）", "type": "main", "index": 0 }]
+    ] },
+    "Notion：承認キーワード重複確認": { "main": [[{ "node": "衝突解消・最終キーワード確定", "type": "main", "index": 0 }]] },
+    "衝突解消・最終キーワード確定": { "main": [[{ "node": "Notionページ本文ブロック生成（チャンク化）", "type": "main", "index": 0 }]] },
+    "Notionページ本文ブロック生成（チャンク化）": { "main": [[{ "node": "Notion：承認待ちタスクページ新規作成", "type": "main", "index": 0 }]] },
+    "Notion：承認待ちタスクページ新規作成": { "main": [[{ "node": "IF：ページ作成成功判定", "type": "main", "index": 0 }]] },
+    "IF：ページ作成成功判定": { "main": [
+      [{ "node": "LINEメッセージ本文生成", "type": "main", "index": 0 }],
+      [{ "node": "レスポンス生成：Notionページ作成失敗（終端）", "type": "main", "index": 0 }]
+    ] },
+    "LINEメッセージ本文生成": { "main": [[{ "node": "LINE - Broadcast確認送信", "type": "main", "index": 0 }]] },
+    "LINE - Broadcast確認送信": { "main": [[{ "node": "レスポンス生成：成功（終端）", "type": "main", "index": 0 }]] }
+  },
+
+  "settings": { "executionOrder": "v1" }
+}
