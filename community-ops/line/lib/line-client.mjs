@@ -46,6 +46,27 @@ export async function replyText(replyToken, text) {
   });
 }
 
+// items: [{ label: "表示ラベル", data: "postbackで返ってくる値" }, ...]（最大13件、LINE仕様）
+export async function replyWithQuickReply(replyToken, text, items) {
+  return lineFetch("/message/reply", {
+    body: {
+      replyToken,
+      messages: [
+        {
+          type: "text",
+          text,
+          quickReply: {
+            items: items.map((item) => ({
+              type: "action",
+              action: { type: "postback", label: item.label, data: item.data, displayText: item.label },
+            })),
+          },
+        },
+      ],
+    },
+  });
+}
+
 // 宛先リスト管理不要（誤配信リスクが低い）。告知配信は原則このbroadcastのみを使う。
 export async function broadcast(text) {
   return lineFetch("/message/broadcast", {

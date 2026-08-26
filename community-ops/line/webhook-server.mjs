@@ -7,7 +7,7 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { lineConfigured, verifySignature, replyText } from "./lib/line-client.mjs";
+import { lineConfigured, verifySignature, replyText, replyWithQuickReply } from "./lib/line-client.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,10 +26,21 @@ loadEnv(join(__dirname, "..", ".env"));
 
 const PORT = process.env.LINE_WEBHOOK_PORT || 8090;
 const WELCOME_PATH = join(__dirname, "templates", "welcome-reply.md");
+// 招待リンク・最小実装（scripts/invite-link-gate.gs）のウェブアプリURL。
+// population A/B識別の自己申告（postback）を記録するために使う。未設定でも動く（記録をスキップするだけ）。
+const INVITE_GATE_URL = process.env.INVITE_GATE_URL || "";
 
 function loadWelcomeText() {
   if (!existsSync(WELCOME_PATH)) return "友だち追加ありがとうございます。";
   return readFileSync(WELCOME_PATH, "utf-8").trim();
+}
+
+// population A/B の自己申告をinvite-link-gate.gsに記録する（fire-and-forget、失敗しても致命的ではない）。
+// GASのレスポンス（リダイレクト用HTML）は使わないため待たない。
+function recordSelfReport(src) {
+  if (!INVITE_GATE_URL) return;
+  const url = `${INVITE_GATE_URL}?src=${encodeURIComponent(src)}&dest=line-selfreport&campaign=line-follow-selfreport`;
+  fetch(url).catch((e) => console.error("招待リンク自己申告の記録に失敗:", e.message));
 }
 
 const server = createServer(async (req, res) => {
@@ -70,9 +81,20 @@ const server = createServer(async (req, res) => {
   for (const ev of payload.events || []) {
     try {
       if (ev.type === "follow" && ev.replyToken) {
-        await replyText(ev.replyToken, loadWelcomeText());
+        // ウェルカムメッセージ本文 + population A/B識別のための自己申告クイックリプライを添える
+        // （B13：招待リンク最小実装の一部。Discord同様、入室検知そのものは行わない設計を踏襲）。
+        await replyWithQuickReply(ev.replyToken, loadWelcomeText(), [
+          { label: "すでにご相談中の案件から", data: "src=A" },
+          { label: "SNS・noteを見て", data: "src=B" },
+        ]);
+      } else if (ev.type === "postback" && ev.postback && ev.replyToken) {
+        const m = /^src=(A|B)$/.exec(ev.postback.data || "");
+        if (m) {
+          recordSelfReport(m[1]);
+          await replyText(ev.replyToken, "ありがとうございます！参考にさせていただきますね。");
+        }
       }
-      // follow以外（通常メッセージ等）には反応しない設計（告知配信専用アカウントのため）
+      // follow/postback以外（通常メッセージ等）には反応しない設計（告知配信専用アカウントのため）
     } catch (e) {
       console.error("webhook handling error:", e.message);
     }
