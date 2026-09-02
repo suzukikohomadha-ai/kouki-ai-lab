@@ -82,3 +82,8 @@ export async function getQuota() {
 export async function getQuotaConsumption() {
   return lineFetch("/message/quota/consumption", { method: "GET" });
 }
+
+// 個別メッセージの送信者プロフィール取得（表示名を下書き一覧に出すためだけに使う。失敗しても致命的ではない）
+export async function getProfile(userId) {
+  return lineFetch(`/profile/${encodeURIComponent(userId)}`, { method: "GET" });
+}
