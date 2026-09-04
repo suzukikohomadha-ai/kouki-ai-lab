@@ -15,6 +15,7 @@ import {
   STUCK_PROMPT_TEXT,
   COMPLETION_TEXT,
   START_KEYWORD,
+  ESCALATION_TEXT,
   getStep,
   getCategory,
 } from "./lib/onboarding-content.mjs";
@@ -69,10 +70,13 @@ function recordOnboardingProgress(userId, step, event, code) {
 }
 
 // ステップNの案内文＋「できました」「わからない・詰まった」クイックリプライを返信する。
-function buildStepQuickReplyItems(step) {
+// escalated=trueのときは「わからない・詰まった」ボタンに esc=1 を付け、次に押されたときは
+// カテゴリ選択を繰り返さずESCALATION_TEXTを返す（無限ループ防止、下記postbackハンドラ参照）。
+function buildStepQuickReplyItems(step, { escalated = false } = {}) {
+  const stuckData = escalated ? `onb=stuck&step=${step}&esc=1` : `onb=stuck&step=${step}`;
   return [
     { label: DONE_LABEL, data: `onb=done&step=${step}` },
-    { label: STUCK_LABEL, data: `onb=stuck&step=${step}` },
+    { label: STUCK_LABEL, data: stuckData },
   ];
 }
 
@@ -96,17 +100,54 @@ async function replyStuckCategories(replyToken, step) {
 // カテゴリ回答文言を返信する。続けて同じステップの「できました」「わからない・詰まった」ボタンを
 // 再度添える（LINEのクイックリプライは直近のメッセージにしか表示されないため、これを付け直さないと
 // ユーザーが元のステップのボタンへ戻れなくなる。フロー設計v3リスク7で指摘されている「クイックリプライが
-// 他の配信で隠れる」問題と同種の理由）。
+// 他の配信で隠れる」問題と同種の理由）。ここで付け直す「わからない・詰まった」はescalated扱いにし、
+// 次に押されたときはカテゴリ選択を繰り返さない（無限ループ防止）。
 async function replyStuckCategoryAnswer(replyToken, step, code) {
   const category = getCategory(step, code);
   if (!category) return;
-  await replyWithQuickReply(replyToken, category.reply, buildStepQuickReplyItems(step));
+  await replyWithQuickReply(replyToken, category.reply, buildStepQuickReplyItems(step, { escalated: true }));
 }
 
-// ステップ配信の開始処理（postbackの onb=start と、テキストの合言葉「はじめる」の両方から呼ばれる）。
+// GASの進捗記録（scripts/onboarding-progress-gate.gs）に現在の進捗を問い合わせる。
+// 「はじめる」再送信時（＝再開したいとき）にのみ使う同期呼び出し。通常のステップ進行では
+// 使わない（応答速度優先の設計を維持するため）。タイムアウト・失敗時はnullを返し、
+// 呼び出し元でStep1からの開始にフォールバックする。
+async function fetchCurrentProgress(userId) {
+  if (!ONBOARDING_PROGRESS_URL || !userId) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const url = `${ONBOARDING_PROGRESS_URL}?${new URLSearchParams({ action: "get", userId })}`;
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || !Number.isInteger(data.currentStep) || data.currentStep < 1) return null;
+    return data; // { currentStep, status }
+  } catch (e) {
+    console.error("進捗取得に失敗（Step1からの開始にフォールバックします）:", e.message);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ステップ配信の開始・再開処理（postbackの onb=start と、テキストの合言葉「はじめる」の両方から呼ばれる）。
+// 既に進行中の記録があれば、そのステップを再表示する（＝「続きから」再開。フロー設計・鈴木さんの
+// 運用フィードバックにより、途中で自由文が挟まりボタンが見えなくなった場合の回復手段として、
+// モニター・鈴木さんのどちらも「はじめる」と再送信するだけで復帰できるようにしている）。
+// 記録が無い、または進捗記録先が未設定の場合はStep1から開始する。
 async function startOnboarding(replyToken, userId) {
-  recordOnboardingProgress(userId, 1, "started");
-  await replyStep(replyToken, 1);
+  const progress = await fetchCurrentProgress(userId);
+  if (progress && progress.status === "completed") {
+    await replyText(replyToken, COMPLETION_TEXT);
+    return;
+  }
+  if (!progress) {
+    recordOnboardingProgress(userId, 1, "started");
+    await replyStep(replyToken, 1);
+    return;
+  }
+  await replyStep(replyToken, progress.currentStep);
 }
 
 const server = createServer(async (req, res) => {
@@ -182,9 +223,18 @@ const server = createServer(async (req, res) => {
             }
           } else if (action === "stuck") {
             const step = Number(params.get("step"));
+            const escalated = params.get("esc") === "1";
             if (Number.isInteger(step) && step >= 1 && step <= TOTAL_STEPS) {
-              recordOnboardingProgress(userId, step, "stuck");
-              await replyStuckCategories(ev.replyToken, step);
+              if (escalated) {
+                // 同じステップで「わからない・詰まった」が2回目以降（カテゴリ回答済みの状態から再度押された）。
+                // カテゴリ選択を繰り返さず、担当への引き継ぎ文言で止める（無限ループ防止）。
+                // ボタンはescalated状態のまま付け直すため、再度押しても同じ案内が返るだけでループしない。
+                recordOnboardingProgress(userId, step, "escalated");
+                await replyWithQuickReply(ev.replyToken, ESCALATION_TEXT, buildStepQuickReplyItems(step, { escalated: true }));
+              } else {
+                recordOnboardingProgress(userId, step, "stuck");
+                await replyStuckCategories(ev.replyToken, step);
+              }
             }
           } else if (action === "reason") {
             const step = Number(params.get("step"));

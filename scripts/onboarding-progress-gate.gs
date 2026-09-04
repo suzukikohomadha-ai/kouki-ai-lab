@@ -19,8 +19,14 @@
  *   列：timestamp / userId / step / event / code
  *
  * エンドポイント：
- * - ?action=record&userId=...&step=1-4&event=started|done|stuck|reason&code=...（event=reasonのみ）
+ * - ?action=record&userId=...&step=1-4&event=started|done|stuck|reason|escalated&code=...（event=reasonのみ）
  *     → events に1行追記 ＋ progress を該当userIdでupsert
+ *     （escalated：同じステップで「わからない・詰まった」を2回目以降押した＝担当への引き継ぎが必要になった記録）
+ * - ?action=get&userId=...
+ *     → その1ユーザーの現在の進捗（{currentStep, status}）をJSONで返す。webhook-server.mjsが
+ *       合言葉「はじめる」の再送信を受けたときに、Step1からではなく現在のステップから再開する
+ *       判定に使う（自由文でクイックリプライが見えなくなった場合の復帰手段）。記録が無ければ
+ *       {currentStep: 0}を返し、その場合はwebhook側がStep1から新規開始として扱う。
  * - ?action=stats（&since=YYYY-MM-DD&until=YYYY-MM-DD）
  *     → ステップ別ファネル・つまずきカテゴリ別集計を簡易HTMLで表示（invite-link-gate.gsのhandleStats_と同じ設計）
  *
@@ -34,7 +40,7 @@
 const SHEET_TITLE = 'スターターキット モニター進捗ログ';
 const PROGRESS_SHEET_NAME = 'progress';
 const EVENTS_SHEET_NAME = 'events';
-const VALID_EVENTS = ['started', 'done', 'stuck', 'reason'];
+const VALID_EVENTS = ['started', 'done', 'stuck', 'reason', 'escalated'];
 const LOCK_TIMEOUT_MS = 5000;
 
 function getSpreadsheet_() {
@@ -81,11 +87,13 @@ function getOrCreateEventsSheet_(ss) {
 function doGet(e) {
   const params = (e && e.parameter) || {};
   if (params.action === 'record') return handleRecord_(params);
+  if (params.action === 'get') return handleGet_(params);
   if (params.action === 'stats') return handleStats_(params);
   return htmlPage_(
     SHEET_TITLE,
     '<p>このエンドポイントは community-ops/line/webhook-server.mjs から呼び出される記録用APIです。</p>' +
-    '<p style="color:#666;font-size:13px;">?action=record（進捗記録・webhook側から呼び出し）／?action=stats（集計表示）</p>'
+    '<p style="color:#666;font-size:13px;">?action=record（進捗記録・webhook側から呼び出し）／' +
+    '?action=get（現在の進捗照会・「はじめる」再送信時の再開判定用）／?action=stats（集計表示）</p>'
   );
 }
 
@@ -129,9 +137,9 @@ function handleRecord_(params) {
     const progressSheet = getOrCreateProgressSheet_(ss);
     const rowIndex = findProgressRow_(progressSheet, userId);
 
-    // status算出：stuck/reasonは「詰まっている」状態、doneでStep4完了ならcompleted、それ以外はin_progress
+    // status算出：stuck/reason/escalatedは「詰まっている」状態、doneでStep4完了ならcompleted、それ以外はin_progress
     let status = 'in_progress';
-    if (event === 'stuck' || event === 'reason') status = 'stuck';
+    if (event === 'stuck' || event === 'reason' || event === 'escalated') status = 'stuck';
     if (event === 'done' && step >= 4) status = 'completed';
 
     const stuckCode = event === 'reason' ? code : (event === 'done' ? '' : undefined);
@@ -159,6 +167,30 @@ function handleRecord_(params) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// 現在の進捗を1ユーザー分だけ返す（webhook-server.mjsの「はじめる」再送信時の再開判定用）。
+// 記録が無い場合は currentStep: 0 を返す（＝Step1から新規に開始する扱い）。
+function handleGet_(params) {
+  const userId = params.userId || '';
+  if (!userId) {
+    return ContentService.createTextOutput(JSON.stringify({ currentStep: 0 }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const ss = getSpreadsheet_();
+  const progressSheet = getOrCreateProgressSheet_(ss);
+  const rowIndex = findProgressRow_(progressSheet, userId);
+  if (rowIndex === -1) {
+    return ContentService.createTextOutput(JSON.stringify({ currentStep: 0 }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const row = progressSheet.getRange(rowIndex, 1, 1, 6).getValues()[0];
+  return ContentService.createTextOutput(JSON.stringify({
+    currentStep: row[1],
+    status: row[2],
+  })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function parseDateParam_(value) {
