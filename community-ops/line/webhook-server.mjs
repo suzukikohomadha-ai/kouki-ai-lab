@@ -15,6 +15,8 @@ import {
   STUCK_PROMPT_TEXT,
   COMPLETION_TEXT,
   START_KEYWORD,
+  RESTART_KEYWORD,
+  RESUME_KEYWORD,
   ESCALATION_TEXT,
   getStep,
   getCategory,
@@ -131,11 +133,18 @@ async function fetchCurrentProgress(userId) {
   }
 }
 
-// ステップ配信の開始・再開処理（postbackの onb=start と、テキストの合言葉「はじめる」の両方から呼ばれる）。
-// 既に進行中の記録があれば、そのステップを再表示する（＝「続きから」再開。フロー設計・鈴木さんの
-// 運用フィードバックにより、途中で自由文が挟まりボタンが見えなくなった場合の回復手段として、
-// モニター・鈴木さんのどちらも「はじめる」と再送信するだけで復帰できるようにしている）。
-// 記録が無い、または進捗記録先が未設定の場合はStep1から開始する。
+// ステップ配信を必ずStep1からやり直す（合言葉「最初から始める」専用）。
+// 進行中の記録があっても無視して上書きする（利用者が明示的に選んだ操作のため）。
+async function restartOnboarding(replyToken, userId) {
+  recordOnboardingProgress(userId, 1, "started");
+  await replyStep(replyToken, 1);
+}
+
+// ステップ配信の開始・再開処理（postbackの onb=start、合言葉「はじめる」「続きから始める」の
+// いずれからも呼ばれる）。既に進行中の記録があれば、そのステップを再表示する（＝「続きから」再開。
+// フロー設計・鈴木さんの運用フィードバックにより、途中で自由文が挟まりボタンが見えなくなった場合の
+// 回復手段として、モニター・鈴木さんのどちらもこの合言葉を再送信するだけで復帰できるようにしている）。
+// 記録が無い、または進捗記録先が未設定の場合はStep1から開始する（=restartOnboardingと同じ結果）。
 async function startOnboarding(replyToken, userId) {
   const progress = await fetchCurrentProgress(userId);
   if (progress && progress.status === "completed") {
@@ -143,8 +152,7 @@ async function startOnboarding(replyToken, userId) {
     return;
   }
   if (!progress) {
-    recordOnboardingProgress(userId, 1, "started");
-    await replyStep(replyToken, 1);
+    await restartOnboarding(replyToken, userId);
     return;
   }
   await replyStep(replyToken, progress.currentStep);
@@ -250,15 +258,20 @@ const server = createServer(async (req, res) => {
         ev.type === "message" &&
         ev.message &&
         ev.message.type === "text" &&
-        ev.replyToken &&
-        (ev.message.text || "").trim() === START_KEYWORD
+        ev.replyToken
       ) {
-        // 「スターターキット」モニター向けはじめかたステップ配信の開始トリガー（完全一致のみ）。
-        // 鈴木さんが個別に送る開始案内（community-ops/line/templates/onboarding-start-invite.md）に
-        // 対して、モニターが合言葉「はじめる」を返信した場合にのみ反応する。これ以外の自由文には
-        // 一切反応しない設計を維持する（告知配信専用アカウントの原則を、この1語だけの例外で守る）。
+        // 「スターターキット」モニター向けはじめかたステップ配信の合言葉（完全一致のみに反応する3語）。
+        // これ以外の自由文には一切反応しない設計を維持する（告知配信専用アカウントの原則を、
+        // この3語だけの例外で守る）。
+        // - START_KEYWORD「はじめる」／RESUME_KEYWORD「続きから始める」：進行中なら続きから、無ければStep1から
+        // - RESTART_KEYWORD「最初から始める」：進行中の記録を無視して必ずStep1からやり直す
+        const text = (ev.message.text || "").trim();
         const userId = (ev.source && ev.source.userId) || "";
-        await startOnboarding(ev.replyToken, userId);
+        if (text === START_KEYWORD || text === RESUME_KEYWORD) {
+          await startOnboarding(ev.replyToken, userId);
+        } else if (text === RESTART_KEYWORD) {
+          await restartOnboarding(ev.replyToken, userId);
+        }
       }
       // 上記いずれにも該当しないメッセージ・イベントには反応しない設計（告知配信専用アカウントのため）
     } catch (e) {
