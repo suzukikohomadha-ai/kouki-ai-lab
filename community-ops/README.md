@@ -17,6 +17,12 @@ Claude Codeから操作するための技術基盤です。
 - LINE：登録時オートリプライ（Webhook常時稼働）、配信テンプレートのdry-runプレビューと（承認後の）実配信
 - LINE：友だち追加直後に「すでにご相談中の案件から／SNS・noteを見て」の2択クイックリプライを添え、
   population A/Bの自己申告を`scripts/invite-link-gate.gs`（招待リンク最小実装）に記録する（任意・`INVITE_GATE_URL`未設定時はスキップ）
+- LINE：「スターターキット」モニター向け「はじめかたステップ配信」。あらかじめ用意した4ステップ
+  （Claude Codeインストール→フォルダをターミナルで開く→`claude`起動・信頼確認→秘書アイとの初回会話）の
+  案内を、クイックリプライ「できました」「わからない・詰まった」への**ボタン操作（postback）にのみ**
+  反応して1段階ずつ返信する。進捗は`scripts/onboarding-progress-gate.gs`（任意・`ONBOARDING_PROGRESS_URL`
+  未設定時はスキップ）に記録する。配信の開始は鈴木さんがモニターへ個別に送るプッシュメッセージを起点とし、
+  友だち追加時の全員自動開始ではない
 - Discord：3チャンネル（`#お知らせ` `#質問-相談` `#やってみた-共有`）の作成・トピック設定・ウェルカムメッセージの固定投稿（A案）
 
 **やらないこと**
@@ -24,7 +30,12 @@ Claude Codeから操作するための技術基盤です。
 - Discord入室イベントの検知・常時稼働のGateway接続（B案は不採用。SERVER MEMBERS INTENTも使いません）
 - 実際の配信・投稿の自動実行（`send-broadcast.mjs`は`--send`、`setup-server.mjs`は`--apply`を
   明示的に付けたときだけAPIを呼びます。それまでは何を送るかのプレビュー表示のみです）
-- 個別の質問・相談への自動応答（Discordの`#質問-相談`は人（会員・鈴木さん）が対応する前提です）
+- 個別の質問・相談への自動応答（Discordの`#質問-相談`は人（会員・鈴木さん）が対応する前提です）。
+  「はじめかたステップ配信」で用意する応答も、**あらかじめ決められた選択式ボタンへの定型応答のみ**で、
+  ユーザーの自由文入力を解析して自動応答する機能は追加していません。「うまくいかない」を選んだ後の
+  一部の案内は、公式LINEの個別チャットへそのまま返信するよう促しますが、その返信自体は鈴木さんが
+  LINE公式アカウントマネージャーの画面から手動で確認・返信する運用です（Webhookは通常のテキスト
+  メッセージには引き続き一切反応しません）
 
 既存 `server/`（秘書アイ用・社長個人向けLINE連携）とは、認証情報・Webhookエンドポイント・
 デプロイ先をすべて分離しています。環境変数名も別（`LINE_COMMUNITY_*` / `DISCORD_*`）にしており、
@@ -39,7 +50,9 @@ community-ops/
   .env.example          必要な環境変数の一覧（値は空。community-ops/.env にコピーして使う）
   line/
     lib/line-client.mjs      LINE Messaging APIクライアント（broadcast / reply / 署名検証）
-    webhook-server.mjs       常時稼働：Webhook受信→登録時オートリプライ
+    lib/onboarding-content.mjs  「スターターキット」はじめかたステップ配信の本文・クイックリプライ文言データ
+                                 （カエデのメッセージ文言案が正、ロジックとは分離して保持）
+    webhook-server.mjs       常時稼働：Webhook受信→登録時オートリプライ、はじめかたステップ配信のpostback応答
     send-broadcast.mjs       CLI：配信テンプレートのプレビュー・実送信
     templates/                配信テンプレート・オートリプライ本文（.md）
   discord/
@@ -131,7 +144,7 @@ node community-ops/line/send-broadcast.mjs --template=new-course-announce --send
 テンプレート本文中の `[〇〇]` `[URL]` 等のプレースホルダーは、実送信前に必ず埋めてください
 （埋め忘れがあると警告が表示されます）。
 
-### LINE：Webhookサーバー（登録時オートリプライ）
+### LINE：Webhookサーバー（登録時オートリプライ・はじめかたステップ配信のpostback応答）
 
 ローカルでの動作確認：
 
@@ -140,8 +153,12 @@ node community-ops/line/webhook-server.mjs
 ```
 
 `http://localhost:8090/webhook`（ポートは`.env`の`LINE_WEBHOOK_PORT`で変更可）でLINEからの
-Webhookを待ち受けます。友だち追加時のみ、`line/templates/welcome-reply.md`の内容を自動返信します。
-通常のメッセージには反応しません（告知配信専用アカウントのため）。
+Webhookを待ち受けます。友だち追加時は`line/templates/welcome-reply.md`の内容を自動返信します。
+また、「スターターキット」モニター向けはじめかたステップ配信のボタン（`onb=`で始まるpostback data）
+にも反応し、`line/lib/onboarding-content.mjs`の文言に沿って次のステップ案内・つまずきカテゴリ選択・
+カテゴリ回答を返信します。進捗は`scripts/onboarding-progress-gate.gs`（`ONBOARDING_PROGRESS_URL`）に
+fire-and-forgetで記録します（未設定時は記録のみスキップ、案内自体は動作します）。
+通常のテキストメッセージには引き続き反応しません（告知配信専用アカウントのため）。
 
 ---
 
