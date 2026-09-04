@@ -14,6 +14,7 @@ import {
   STUCK_LABEL,
   STUCK_PROMPT_TEXT,
   COMPLETION_TEXT,
+  START_KEYWORD,
   getStep,
   getCategory,
 } from "./lib/onboarding-content.mjs";
@@ -102,6 +103,12 @@ async function replyStuckCategoryAnswer(replyToken, step, code) {
   await replyWithQuickReply(replyToken, category.reply, buildStepQuickReplyItems(step));
 }
 
+// ステップ配信の開始処理（postbackの onb=start と、テキストの合言葉「はじめる」の両方から呼ばれる）。
+async function startOnboarding(replyToken, userId) {
+  recordOnboardingProgress(userId, 1, "started");
+  await replyStep(replyToken, 1);
+}
+
 const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -162,8 +169,7 @@ const server = createServer(async (req, res) => {
 
           if (action === "start") {
             // 冒頭案内の「はじめる」ボタン。ステップ1を案内する。
-            recordOnboardingProgress(userId, 1, "started");
-            await replyStep(ev.replyToken, 1);
+            await startOnboarding(ev.replyToken, userId);
           } else if (action === "done") {
             const step = Number(params.get("step"));
             if (Number.isInteger(step) && step >= 1 && step <= TOTAL_STEPS) {
@@ -190,8 +196,21 @@ const server = createServer(async (req, res) => {
           }
           // 上記いずれにも一致しない onb=... postbackは、現状どおり無視する（ログのみ）。
         }
+      } else if (
+        ev.type === "message" &&
+        ev.message &&
+        ev.message.type === "text" &&
+        ev.replyToken &&
+        (ev.message.text || "").trim() === START_KEYWORD
+      ) {
+        // 「スターターキット」モニター向けはじめかたステップ配信の開始トリガー（完全一致のみ）。
+        // 鈴木さんが個別に送る開始案内（community-ops/line/templates/onboarding-start-invite.md）に
+        // 対して、モニターが合言葉「はじめる」を返信した場合にのみ反応する。これ以外の自由文には
+        // 一切反応しない設計を維持する（告知配信専用アカウントの原則を、この1語だけの例外で守る）。
+        const userId = (ev.source && ev.source.userId) || "";
+        await startOnboarding(ev.replyToken, userId);
       }
-      // follow/postback以外（通常メッセージ等）には反応しない設計（告知配信専用アカウントのため）
+      // 上記いずれにも該当しないメッセージ・イベントには反応しない設計（告知配信専用アカウントのため）
     } catch (e) {
       console.error("webhook handling error:", e.message);
     }

@@ -11,6 +11,11 @@
 
 export const TOTAL_STEPS = 4;
 
+// モニターが最初にステップ配信を開始するための合言葉（完全一致でのみ反応する）。
+// 鈴木さんが個別に送る開始案内メッセージ（community-ops/line/templates/onboarding-start-invite.md）に
+// 呼応する形になっている。この文字列以外の自由文にはwebhook-server.mjsは一切反応しない。
+export const START_KEYWORD = 'はじめる';
+
 // 各ステップ共通の「できました」「わからない・詰まった」ボタンラベル
 export const DONE_LABEL = 'できました';
 export const STUCK_LABEL = 'わからない・詰まった';
