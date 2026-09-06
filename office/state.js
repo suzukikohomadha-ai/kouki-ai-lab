@@ -26,6 +26,7 @@ window.AI_STATE = {
   },
 
   tasks: [
+    { id: "T224", title: "iPhone Siri × Claude Code 連携（n8n経由・要件定義/設計）", owner: "メイ", status: "doing", progress: 10, hint: "メイが要件定義・設計中。n8n環境の接続状況が未確認のため、まず前提条件の整理から", cmd: "", log: [ { time: "now", text: "社長より「n8nでSiriとClaude Codeを連携できないか」と依頼。層Aルーティング(A-4 AI・業務自動化)に従いメイへ設計を依頼" } ], deliverables: [] },
     { id: "T1", client: "ガチャガチャ案件", title: "ガチャガチャ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T2", client: "トップパフォーマー案件", title: "トップパフォーマー案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T3", client: "へウラ案件", title: "へウラ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
