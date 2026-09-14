@@ -5,7 +5,7 @@
 - 作成：メイ（AI Automation & Operations Architect）
 - 日付：2026-09-14
 - ステータス：**Draft（社長確認前・n8n本番未登録）**
-- 連携：エイト（n8n実装）、リサ・claude-code-guide（Slack API／n8n Slackノード／Claude Tag等の技術仕様を並行して事実確認中。本書の技術記述は速報レベルであり、両名の確認結果と齟齬が出た場合は両名の確認結果を優先する）
+- 連携：エイト（n8n実装）、リサ・claude-code-guide（Slack API／n8n Slackノード／Claude Tag等の技術仕様の並行事実確認は完了、結果は4節・9節・10節に統合済み）
 
 ---
 
@@ -13,13 +13,13 @@
 
 ### 確認済み事実
 - 社長より「コホマダの仕事を全てSlackで管理できるようにしたい。n8nやClaude Codeで案件整理や会話中の情報を自動整理したい」との相談があり、秘書アイがA〜Eのアイデアを提示、社長は「どこから進めるべきか分からないので提案ベースで進めて」と回答した（`office/state.js` T224）。
-- n8nセルフホストインスタンス（kohomada-n8n.top）が接続済みで、`n8n-automation/`に専任実装体制（CLAUDE.md・4エージェント・スクリプト・ドキュメント一式）が存在する。
+- n8nセルフホストインスタンス（`kohomadha-n8n.top`）が接続済みで、`n8n-automation/`に専任実装体制（CLAUDE.md・4エージェント・スクリプト・ドキュメント一式）が存在する。
 - 既存の共通基盤サブワークフローとして、AUTO-COM-001（Claude API呼び出し共通サブワークフロー、HTTP Request＋`anthropicApi`Credential方式）とAUTO-COM-002（共通エラーハンドラー、LINE Broadcast主経路＋Notionフォールバック）が本番想定でドラフト実装済み（`n8n-automation/docs/cases/AUTO-COM-001`, `AUTO-COM-002`）。
 - AUTO-CNT-001（note運用マニュアル自動更新）が、情報源ページと書き込み先ページを物理的に分離する設計（自己汚染防止）で実装されている実例がある（`n8n-automation/docs/cases/AUTO-CNT-001`）。
 - Notion「🚀 事業開発ハブ」に📋タスク管理DBが既に運用中で、`office/app/views/notion-hub.js`がこれをサーバー経由でライブ取得・表示している（URL: `https://pricey-legume-14e.notion.site/3a9040888e9781efab1ccbf858f14c0e`）。これは`office/state.js`の`tasks[]`（秘書アイ・ジンの社内作業管理用）とは**別物**であり、本設計で混同しない。
 - `.claude/rules/content-draft-automation.md`により「📝コンテンツ下書き・DB」は下書きコンテンツ専用と定められており、案件管理・議事メモ用途には使わない。
-- n8n公式ドキュメントに「Slack Trigger」ノード（`n8n-nodes-base.slackTrigger`、メッセージ・リアクション等のSlackイベントに反応する公式トリガーノード）と「Slack」ノード（`n8n-nodes-base.slack`、メッセージ送信・チャンネル操作等を行う公式アプリノード。「Send and Wait for Response」という、メッセージ送信後に相手の応答を待って処理を続けるアクションを含む）が存在する（出典：n8n公式ドキュメント、下記「出典」節参照、2026-09-14検索確認）。ただし、この接続先n8nインスタンス（kohomada-n8n.top）に実際にインストール・有効化されているか、正確な`typeVersion`・パラメータ構造は本書作成時点で未確認（`[要インスタンス確認]`、リサ・エイトの並行確認範囲）。
-- n8n公式ドキュメントによれば、Slack Trigger node利用にはSlackアプリの作成とEvent Subscriptionsの有効化、`conversations.list`・`users.list`等のスコープ付与が必要である旨の記載がある（出典：n8n公式ドキュメント、2026-09-14検索確認）。Webhookの送信元検証（Slack Signing Secret）はn8n 1.106.0以降で対応、との記載もある（出典同上）。接続先インスタンスのn8nバージョンは本書作成時点で未確認（`[要インスタンス確認]`）。
+- n8n公式ドキュメントに「Slack Trigger」ノード（`n8n-nodes-base.slackTrigger`、メッセージ・リアクション等のSlackイベントに反応する公式トリガーノード）と「Slack」ノード（`n8n-nodes-base.slack`、メッセージ送信・チャンネル操作等を行う公式アプリノード。「Send and Wait for Response」という、メッセージ送信後に相手の応答を待って処理を続けるアクションを含む）が存在する（出典：n8n公式ドキュメント、下記「出典」節参照、2026-09-14検索確認）。ただし、この接続先n8nインスタンス（`kohomadha-n8n.top`）に実際にインストール・有効化されているか、正確な`typeVersion`・パラメータ構造は本書作成時点で未確認（`[要インスタンス確認]`）。
+- n8n公式ドキュメントによれば、Slack Trigger node利用にはSlackアプリの作成とEvent Subscriptionsの有効化、`conversations.list`・`users.list`等のスコープ付与が必要である旨の記載がある（出典：n8n公式ドキュメント、2026-09-14検索確認）。Webhookの送信元検証（Slack Signing Secret）はn8n 1.106.0以降で対応、との記載もある（出典同上）。**接続先インスタンスのn8nバージョンは確認済み：n8n 2.33.6（出典：`n8n-automation/docs/cases/KNW-001/workflow-design.md`242行目、`office/state.js` T129ログ。エイトが読み取り専用APIで実調査済み）。2.33.6は1.106.0より新しいため、Signing Secretによる署名検証機能自体は対応バージョン条件を満たしている見込みが高い。ただし、実機でのSigning Secret設定・署名検証が実際に正しく動作するかどうかの動作確認は別途必要（`[要インスタンス確認]`、バージョン条件を満たすことと実機動作確認は別軸）。**
 
 ### 推測・仮説
 - 社長が想定する「案件」は、コホマダの貿易・海外展開支援・日本進出支援・AI/DX導入・業務自動化等、現在進行中の個別プロジェクト単位であると推測する（`[要ヒアリング]`で確認）。
@@ -48,7 +48,7 @@
 ### 2.2 既存資産の棚卸し
 | 資産 | 状態 | 本設計での使い方 |
 |---|---|---|
-| n8n（kohomada-n8n.top） | 接続済み | Slack自動化ワークフローの実行基盤 |
+| n8n（`kohomadha-n8n.top`、確認済みバージョン: n8n 2.33.6） | 接続済み | Slack自動化ワークフローの実行基盤 |
 | AUTO-COM-001（Claude API共通サブワークフロー） | ドラフト | Slack本文の要約・構造化抽出に流用 |
 | AUTO-COM-002（共通エラーハンドラー） | ドラフト | Slack自動化ワークフローのError Workflowとしてそのまま割当 |
 | AUTO-CNT-001（自己汚染防止パターンの実例） | ドラフト | 「情報源と書き込み先を分離する」設計思想を踏襲 |
@@ -74,7 +74,7 @@
 Aと同じ「Slackメッセージ→Claude要約→Notion書き込み」というトリガー構造・サブワークフロー（AUTO-COM-001/002）をそのまま使い回せるため、別チャンネル・別トリガー条件を1つ追加するだけで実装できる。実装コストの増分が小さい一方、「会話の中の重要情報を勝手に整理」という社長の要望に早期に応えられる。
 
 ### 3.3 なぜC・D・Eを後回しにするか
-- **C（承認・催促のSlack完結）**：技術的にはn8n公式Slackノードの「Send and Wait for Response」機能で実現可能と分かってきているが（3節出典参照）、「何に対して承認を求めるか」の対象（案件データ）がまだ存在しない。また、Slack上のボタン押下を`.claude/rules/approval-policy.md`上の「社長の承認」として扱ってよい範囲（対外送付・契約締結など）は、AI側だけで拡大解釈すべきでない論点であり、A稼働後に改めて社長と運用ルールを確認すべきと判断する。
+- **C（承認・催促のSlack完結）**：リサの確認（検索経由、n8n公式ドキュメント`n8n-nodes-base.slack/approvals`ページ）により、n8n公式Slackノードに「Send and Wait for Response」という操作があり、Response Typeを「Approval」に設定するとSlack上のインタラクティブボタン（承認／却下）をワークフロー内で直接受け取れる、との記載を確認した。「Capture Who Responded」「Restrict Who Can Approve」「Unauthorized Reply」「After Decision」等の設定項目名も確認できており、Cの実現手段としては公式機能が存在する見込みが高い。ただし現時点では「何に対して承認を求めるか」の対象（案件データ）がまだ存在しない。また、Slack上のボタン押下を`.claude/rules/approval-policy.md`上の「社長の承認」として扱ってよい範囲（対外送付・契約締結など）は、AI側だけで拡大解釈すべきでない論点であり、A稼働後に改めて社長と運用ルールを確認すべきと判断する。
 - **D（Claude常駐／Claude Tag導入）**：Claude Tagの提供有無・料金・権限モデルはclaude-code-guideが並行確認中で未確定。加えて、「常駐Claudeが何を参照して回答するか」はAで整備されたNotionデータがあって初めて実用的に設計できる。
 - **E（定点レポーティング）**：日報・週報はA・Bで蓄積されたNotionデータを集計するだけの処理であり、Aより先に作ってもレポートの中身が空になる。Aの完全な従属タスクとして扱う。
 
@@ -97,17 +97,19 @@ Aと同じ「Slackメッセージ→Claude要約→Notion書き込み」とい�
 **管理ID（提案・仮）**：`AUTO-SLK-001`（案件自動集約）、`AUTO-SLK-002`（決定事項ログ抽出）。部署略称`SLK`は本設計で新設する提案であり、`n8n-automation/docs/architecture.md`の部署略称一覧への追記はエイトの実装着手時に行う（本書はメイの設計提案段階のため、n8n-automationフォルダ自体への書き込みは行っていない）。
 
 **AUTO-SLK-001：Slack案件自動集約**
-1. **トリガー**：Slack Trigger node（`n8n-nodes-base.slackTrigger`、公式ノードの存在は確認済み。イベント種別・スコープ・署名検証設定の正確なパラメータは`[要インスタンス確認][要公式確認]`）。`#kohomada-projects`チャンネルの「reaction_added」相当イベント（絵文字📋がメッセージに付与された時点）を対象にする案を推奨（後述の代替案参照）。
+1. **トリガー**：Slack Trigger node（`n8n-nodes-base.slackTrigger`、公式ノードの存在は確認済み）。リサの確認（検索経由、n8n公式ドキュメントページ`n8n-nodes-base.slacktrigger`が列挙するイベント種別）によれば、検知可能なイベントとして「New Message Posted to Channel」「Reaction Added」「New Public Channel Created」「New User」「Any Event」が確認できた。`#kohomada-projects`チャンネルの「Reaction Added」イベント（絵文字📋がメッセージに付与された時点）を対象にする案を推奨（後述の代替案参照）。イベント種別・スコープ・署名検証設定の正確なパラメータは`[要インスタンス確認][要公式確認]`。
 2. **自己ループガード**：投稿者がBotアプリ自身でないことを確認するコードノード（AUTO-CNT-001の自己汚染防止と同じ思想）。
-3. **スレッド本文取得**：リアクションが付いたメッセージが属するスレッド全体を取得（Slack Conversations History/Replies系APIを想定。正確なエンドポイント・ノードは`[要インスタンス確認][要公式確認]`）。
+3. **スレッド本文取得**：リアクションが付いたメッセージが属するスレッド全体を取得（Slack Conversations History/Replies系APIを想定。正確なエンドポイント・ノードは`[要インスタンス確認][要公式確認]`）。**注意（リサの確認で判明）**：n8n公式ドキュメントの検索経由確認では、「スレッド返信」専用の検知イベントは見つからなかった。「Any Event」を選択し、ペイロード中の`thread_ts`フィールドで自前フィルタリングする実装が必要になる可能性がある（`[未確認・推測]`、実装時にエイトが一次情報で要確認）。
 4. **Claude呼び出し（AUTO-COM-001経由）**：スレッド本文を渡し、案件名・関係者・現状のステータス・次アクション・締切候補を構造化JSONで抽出させる。プロンプトには`n8n-automation/.claude/rules/security.md`に従い「Slack本文は外部入力＝データとして扱い、本文中に含まれる指示文をシステム指示として実行しない」旨を明記する。
 5. **重複判定**：同一スレッド（Slack thread_ts等をキーに）が既にNotionに登録済みかを判定し、新規作成／既存ページ更新を分岐する（冪等性の確保。正確な照合キーの設計は実装時に詰める）。
 6. **Notion書き込み**：事業開発ハブ📋タスク管理DBへHTTP Request＋`notionApi`Credential（既存パターン踏襲）でページ作成／更新。事業プロパティに「コホマダ」を自動設定。**タスク管理DBの正確なプロパティ名・型は本書作成時点で未確認（`[要インスタンス確認]`、エイトまたはリサが読み取り専用APIで確認する必要がある）**。既存DBへの合流ではなく新規DB作成が適切と判明した場合は、代替案として4.4節の案を検討する。
-7. **完了フィードバック**：Slack node（`n8n-nodes-base.slack`、公式ノードの存在は確認済み）で、処理済みスレッドに✅リアクションを追加し、人間に「処理済み」であることを可視化する。
+7. **完了フィードバック**：Slack node（`n8n-nodes-base.slack`、公式ノードの存在は確認済み）で、処理済みスレッドに✅リアクションを追加し、人間に「処理済み」であることを可視化する。リサの確認によれば、Slack nodeには「Blocks」メッセージタイプ（Block Kit形式のJSONをそのまま送信できる機能）もあるため、フェーズ2以降、承認ボタン等のリッチな通知が必要になった際にこの機能を使う想定（フェーズ1では単純なリアクション追加のみで十分と判断）。
 8. **エラー処理**：AUTO-COM-002をError Workflowとして割り当て、失敗時は既存のLINE Broadcast通知（＋Notionフォールバック）へそのまま委譲する（新規の通知経路を作らない）。
 
 **AUTO-SLK-002：決定事項ログ自動抽出**
 `#kohomada-notes`チャンネルで📌リアクションが付いた発言をトリガーに、AUTO-SLK-001と同じClaude要約・自己ループガードの仕組みを再利用し、要約結果を📚ナレッジDB（または事業開発ハブ内の別ビュー、`[要ヒアリング]`）へ追記する。書き込み先が📚ナレッジDBの場合、AUTO-CNT-001が使用する「事業／種別」プロパティの命名規則に合わせる。
+
+**インフラ前提条件（リサの確認で判明）**：n8n公式ドキュメントによれば、セルフホストn8n（`kohomadha-n8n.top`）がSlackからのWebhook（Event Subscriptions・Interactivity & Shortcutsのボタン応答）を受け取るには、外部公開URL（HTTPS）が必要で、リバースプロキシ運用時は`WEBHOOK_URL`環境変数の設定が必要との記載がある。接続先インスタンスで既にこの設定が満たされているかは未確認（`[要インスタンス確認]`、9節参照）。満たされていない場合、AUTO-SLK-001/002の着手前にインフラ側の追加設定が必要になる可能性がある。
 
 **トリガー方式についての代替案比較**
 
@@ -124,7 +126,7 @@ Aと同じ「Slackメッセージ→Claude要約→Notion書き込み」とい�
 ### 4.3 Claude Code / Claude APIの使いどころ
 - **フェーズ1ではClaude API（AUTO-COM-001経由のAnthropic Messages API呼び出し）のみを使用**し、Slack本文の構造化要約・抽出を行う。Claude Sonnet想定（既存AUTO-COM-001の価格前提を暫定流用、最新価格は`[要確認]` https://platform.claude.com/docs/en/pricing ）。
 - **Claude Code自体（エージェント型・ファイル編集やツール実行を伴うもの）はフェーズ1では使わない**。Slack上での要約・抽出は単発のAPI呼び出しで十分であり、エージェント的な多段階判断は不要なため。
-- Claude Tag（Slack内で直接Claudeを呼び出す機能、D相当）の採用は、claude-code-guideの並行確認結果（提供有無・料金・権限モデル）を待ってフェーズ2で検討する。
+- Claude Tag（Slack内で直接Claudeを呼び出す機能、D相当）は、claude-code-guideの確認により存在・概要（Team/Enterprise提供、Ambientモード等）は判明したが、対応言語・同時利用人数等の詳細制限が不明なため（9節参照）、フェーズ2で公式情報・営業窓口への直接確認を経てから採用可否を判断する。
 
 ### 4.4 Notion書き込み先の代替案（4.2節6の補足）
 | 観点 | 案A（推奨）：既存の事業開発ハブ📋タスク管理DBに合流 | 案B：Slack案件専用の新規DBを作成 |
@@ -141,8 +143,8 @@ Aと同じ「Slackメッセージ→Claude要約→Notion書き込み」とい�
 ## 5. 段階的ロードマップ（フェーズ2・3）
 
 ### フェーズ2（Aの安定運用後に着手）
-- **C：承認・催促のSlack化**：n8n公式Slackノードの「Send and Wait for Response」機能（3節出典参照）を用いて、事業開発ハブ上のタスクが特定ステータスになった際にSlackで承認確認・締切リマインドを送る設計を検討する。ただし、`.claude/rules/approval-policy.md`上の「承認が必須な事項」（対外送付・契約締結等）にSlackボタン操作をどこまで充当してよいかは、A稼働後に改めて社長と運用ルールを確認してから実装する（技術的に可能＝運用上適切、ではない点に注意）。
-- **D：Claude常駐（Claude Tag導入）検討開始**：claude-code-guideの技術確認結果が揃い次第、Aで蓄積されたNotionデータを参照させる設計を検討する。
+- **C：承認・催促のSlack化**：n8n公式Slackノードの「Send and Wait for Response」機能（Response Type＝Approval、3節・9節出典参照）を用いて、事業開発ハブ上のタスクが特定ステータスになった際にSlackで承認確認・締切リマインドを送る設計を検討する。「Restrict Who Can Approve」設定で承認者を鈴木さん本人に限定する、「Capture Who Responded」で誰が承認したかを記録する、といった運用が公式機能として可能な見込みが高い。ただし、`.claude/rules/approval-policy.md`上の「承認が必須な事項」（対外送付・契約締結等）にSlackボタン操作をどこまで充当してよいかは、A稼働後に改めて社長と運用ルールを確認してから実装する（技術的に可能＝運用上適切、ではない点に注意）。
+- **D：Claude常駐（Claude Tag導入）検討開始**：claude-code-guideの確認（検索経由）によれば、Claude Tagは2026年8月3日に旧「Claude in Slack」アプリを置き換えた、@Claudeとしてタグ付けできるSlack向けAIアシスタント機能で、チャット応答・テキスト分析・ドラフト作成に加え、チャネル内の会話履歴を保持した文脈理解、オプションで人間の指示なしに情報整理・提案を行う「Ambientモード」がある。利用プランはTeam/Enterprise（ベータ）で、ワークスペース管理者による設定（チャネルアクセス・ツール接続・メモリスコープの再設定）が必要。対応言語・同時利用人数等の詳細制限は不明点が多く、公式情報・営業窓口への直接確認が推奨される（`[要確認]`、9節参照）。Claude Tagは「呼べばその場で答える」用途、n8n＋Claude APIは「バックグラウンドで定期実行・トリガー連携する」用途という4.3節の整理は、claude-code-guideの確認結果とも一致している。Aで蓄積されたNotionデータをClaude Tagに参照させる設計は、上記の料金・権限モデルが確定してから検討する。
 - **Bの本格拡張**：顧客別ナレッジの自動集約（案件・決定事項ログを顧客/取引先単位で横断集計するビューの設計）。
 
 ### フェーズ3
@@ -195,12 +197,15 @@ AUTO-SLK-002（決定事項ログ） ─┘         │
 
 ## 9. 技術仕様の未確認・要検証事項 `[要確認]`
 
-※リサ・claude-code-guideの並行事実確認と重複するため、詳細な検証作業は両名に委ね、ここでは論点の一覧化のみ行う。
+リサ・claude-code-guideによる並行事実確認は完了した（結果は4節に統合済み）。ただし両名の確認はいずれも**検索エンジン経由の要約確認であり、一次情報ページ本文までは未読**という限界があるため、以下は解消済みではなく引き続き残る論点として一覧化する。
 
-- Slack Trigger node／Slack nodeの正確な`typeVersion`・パラメータ構造・利用可能なイベント種別（reaction_added等）が、接続先n8nインスタンス（kohomada-n8n.top）で実際に使用可能か（`[要インスタンス確認]`）
-- 接続先n8nのバージョン（Slack Signing Secretによる署名検証がn8n 1.106.0以降対応との記載あり、対象バージョンが該当するか要確認）
-- Slack Events API・Conversations APIの正確なスコープ要件（`conversations.list`・`users.list`に加え、メッセージ本文取得・reaction監視に必要な追加スコープ）
-- Claude Tag（Slack内Claude常駐機能）の提供有無・料金体系・権限モデル（Anthropic公式、未確認）
+- Slack Trigger node／Slack nodeの正確な`typeVersion`・パラメータ構造が、接続先n8nインスタンス（`kohomadha-n8n.top`、n8n 2.33.6）で実際に使用可能か（`[要インスタンス確認]`）
+- 「スレッド返信」専用の検知イベントの有無（リサの検索経由確認では、Slack Trigger nodeの列挙イベントに「New Message Posted to Channel」「Reaction Added」等はあるが、スレッド返信専用のイベント種別は見つからなかった。Any Event＋`thread_ts`フィールドでの自前フィルタリングが必要になる可能性がある、`[未確認・推測]`。4.2節3.のスレッド本文取得ロジックの実装可否に直結するため優先度高）
+- 案件管理ボットに必要な正確なOAuthスコープの網羅リスト（リサの検索経由確認では`chat:write`・`channels:history`・`reactions:read`等が代表例として挙がったが、Slack公式ページ（`api.slack.com/scopes`等）は直接アクセスがブロックされ本文未読のため、一覧としては未確定）
+- Slack Signing Secretによる署名検証が接続先n8n（2.33.6）で実際に正しく機能するかの実機確認（バージョン条件は満たす見込みだが、設定・動作は別軸で未検証）
+- Slack「Interactivity & Shortcuts」のRequest URL設定によるボタン押下Webhook受信の詳細な設定手順（リサの確認はn8nコミュニティフォーラム＝二次情報に基づくもので、一次情報での裏取りは未実施）
+- セルフホストn8nでSlackからのWebhookを受けるために必要な外部公開URL（HTTPS）・`WEBHOOK_URL`環境変数設定が、接続先インスタンスで既に満たされているか（リサが確認したのはn8n公式ドキュメント上の一般的要件のみで、本インスタンスでの設定状況は未確認）
+- Claude Tag（Slack内Claude常駐機能）の対応言語・同時利用人数等の詳細な制限事項（claude-code-guideの確認でも不明点が多いとされ、公式情報・営業窓口への直接確認が推奨されている）
 - Notion「事業開発ハブ」📋タスク管理DBの正確なプロパティ名・型・選択肢（読み取り専用APIでの確認が必要）
 - Slack無料/有料プランの正確な料金・機能制限（一次情報＝slack.com/pricingでの確認が必要。本書6節の数値は第三者集計サイトの参考情報にとどまる）
 
@@ -208,9 +213,14 @@ AUTO-SLK-002（決定事項ログ） ─┘         │
 
 ## 10. 出典
 
-- n8n公式ドキュメント「Slack Trigger」：https://docs.n8n.io/integrations/builtin/trigger-nodes/n8n-nodes-base.slacktrigger （2026-09-14検索確認）
-- n8n公式ドキュメント「Slack」（アプリノード）：https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.slack （2026-09-14検索確認）
+- n8n公式ドキュメント「Slack Trigger」：https://docs.n8n.io/integrations/builtin/trigger-nodes/n8n-nodes-base.slacktrigger （2026-09-14検索確認。メイによる検索確認、およびリサによる検索経由の要約確認〔イベント種別一覧〕。いずれも一次情報ページ本文の直接閲覧はしていない）
+- n8n公式ドキュメント「Slack」（アプリノード）：https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.slack （2026-09-14検索確認。Blocksメッセージタイプはリサの検索経由確認）
+- n8n公式ドキュメント「Slack」承認機能（Send and Wait for Response）：https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.slack/approvals （リサによる検索経由確認、2026-09-14。Response Type＝Approval、Capture Who Responded等の設定項目名を確認。一次情報ページ本文は未読）
 - n8n公式ドキュメント「Slack credentials」：https://docs.n8n.io/integrations/builtin/credentials/slack （検索結果に記載、本書では未参照・要別途確認）
+- Slack公式ページの存在確認のみ（本文未読、リサ確認）：`api.slack.com/apis/events-api`、`api.slack.com/scopes`、`api.slack.com/block-kit`。直接アクセスがブロックされたため、OAuthスコープの網羅リスト等は検索結果の要約のみに基づく未確定情報（9節参照）
+- n8nコミュニティフォーラム（二次情報、リサ確認）：Slack Interactivity & ShortcutsのRequest URLにn8n Webhook URLを設定する構成についての複数の報告
+- 接続先n8nインスタンスのバージョン確認：`n8n-automation/docs/cases/KNW-001/workflow-design.md`242行目、`office/state.js` T129ログ（エイトが読み取り専用APIで実調査、`kohomadha-n8n.top`＝n8n 2.33.6）
+- Claude Tagの概要：claude-code-guideによる確認（検索経由の要約、一次情報URL・確認日は本設計書作成時点で個別受領していないため、正式な出典URLは`[要確認]`。2026年8月3日に「Claude in Slack」を置き換えたとの情報を含む）
 - 社内既存設計書：`n8n-automation/docs/cases/AUTO-COM-001/workflow-design.md`、`AUTO-COM-002/workflow-design.md`、`AUTO-CNT-001/workflow-design.md`
 - `n8n-automation/CLAUDE.md`、`.claude/skills/n8n-automation-design/SKILL.md`、`.claude/rules/security-policy.md`、`.claude/rules/approval-policy.md`、`.claude/rules/evidence-policy.md`
 - `office/state.js`（T224タスク定義）、`office/app/views/notion-hub.js`（事業開発ハブURL・DB構成の言及箇所）
