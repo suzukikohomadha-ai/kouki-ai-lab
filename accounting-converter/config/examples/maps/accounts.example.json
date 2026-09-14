@@ -1,0 +1,27 @@
+{
+  "_comment": "テスト専用。freee側の科目名も架空（例_ 接頭辞）。",
+  "version": 1,
+  "reviewedBy": null,
+  "reviewedAt": null,
+  "entries": {
+    "現金":           { "freeeAccount": "例_現金",           "confirmed": true, "source": "manual" },
+    "普通預金":       { "freeeAccount": "例_普通預金",       "confirmed": true, "source": "manual" },
+    "売掛金":         { "freeeAccount": "例_売掛金",         "confirmed": true, "source": "manual" },
+    "買掛金":         { "freeeAccount": "例_買掛金",         "confirmed": true, "source": "manual" },
+    "預り金":         { "freeeAccount": "例_預り金",         "confirmed": true, "source": "manual" },
+    "未払金":         { "freeeAccount": "例_未払金",         "confirmed": true, "source": "manual" },
+    "売上高":         { "freeeAccount": "例_売上高",         "confirmed": true, "source": "manual" },
+    "仕入高":         { "freeeAccount": "例_仕入高",         "confirmed": true, "source": "manual" },
+    "消耗品費":       { "freeeAccount": "例_消耗品費",       "confirmed": true, "source": "manual" },
+    "通信費":         { "freeeAccount": "例_通信費",         "confirmed": true, "source": "manual" },
+    "支払手数料":     { "freeeAccount": "例_支払手数料",     "confirmed": true, "source": "manual" },
+    "旅費交通費":     { "freeeAccount": "例_旅費交通費",     "confirmed": true, "source": "manual" },
+    "雑費":           { "freeeAccount": "例_雑費",           "confirmed": true, "source": "manual" },
+    "工具器具備品":   { "freeeAccount": "例_工具器具備品",   "confirmed": true, "source": "manual" },
+    "減価償却費":     { "freeeAccount": "例_減価償却費",     "confirmed": true, "source": "manual" },
+    "減価償却累計額": { "freeeAccount": "例_減価償却累計額", "confirmed": true, "source": "manual" },
+    "資本金":         { "freeeAccount": "例_資本金",         "confirmed": true, "source": "manual" },
+    "元入金":         { "freeeAccount": "例_元入金",         "confirmed": true, "source": "manual" },
+    "繰越利益剰余金": { "freeeAccount": "例_繰越利益剰余金", "confirmed": true, "source": "manual" }
+  }
+}
