@@ -77,7 +77,7 @@ test('T5 重複取引先: W001×1・W002×1、aliases 設定時は消える', as
   assert.equal(codes(r, 'W001').length, 1);
   assert.equal(codes(r, 'W002').length, 1);
   const w1 = codes(r, 'W001')[0].detail!;
-  assert.deepEqual([w1.a, w1.b].sort(), ['ABC商事', 'ＡＢＣ商事']);
+  assert.deepEqual([w1.a, w1.b].sort(), ['例_ABC商事', '例_ＡＢＣ商事']);
   const w2 = codes(r, 'W002')[0].detail!;
   assert.deepEqual([w2.a, w2.b].sort(), ['サンプル商事株式会社', '（株）サンプル商事']);
   assert.equal(r.report.partners.candidates.length, 2);
@@ -104,13 +104,17 @@ test('T6 固定資産・減価償却: W003/W004、exclude で除外・I002・レ
   const r2 = await run('mf', 'mf/fixed-assets.csv', (p) => {
     p.options.fixedAssets = 'exclude';
   });
-  assert.equal(bodyRows(r2.outputCsv).length, 1);
+  assert.equal(bodyRows(r2.outputCsv).length, 2);
   assert.equal(codes(r2, 'I002').length, 1);
-  assert.equal(codes(r2, 'I002')[0].detail?.fixedAssets, 2);
-  assert.equal(r2.report.excluded.entries.length, 2);
+  assert.equal(codes(r2, 'I002')[0].detail?.fixedAssets, 1);
+  assert.equal(r2.report.excluded.entries.length, 1);
+  assert.equal(r2.report.excluded.entries[0].accounts, '減価償却費/減価償却累計額');
   const tools = r2.report.accounts.find((a) => a.sourceAccount === '工具器具備品')!;
-  assert.deepEqual([tools.srcDebit, tools.outDebit, tools.diff], [220000, 0, 220000]);
-  assert.ok(tools.note.includes('除外'));
+  assert.deepEqual([tools.srcDebit, tools.outDebit, tools.diff], [220000, 220000, 0]);
+  assert.ok(r2.outputCsv!.includes('例_工具器具備品'));
+  const dep = r2.report.accounts.find((a) => a.sourceAccount === '減価償却費')!;
+  assert.deepEqual([dep.srcDebit, dep.outDebit, dep.diff], [5000, 0, 5000]);
+  assert.ok(dep.note.includes('除外'));
 });
 
 test('T7 経過措置切替日またぎ: W005、免税事業者仕入が日付で控80/控50に振り分け', async () => {

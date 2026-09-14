@@ -1,7 +1,7 @@
 import type { Profile } from './config.js';
 import type { Dataset, Diagnostic, JournalEntry } from './model.js';
 import { diag } from './model.js';
-import { levenshtein, partnerKey, stripCorporate } from './normalize.js';
+import { levenshtein, normalizeName, partnerKey, stripCorporate } from './normalize.js';
 
 export interface ValidationConfig {
   fiscalYear?: Profile['fiscalYear'];
@@ -12,7 +12,7 @@ export interface ValidationConfig {
 }
 
 export function taxRateKey(sourceTaxCode: string | null, freeeTaxCode: string): string {
-  return JSON.stringify([sourceTaxCode ?? '', freeeTaxCode]);
+  return JSON.stringify([normalizeName(sourceTaxCode ?? ''), normalizeName(freeeTaxCode)]);
 }
 
 export function validate(ds: Dataset, cfg: ValidationConfig): Diagnostic[] {

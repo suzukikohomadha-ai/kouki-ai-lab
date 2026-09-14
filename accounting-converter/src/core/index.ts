@@ -101,15 +101,15 @@ export async function convert(input: ConvertInput, opts: ConvertOptions = {}): P
     if (e.flags.includes('OPENING_BALANCE') && profile.options.openingBalances !== 'include') {
       excluded.set(e.entryId, '期首残高・繰越（options.openingBalances=exclude_and_report）');
       excludedOpening++;
-    } else if ((e.flags.includes('FIXED_ASSET') || e.flags.includes('DEPRECIATION')) && profile.options.fixedAssets === 'exclude') {
-      excluded.set(e.entryId, '固定資産・減価償却関連（options.fixedAssets=exclude）');
+    } else if (e.flags.includes('DEPRECIATION') && profile.options.fixedAssets === 'exclude') {
+      excluded.set(e.entryId, '減価償却関連（options.fixedAssets=exclude。取得仕訳は資金移動のため除外しない）');
       excludedFixed++;
     } else if (opts.force && erroredEntryIds.has(e.entryId)) {
       excluded.set(e.entryId, 'エラーを含む伝票（--force により除外）');
     }
   }
   if (excludedOpening + excludedFixed > 0) {
-    diagnostics.push(diag('I002', 'info', `出力から除外した伝票: 期首残高 ${excludedOpening} 件、固定資産・減価償却 ${excludedFixed} 件`, { detail: { openingBalances: excludedOpening, fixedAssets: excludedFixed } }));
+    diagnostics.push(diag('I002', 'info', `出力から除外した伝票: 期首残高 ${excludedOpening} 件、減価償却 ${excludedFixed} 件`, { detail: { openingBalances: excludedOpening, fixedAssets: excludedFixed } }));
   }
 
   const rendered = renderOutput(ds, profile.target, new Set([...excluded.keys(), ...erroredEntryIds]));

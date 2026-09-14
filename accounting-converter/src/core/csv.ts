@@ -27,7 +27,7 @@ export function parseCsv(text: string, opts: ParseCsvOptions): ParsedCsv {
     for (const c of cells) embeddedNewlines += (c.match(/\n/g) ?? []).length;
     physical += 1 + embeddedNewlines;
     if (cells.every((c) => c.trim() === '')) continue;
-    records.push({ rowNumber, cells: cells.map((c) => c.replace(/^﻿/, '')) });
+    records.push({ rowNumber, cells: cells.map((c) => c.replace(/^\uFEFF/, '')) });
   }
   const physicalRows = physical - 1 - (text.endsWith('\n') || text.endsWith('\r') ? 1 : 0);
 

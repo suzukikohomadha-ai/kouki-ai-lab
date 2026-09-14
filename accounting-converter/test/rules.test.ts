@@ -92,3 +92,20 @@ test('取引先: 取引先列 > 補助科目ルール、alias で置換', async 
   assert.deepEqual([l1.partner, l1.provenance.partner, l1.memoTags], ['サンプル商事株式会社', 'column', ['ダミー物産']]);
   assert.deepEqual([l2.partner, l2.provenance.partner], ['ダミー物産株式会社', 'alias']);
 });
+
+test('期首残高の誤判定防止: 繰越利益剰余金を含む決算振替仕訳・摘要「前月繰越」は除外されない', async () => {
+  const r = await runRows([
+    { no: '1', date: '2027/03/31', dr: { acc: '売上高', tax: '例_対象外', amt: 100000 }, cr: { acc: '繰越利益剰余金', amt: 100000 }, desc: '決算振替' },
+    { no: '2', date: '2026/05/01', dr: { acc: '現金', amt: 5000 }, cr: { acc: '売上高', tax: '例_課税売上10%', amt: 5000 }, desc: '前月繰越分の売上' },
+    { no: '3', date: '2026/04/01', dr: { acc: '現金', amt: 70000 }, cr: { acc: '元入金', amt: 70000 }, desc: '期首残高' },
+    { no: '4', date: '2026/04/01', dr: { acc: '普通預金', amt: 80000 }, cr: { acc: '元入金', amt: 80000 }, desc: '' },
+    { no: '5', date: '2026/04/10', dr: { acc: '現金', amt: 3000 }, cr: { acc: '元入金', amt: 3000 }, desc: '事業主借' },
+  ]);
+  assert.equal(r.stats.errors, 0, JSON.stringify(r.diagnostics.filter((d) => d.severity === 'error')));
+  const flagged = r.dataset.entries.filter((e) => e.flags.includes('OPENING_BALANCE')).map((e) => e.voucherNo);
+  assert.deepEqual(flagged, ['3', '4']);
+  assert.equal(codes(r, 'W007').length, 2);
+  assert.equal(r.excluded.size, 2);
+  assert.ok(r.outputCsv!.includes('例_繰越利益剰余金'));
+  assert.ok(r.outputCsv!.includes('前月繰越分の売上'));
+});

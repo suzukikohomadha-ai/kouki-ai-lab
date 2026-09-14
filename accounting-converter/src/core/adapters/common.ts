@@ -276,7 +276,7 @@ function detectFlags(entry: JournalEntry, group: ParsedRow[], profile: Profile):
   const flags = new Set<EntryFlag>();
   const accounts = entry.lines.map((l) => l.account);
   const inList = (list: string[] | undefined, name: string) => (list ?? []).map(normalizeName).includes(name);
-  const texts = [entry.description, ...entry.lines.map((l) => l.memo ?? ''), ...accounts];
+  const texts = [entry.description, ...entry.lines.map((l) => l.memo ?? '')];
   if ((d.openingBalanceKeywords ?? []).some((kw) => texts.some((t) => t.includes(kw)))) flags.add('OPENING_BALANCE');
   if (profile.fiscalYear && entry.date === profile.fiscalYear.start) {
     const counters = d.openingBalanceCounterAccounts ?? ['元入金', '資本金', '繰越利益剰余金'];
