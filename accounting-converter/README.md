@@ -18,8 +18,8 @@
 | 税区分 | 対応表（`maps/taxcodes`）で変換。日付範囲つきの対応（インボイス経過措置の控80/控50）に対応。未対応は停止（E003）。自動判定はしない |
 | 補助科目 | ルール（`maps/subaccount-rules`）で取引先／freee補助科目／メモタグへ割当 |
 | 取引先 | そのまま出力＋重複（W001）・表記ゆれ（W002）候補を警告。名寄せは `maps/partners` の別名表で人間が指定したときのみ |
-| 期首残高・繰越 | 検出して出力から除外し、科目別合計をレポートに出す（変換しない） |
-| 固定資産・減価償却 | 検出して警告（W003 取得仕訳／W004 減価償却仕訳）。`fixedAssets: "exclude"` で除外されるのは **減価償却仕訳のみ**。取得仕訳（例：借方 工具器具備品／貸方 普通預金）は資金移動のため除外しない（除外すると預金残高が合わなくなる） |
+| 期首残高・繰越 | 検出して出力から除外し、科目別合計をレポートに出す（変換しない）。検出は「摘要・メモに `openingBalanceKeywords`（既定：期首残高／開始残高／前期繰越／前期より繰越／期首繰越）を含む」または「伝票日付が期首日 かつ 相手科目が `openingBalanceCounterAccounts`」のみ。**科目名だけでは判定しない**（「繰越利益剰余金」を含む決算振替仕訳の誤除外を防ぐため）。その分、どちらにも該当しない期首残高伝票は検出されず出力に含まれるので、有資格者はレポートの「期首残高・除外伝票」セクションと `report_diagnostics.csv` の W006/W007 を、期首日付の伝票と突合してください |
+| 固定資産・減価償却 | 検出して警告（W003 取得仕訳／W004 減価償却仕訳）。`fixedAssets: "exclude"` で除外されるのは **減価償却仕訳のみ**。取得仕訳（例：借方 工具器具備品／貸方 普通預金）は資金移動のため除外しない（除外すると預金残高が合わなくなる）。**注意**：DEPRECIATION の判定キー `depreciationAccounts` に「減価償却累計額」が含まれるため、除却・売却仕訳（例：借方 現金＋減価償却累計額／貸方 車両運搬具）も `exclude` 時に除外されうる［要確認：会計上の扱いはミナに確認中。確定までは `warn`（既定）で運用し、除外セクションを必ず目視確認］ |
 | 部門・タグ | 既定で落として警告（W008）。部門は `departments: "passthrough"` で素通し可。タグは `tags: "memo_tag"` で出力テンプレートのメモタグ列（`from: *.mapped.memoTags`）へ渡せる（列が無ければ W008 のまま） |
 | 複合仕訳 | `compoundEntries: "blank_side"`（借方行・貸方行を別行にし相手側空欄）または `"unsupported"`（E007で停止） |
 
@@ -97,10 +97,11 @@ config/
 手順（設計書 §3.7 と同じ）：
 
 1. freee ヘルプ「他社会計ソフトから仕訳データを移行する」から仕訳インポート用テンプレート（UTF-8版・Shift-JIS版）をダウンロードし、`config/templates/` に置く。**Excel では開かず**テキストエディタで開く（Excel は先頭の0や日付表記を書き換えるため）。
-2. テンプレート1行目のヘッダーを `config/targets/freee-generic.json` の `columns[].name` に **列順どおり・文字列完全一致** で転記する（全角/半角・括弧・空白まで一致させる）。テンプレートに無い列は削除し、テンプレートにあって中間モデルに対応が無い列は `"from": null` を追加する。
+   **転記先について**：公式ヘッダー文字列の転記結果をリポジトリにコミットしてよいかは規約確認待ち（リョウ）です。確定までは、転記は git 管理外のコピーに対して行ってください：`config/profile.sample.json` → `config/profile.json`、`config/targets/freee-generic.json` → `config/targets/freee-generic.local.json`、`config/sources/mf-journal.json` → `config/sources/mf-journal.local.json`、`config/sources/yayoi-generic.json` → `config/sources/yayoi-generic.local.json` にコピーし、`config/profile.json` の `source`／`target` の参照先を `.local.json` に書き換える（いずれも `.gitignore` 済み。パスはプロファイルの位置からの相対で解決されます）。以下の手順2・4・5は、この `.local.json` 側に対して行う。
+2. テンプレート1行目のヘッダーを `config/targets/freee-generic.local.json` の `columns[].name` に **列順どおり・文字列完全一致** で転記する（全角/半角・括弧・空白まで一致させる）。テンプレートに無い列は削除し、テンプレートにあって中間モデルに対応が無い列は `"from": null` を追加する。
 3. 同ページに「金額は税込か税抜か」「複合仕訳の書き方」「必須列」「文字コード」「行数上限」の記載があれば、`amountMode` / `compoundEntries` / `required` / `encoding` に反映し、`templateInfo` にファイル名・取得日を記録する。
-4. MF：試用または自社事業所の「仕訳帳」から **架空データ数件だけ** を CSV エクスポートし、ヘッダー行を `config/sources/mf-journal.json` の各 `header` に転記する。金額列が税込か、複合仕訳が同一取引Noの複数行か、BOM の有無をメモする。
-5. 弥生：同様に汎用形式で数件エクスポートし、ヘッダー行の有無・文字コード・列順・識別フラグ列の有無・日付表記（西暦/和暦）を確認して、`config/sources/yayoi-generic.json` の `index` / `grouping` を確定する（識別フラグ列が無ければ `grouping.strategy` を `by_voucher_no` にする）。
+4. MF：試用または自社事業所の「仕訳帳」から **架空データ数件だけ** を CSV エクスポートし、ヘッダー行を `config/sources/mf-journal.local.json` の各 `header` に転記する。金額列が税込か、複合仕訳が同一取引Noの複数行か、BOM の有無をメモする。
+5. 弥生：同様に汎用形式で数件エクスポートし、ヘッダー行の有無・文字コード・列順・識別フラグ列の有無・日付表記（西暦/和暦）を確認して、`config/sources/yayoi-generic.local.json` の `index` / `grouping` を確定する（識別フラグ列が無ければ `grouping.strategy` を `by_voucher_no` にする）。
 6. 税区分の対応（`maps/taxcodes`）は、元CSVに実際に出てくる税区分文字列と、freee 側の税区分名称（正式名称は未確認）を **有資格者が確定** し、`confirmed: true` にする。勘定科目（`maps/accounts`）も同様。
 7. `npx tsx src/cli/index.ts verify-config --profile config/profile.json` を実行し、`TODO_VERIFY 残数: 0` かつ「結果: OK」になるまで繰り返す。
 
@@ -182,7 +183,13 @@ test/         node:test（npm test）
 
 ## 8. 未実装項目・設計書（v2）との相違
 
-設計書 v2 の「v1 からの変更点」15項目（A-1/A-2、`convert` 非同期、`tagsRaw`、`E000`、W012 の `--dev` 時挙動、`verifyConfig` の値域検査、`run.json.input`、fixtures の `例_` 接頭辞、README 追記、encoding 層の差し替え前提）は本実装に反映済みです。以下は未実装項目と、v2 にも書かれていない実装上の決め事です。
+設計書 v2 の「v1 からの変更点」15項目（A-1/A-2、`convert` 非同期、`tagsRaw`、`E000`、W012 の `--dev` 時挙動、`verifyConfig` の値域検査、`run.json.input`、README 追記、encoding 層の差し替え前提）は本実装に反映済みです。ただし #13（fixtures の `例_` 接頭辞）は**一部のみ**：接頭辞を付けたのは「例_ABC商事」「例_A銀行」「例_B銀行」で、「サンプル商事株式会社」「（株）サンプル商事」「ダミー物産」「テスト工業有限会社」は明らかなプレースホルダー名のためそのままです。以下は未実装項目と、v2 と異なる／v2 に書かれていない実装上の決め事です。
+
+v2 と異なる点：
+
+- `convert(input, opts)` は2引数です（v2 §2 は `input.options`）。E000（設定検証エラー）のときも `dataset`／`report` は `null` ではなく空の Dataset と Report を返します。
+- `applyMappings()` は同期で、`suggester` 引数を持ちません（v2 §2.4 は非同期）。`MappingSuggester` の呼び出しは `convert()` 側で行っています。非同期化はフェーズ1で検討。
+- `Codec.encodeText` は `convert()` 内では使いません（`decodeBytes` のみ）。出力のエンコードは CLI が `src/core/encoding.ts` の `encodeText` を直接呼びます。ブラウザ化時は CLI 相当のシェル側で注入 codec の `encodeText` を使う想定。
 
 未実装：
 
