@@ -1,0 +1,14 @@
+{
+  "_comment": "テスト専用。弥生の『税区分+税計算区分』結合表記を模した架空の文字列。実際の表記ではない。",
+  "version": 1,
+  "reviewedBy": null,
+  "defaultForBlank": {
+    "freeeTaxCode": "例_freee対象外",
+    "appliesToAccounts": ["現金", "普通預金", "当座預金", "売掛金", "買掛金", "預り金", "未払金", "資本金", "元入金", "繰越利益剰余金"]
+  },
+  "entries": [
+    { "sourceTaxCode": "例_課税売上込10%", "freeeTaxCode": "例_freee課税売上10%", "rate": 0.10, "confirmed": true },
+    { "sourceTaxCode": "例_課税仕入込10%", "freeeTaxCode": "例_freee課対仕入10%", "rate": 0.10, "confirmed": true },
+    { "sourceTaxCode": "例_対象外",        "freeeTaxCode": "例_freee対象外",      "rate": 0, "confirmed": true }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "_comment": "勘定科目対応表の雛形。キーは元CSVの科目名（照合時にNFKC・trim・連続空白圧縮で正規化）。freeeAccount の値は freee 側の勘定科目名と一致させる（freee標準科目名は未確認。有資格者が確定する）。confirmed:false のエントリは使用時に W012、--strict では停止。",
+  "version": 1,
+  "reviewedBy": "TODO_VERIFY:有資格者のイニシャル（実名をファイル名に使わない）",
+  "reviewedAt": null,
+  "entries": {
+    "現金":     { "freeeAccount": "現金",     "freeeSubAccount": null, "confirmed": false, "source": "manual" },
+    "普通預金": { "freeeAccount": "普通預金", "freeeSubAccount": null, "confirmed": false, "source": "manual" },
+    "売掛金":   { "freeeAccount": "売掛金",   "confirmed": false, "source": "manual" },
+    "買掛金":   { "freeeAccount": "買掛金",   "confirmed": false, "source": "manual" },
+    "売上高":   { "freeeAccount": "売上高",   "confirmed": false, "source": "manual" },
+    "仕入高":   { "freeeAccount": "仕入高",   "confirmed": false, "source": "manual" },
+    "雑費":     { "freeeAccount": "雑費",     "confirmed": false, "source": "manual", "note": "候補。要確認" }
+  }
+}

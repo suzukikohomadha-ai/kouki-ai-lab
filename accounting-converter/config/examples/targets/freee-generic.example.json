@@ -1,0 +1,28 @@
+{
+  "_comment": "テスト専用の架空列名。freee公式テンプレートのヘッダーではない。",
+  "system": "freee_generic",
+  "encoding": "utf8_bom",
+  "newline": "CRLF",
+  "rowModel": "debit_credit_pair",
+  "compoundEntries": "blank_side",
+  "columns": [
+    { "name": "例_日付",         "from": "entry.date", "format": "YYYY/MM/DD", "required": true },
+    { "name": "例_伝票番号",     "from": "entry.voucherNo", "required": false },
+    { "name": "例_借方勘定科目", "from": "debit.mapped.freeeAccount", "required": true },
+    { "name": "例_借方補助科目", "from": "debit.mapped.freeeSubAccount" },
+    { "name": "例_借方税区分",   "from": "debit.mapped.freeeTaxCode", "required": true },
+    { "name": "例_借方金額",     "from": "debit.amount", "required": true },
+    { "name": "例_借方取引先",   "from": "debit.mapped.partner" },
+    { "name": "例_借方部門",     "from": "debit.mapped.department" },
+    { "name": "例_借方メモタグ", "from": "debit.mapped.memoTags", "join": "," },
+    { "name": "例_貸方勘定科目", "from": "credit.mapped.freeeAccount", "required": true },
+    { "name": "例_貸方補助科目", "from": "credit.mapped.freeeSubAccount" },
+    { "name": "例_貸方税区分",   "from": "credit.mapped.freeeTaxCode", "required": true },
+    { "name": "例_貸方金額",     "from": "credit.amount", "required": true },
+    { "name": "例_貸方取引先",   "from": "credit.mapped.partner" },
+    { "name": "例_貸方部門",     "from": "credit.mapped.department" },
+    { "name": "例_貸方メモタグ", "from": "credit.mapped.memoTags", "join": "," },
+    { "name": "例_摘要",         "from": "entry.description" },
+    { "name": "例_空欄列",       "from": null }
+  ]
+}
