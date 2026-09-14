@@ -109,3 +109,58 @@ test('期首残高の誤判定防止: 繰越利益剰余金を含む決算振替
   assert.ok(r.outputCsv!.includes('例_繰越利益剰余金'));
   assert.ok(r.outputCsv!.includes('前月繰越分の売上'));
 });
+
+test('options.tags: memo_tag でメモタグ列に渡す／メモタグ列が無ければ W008／drop は W008', async () => {
+  const rows: Row[] = [{ no: '1', date: '2026/04/05', dr: { acc: '雑費', tax: '例_課税仕入10%', amt: 1100 }, cr: { acc: '現金', amt: 1100 }, tags: '例タグA' }];
+  const drop = await runRows(rows);
+  assert.equal(codes(drop, 'W008').length, 2);
+  assert.ok(!drop.outputCsv!.includes('例タグA'));
+
+  const memo = await runRows(rows, (p) => {
+    p.options.tags = 'memo_tag';
+  });
+  assert.equal(codes(memo, 'W008').length, 0);
+  assert.deepEqual(memo.dataset.entries[0].lines.map((l) => l.mapped!.memoTags), [['例タグA'], ['例タグA']]);
+  assert.ok(memo.outputCsv!.includes(',例タグA,'));
+
+  const noCol = await runRows(rows, (p) => {
+    p.options.tags = 'memo_tag';
+    p.target.columns = p.target.columns.filter((c) => !(c.from ?? '').endsWith('.mapped.memoTags'));
+  });
+  assert.equal(codes(noCol, 'W008').length, 2);
+  assert.ok(codes(noCol, 'W008')[0].message.includes('メモタグ列'));
+  assert.ok(!noCol.outputCsv!.includes('例タグA'));
+});
+
+test('verifyConfig: options の値域検査（tags / openingBalances / fixedAssets / departments）', async () => {
+  const { verifyConfig } = await import('../src/core/index.js');
+  const p = exampleProfile('mf');
+  (p.options as { tags: string }).tags = 'bogus';
+  (p.options as { openingBalances: string }).openingBalances = 'include';
+  const v = verifyConfig(p);
+  assert.equal(v.ok, false);
+  assert.ok(v.issues.some((i) => i.path === 'options.tags'));
+  assert.ok(v.issues.some((i) => i.path === 'options.openingBalances'));
+});
+
+test('ConvertInput.codec: 注入した codec の decodeBytes が使われる', async () => {
+  const calls: string[] = [];
+  const profile = exampleProfile('mf');
+  const csv = toCsv([HEADER, row({ no: '1', date: '2026/04/05', dr: { acc: '雑費', tax: '例_課税仕入10%', amt: 1100 }, cr: { acc: '現金', amt: 1100 } })]);
+  const bytes = new TextEncoder().encode(csv);
+  const codec = {
+    decodeBytes: (b: Uint8Array, hint: string) => {
+      calls.push(`decode:${hint}:${b.length}`);
+      return { text: new TextDecoder().decode(b), encoding: 'utf8' as const, hadBom: true };
+    },
+    encodeText: (t: string) => {
+      calls.push('encode');
+      return new TextEncoder().encode(t);
+    },
+  };
+  const r = await convert({ bytes, profile, codec });
+  assert.deepEqual(calls, [`decode:auto:${bytes.length}`]);
+  assert.equal(r.stats.errors, 0);
+  assert.deepEqual(codes(r, 'I001')[0].detail, { encoding: 'utf8', hadBom: true });
+  assert.equal(r.dataset.sourceFile.hadBom, true);
+});

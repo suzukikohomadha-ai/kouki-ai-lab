@@ -279,7 +279,7 @@ function detectFlags(entry: JournalEntry, group: ParsedRow[], profile: Profile):
   const texts = [entry.description, ...entry.lines.map((l) => l.memo ?? '')];
   if ((d.openingBalanceKeywords ?? []).some((kw) => texts.some((t) => t.includes(kw)))) flags.add('OPENING_BALANCE');
   if (profile.fiscalYear && entry.date === profile.fiscalYear.start) {
-    const counters = d.openingBalanceCounterAccounts ?? ['元入金', '資本金', '繰越利益剰余金'];
+    const counters = d.openingBalanceCounterAccounts ?? ['元入金', '資本金', '繰越利益剰余金', '開始残高', '期首残高'];
     if (accounts.some((a) => inList(counters, a))) flags.add('OPENING_BALANCE');
   }
   if (accounts.some((a) => inList(d.depreciationAccounts, a))) flags.add('DEPRECIATION');

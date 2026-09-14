@@ -1,7 +1,7 @@
 import { toDataset, collectHeaderSignature } from './adapters/index.js';
 import { configDiagnostics, stripTodoVerify, verifyConfig, type Profile } from './config.js';
 import { parseCsv } from './csv.js';
-import { decodeBytes } from './encoding.js';
+import { decodeBytes, encodeText, type DecodeResult, type EncodingHint, type OutputEncoding } from './encoding.js';
 import { applyMappings } from './mapping.js';
 import type { Dataset, Diagnostic } from './model.js';
 import { diag } from './model.js';
@@ -21,11 +21,19 @@ export { validate } from './validate.js';
 export { renderOutput } from './output.js';
 export { normalizeName, parseAmount, parseDate, levenshtein } from './normalize.js';
 
+export interface Codec {
+  decodeBytes(bytes: Uint8Array, hint: EncodingHint): DecodeResult;
+  encodeText(text: string, encoding: OutputEncoding): Uint8Array;
+}
+
+export const defaultCodec: Codec = { decodeBytes, encodeText };
+
 export interface ConvertInput {
   bytes: Uint8Array;
   profile: Profile;
   fileName?: string;
   suggester?: MappingSuggester;
+  codec?: Codec;
   configHashes?: Record<string, string>;
   runAt?: string;
 }
@@ -67,7 +75,8 @@ export async function convert(input: ConvertInput, opts: ConvertOptions = {}): P
     return { dataset: empty, diagnostics, outputCsv: null, report, stats: { rows: 0, entries: 0, lines: 0, errors: diagnostics.filter((d) => d.severity === 'error').length, warnings: 0, outputEntries: 0 }, excluded: new Map() };
   }
 
-  const decoded = decodeBytes(input.bytes, profile.source.encoding);
+  const codec = input.codec ?? defaultCodec;
+  const decoded = codec.decodeBytes(input.bytes, profile.source.encoding);
   diagnostics.push(diag('I001', 'info', `文字コード判定: ${decoded.encoding}${decoded.hadBom ? '（BOM付き）' : ''}`, { detail: { encoding: decoded.encoding, hadBom: decoded.hadBom } }));
 
   const parsed = parseCsv(decoded.text, { delimiter: profile.source.delimiter, hasHeader: profile.source.hasHeader, headerSignature: collectHeaderSignature(profile.source) });
@@ -76,7 +85,8 @@ export async function convert(input: ConvertInput, opts: ConvertOptions = {}): P
   diagnostics.push(...built.diagnostics);
   const ds = built.dataset;
 
-  const mapping = applyMappings(ds, profile.maps, { departments: profile.options.departments, strict: opts.strict ?? false, sourceSystem: ds.source });
+  const memoTagColumnExists = profile.target.columns.some((c) => typeof c.from === 'string' && c.from.endsWith('.mapped.memoTags'));
+  const mapping = applyMappings(ds, profile.maps, { departments: profile.options.departments, tags: profile.options.tags ?? 'drop', memoTagColumnExists, strict: opts.strict ?? false, sourceSystem: ds.source });
   diagnostics.push(...mapping.diagnostics);
 
   const erroredEntryIds = new Set(diagnostics.filter((d) => d.severity === 'error' && d.entryId).map((d) => d.entryId as string));
@@ -98,7 +108,7 @@ export async function convert(input: ConvertInput, opts: ConvertOptions = {}): P
   let excludedOpening = 0;
   let excludedFixed = 0;
   for (const e of ds.entries) {
-    if (e.flags.includes('OPENING_BALANCE') && profile.options.openingBalances !== 'include') {
+    if (e.flags.includes('OPENING_BALANCE') && (profile.options.openingBalances ?? 'exclude_and_report') === 'exclude_and_report') {
       excluded.set(e.entryId, '期首残高・繰越（options.openingBalances=exclude_and_report）');
       excludedOpening++;
     } else if (e.flags.includes('DEPRECIATION') && profile.options.fixedAssets === 'exclude') {

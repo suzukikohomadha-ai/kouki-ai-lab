@@ -1,7 +1,7 @@
 # accounting-converter — 会計ツールコンバータ PoC（フェーズ0）
 
 弥生会計／マネーフォワードクラウド会計（MF）の仕訳CSVを、freee会計の仕訳インポート用CSVに変換する **ローカル完結型の CLI** です。
-株式会社コホマダ T13「会計ツールのコンバータ構築」の PoC。設計は `logs/kohomada_2026-09-14_会計ツールコンバータPoC詳細設計_v1.md`（メイ作成）に基づきます。
+株式会社コホマダ T13「会計ツールのコンバータ構築」の PoC。設計は `logs/kohomada_2026-09-14_会計ツールコンバータPoC詳細設計_v2.md`（メイ作成。v1 にアオイ監査を反映したもの）に基づきます。
 
 - 本ツールは **データを外部に送信しません**（ネットワーク通信を行うコードを含みません。検査範囲：`src/` の静的 import 検査（`fetch`/`http`/`https`/`net`/`child_process` 等）。依存ライブラリ本体は検査対象外ですが、実行時依存を papaparse・iconv-lite の2つに限定する検査を入れています）。
 - 本ツールは **税務・会計上の判断を行いません**。勘定科目・税区分の対応表は人間（有資格者）が確定し、実行結果の最終確認も有資格者が行ってください。
@@ -20,7 +20,7 @@
 | 取引先 | そのまま出力＋重複（W001）・表記ゆれ（W002）候補を警告。名寄せは `maps/partners` の別名表で人間が指定したときのみ |
 | 期首残高・繰越 | 検出して出力から除外し、科目別合計をレポートに出す（変換しない） |
 | 固定資産・減価償却 | 検出して警告（W003 取得仕訳／W004 減価償却仕訳）。`fixedAssets: "exclude"` で除外されるのは **減価償却仕訳のみ**。取得仕訳（例：借方 工具器具備品／貸方 普通預金）は資金移動のため除外しない（除外すると預金残高が合わなくなる） |
-| 部門・タグ | 既定で落として警告（W008）。部門は `departments: "passthrough"` で素通し可 |
+| 部門・タグ | 既定で落として警告（W008）。部門は `departments: "passthrough"` で素通し可。タグは `tags: "memo_tag"` で出力テンプレートのメモタグ列（`from: *.mapped.memoTags`）へ渡せる（列が無ければ W008 のまま） |
 | 複合仕訳 | `compoundEntries: "blank_side"`（借方行・貸方行を別行にし相手側空欄）または `"unsupported"`（E007で停止） |
 
 出力は freee 用 CSV と差分レポート（Markdown＋CSV 4本＋`run.json`）。
@@ -111,6 +111,7 @@ config/
 - 列指定は `{ "header": "…" }`（ヘッダー名一致）と `{ "index": n }`（0始まり）の両方を書けます。ヘッダーがあれば `header` を優先し、無ければ `index` にフォールバックします。`"optional": true` の列は無くてもエラーになりません。
 - 勘定科目対応表のキーは元CSVの科目名で、照合時に NFKC 正規化・trim・連続空白圧縮をかけます（全角/半角の違いは吸収）。
 - 税区分対応表は同じ `sourceTaxCode` を `effectiveFrom`/`effectiveTo` 付きで複数書けます（伝票日付で選択）。範囲外の日付は E003 で停止します。
+- `options` の値域：`departments: drop|passthrough`、`tags: drop|memo_tag`（既定 drop）、`fixedAssets: warn|exclude`、`openingBalances: exclude_and_report|include_with_warning`。範囲外の値は `verify-config` で E000。
 - 税区分が空欄のときは、科目が `defaultForBlank.appliesToAccounts` にある場合のみ `defaultForBlank.freeeTaxCode` を使い、それ以外は E003 で停止します。
 - 経過措置の切替日（`options.invoiceTransitionDates`、既定 `2026-09-30`）は現行制度に基づきます（国税庁一次情報での再確認は未了・リサ確認待ち）。税制改正による延長が法制化された場合は、`maps/taxcodes` のエントリと切替日を追記してください（コード改修は不要）。
 
@@ -130,7 +131,7 @@ config/
 | E007 | 複合仕訳が出力テンプレート設定で表現不可（`compoundEntries: "unsupported"`） |
 | E008 | 伝票に明細行が1つしかない（グループ化設定の見直し） |
 
-警告（warning。出力は続行）：W001 取引先の完全一致衝突候補／W002 取引先の表記ゆれ候補／W003 固定資産科目／W004 減価償却関連科目／W005 日付範囲がインボイス経過措置切替日をまたぐ／W006 会計期間外／W007 期首残高・繰越（除外）／W008 部門・タグ・補助科目を落とした／W009 税額が逆算値と±1円超で乖離／W010 負の金額／W011 伝票番号の非連続重複／W012 `confirmed:false` の対応表エントリを使用／W013 `--dev` で `TODO_VERIFY` のまま実行／W014 `amountMode: unknown` のまま借貸チェック／W015 同一補助科目名が複数の親科目で異なる割当結果。
+警告（warning。出力は続行）：W001 取引先の完全一致衝突候補／W002 取引先の表記ゆれ候補／W003 固定資産科目／W004 減価償却関連科目／W005 日付範囲がインボイス経過措置切替日をまたぐ／W006 会計期間外／W007 期首残高・繰越（除外）／W008 部門・タグ・補助科目を落とした（`departments:'drop'`／`tags:'drop'`／メモタグ列なし）／W009 税額が逆算値と±1円超で乖離／W010 負の金額／W011 伝票番号の非連続重複／W012 `confirmed:false` の対応表エントリを使用／W013 `--dev` で `TODO_VERIFY` のまま実行／W014 `amountMode: unknown` のまま借貸チェック／W015 同一補助科目名が複数の親科目で異なる割当結果。
 
 情報（info）：I001 文字コード判定／I002 除外した伝票数／I003 グループ化戦略と伝票数・明細数。
 
@@ -179,22 +180,29 @@ test/         node:test（npm test）
 
 `expected/*.json` との比較方式（設計書 §7）ではなく、テストコード内で期待値を直接アサートしています。
 
-## 8. 未実装項目・設計書からの相違
+## 8. 未実装項目・設計書（v2）との相違
 
-- `RuleSuggester`・`LlmSuggester`（設計書 §8）は未実装。`MappingSuggester` インターフェースと `NoopSuggester` のみ。外部LLMの利用は社長の承認未了のため、`--suggester` フラグ・`config/approvals.json`・W016 も未実装。
-- `convert()` は設計書では同期関数ですが、`MappingSuggester.suggest()` が `Promise` を返す設計と整合させるため **非同期（`Promise<ConvertResult>`）** にしました。
-- 中間モデルの `JournalLine` に、MF のタグ列を保持する `tagsRaw` を追加しました（設計書には無い項目。既定では W008 を出して落とします）。
-- `E000`（設定検証エラー）は設計書の一覧に無いコードです。`--dev` なしで `TODO_VERIFY` が残った設定を渡したときに、変換せず返すために追加しました。
-- E002/E003 は明細行ごとに1件出します（レポートの未マッピング一覧では値ごとに集計）。未マッピング等で error になった伝票は出力レンダリングをスキップするため、同じ伝票に E006 が重複して出ることはありません。
+設計書 v2 の「v1 からの変更点」15項目（A-1/A-2、`convert` 非同期、`tagsRaw`、`E000`、W012 の `--dev` 時挙動、`verifyConfig` の値域検査、`run.json.input`、fixtures の `例_` 接頭辞、README 追記、encoding 層の差し替え前提）は本実装に反映済みです。以下は未実装項目と、v2 にも書かれていない実装上の決め事です。
+
+未実装：
+
+- `RuleSuggester`・`LlmSuggester`（v2 §8）。`MappingSuggester` インターフェースと `NoopSuggester` のみ。外部LLMの利用は社長の承認未了のため、`--suggester` フラグ・`config/approvals.json`・W016 も未実装。
+- ブラウザ用 codec の実装。`ConvertInput.codec`（`decodeBytes`/`encodeText` の注入口）は用意し、未指定時は `src/core/encoding.ts`（`iconv-lite`・Node `Buffer` 依存）を使います。ブラウザ版では `TextDecoder('shift_jis')`＋Shift_JIS エンコード可能な別実装を注入する想定（未作成）。
+
+実装上の決め事：
+
+- `options.tags: "memo_tag"` は `tagsRaw` を分割せず1つのメモタグとして渡します（MF のタグ列に複数タグがどう格納されるかは未確認）。同じ行の借方・貸方の両方の明細に付きます。
+- `run.json` の `input` は `{ fileName, encoding, hadBom, physicalRows, sha256 }`。`fileName` はパスではなくファイル名のみ。明細データは含めません。
+- E002/E003 は明細行ごとに1件出します（レポートの未マッピング一覧では値ごとに集計）。error になった伝票は出力レンダリングをスキップするため、同じ伝票に E006 が重複して出ることはありません。
 - `hasHeader: "auto"` の判定は「1行目のセルが `headerSignature` または `columns[].header` のいずれかと一致するか」で行います。
-- 期首残高の検出は、キーワード（摘要・メモ・科目名）と「伝票日付＝会計期間開始日 かつ 相手科目が `openingBalanceCounterAccounts`」の2通り。
+- 期首残高の検出は v2 §2.3 どおり、(a) 摘要・メモのキーワード（既定 `期首残高／開始残高／前期繰越／前期より繰越／期首繰越`。科目名は照合しない）、(b) 伝票日付＝会計期間開始日 かつ 科目が `openingBalanceCounterAccounts` に含まれる、のいずれか。
+- `fixedAssets: "exclude"` で除外されるのは `DEPRECIATION` フラグの伝票のみ（`FIXED_ASSET` はどの設定でも除外しない）。
+- `confirmed:false` の対応表エントリは `--dev` でも W012 を出します。
+- T9 の MF 側 fixture は `mf/normal.csv`（BOM付き）＋ `mf/utf8-nobom.csv`（BOMなし）の2本で判定を確認しています。
 - W002 の距離しきい値は `partnerFuzzyThreshold`（既定2、法人格除去後の文字数が5以下なら1）。
 - 弥生アダプタは MF と同じ共通処理を使い、取引先列を持たない点だけが異なります（弥生の「税区分＋税計算区分」結合表記は文字列のまま対応表で引く前提）。
 - `inspect` は区切り文字カンマ固定・1行目をヘッダーと仮定して表示します。
-- `confirmed:false` の対応表エントリは `--dev` でも W012 を出します（設計書の「`--dev` モード以外では W012」より厳しめ）。
-- T9 の MF 側 fixture は設計書の `mf/utf8-bom.csv` ではなく `mf/normal.csv`（BOM付き）＋ `mf/utf8-nobom.csv`（BOMなし）の2本で判定を確認しています。
-- `verifyConfig()` は設計書の検査項目に加えて、`grouping.strategy` の名称と `amountMode` の値の妥当性も検査します。
-- 期首残高のキーワード検出は摘要・メモのみを対象とし、勘定科目名は対象にしません（`繰越利益剰余金` を含む決算振替仕訳等の誤判定防止）。既定キーワードから単独の「繰越」を除いています。
+- テストは `expected/*.json` 比較ではなく、テストコード内で期待値を直接アサートしています。
 
 ## 9. 既知の制約・注意
 

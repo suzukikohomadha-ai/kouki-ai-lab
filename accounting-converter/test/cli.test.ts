@@ -35,6 +35,9 @@ test('CLI convert: 正常系は終了コード0で成果物一式を書き出す
   const run = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
   assert.equal(run.outputWritten, true);
   assert.equal(run.stats.entries, 5);
+  assert.equal(run.input.fileName, 'normal.csv');
+  assert.deepEqual([run.input.encoding, run.input.hadBom, run.input.physicalRows], ['utf8', true, 6]);
+  assert.match(run.input.sha256, /^[0-9a-f]{64}$/);
   assert.ok(!('entries' in run) && !JSON.stringify(run).includes('店頭売上'));
 });
 

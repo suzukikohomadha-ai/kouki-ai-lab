@@ -12,14 +12,15 @@
   "fiscalYear": { "start": "2026-04-01", "end": "2027-03-31" },
   "options": {
     "departments": "drop",
+    "tags": "drop",
     "fixedAssets": "warn",
     "openingBalances": "exclude_and_report",
     "invoiceTransitionDates": ["2026-09-30"],
     "partnerFuzzyThreshold": 2,
     "detectors": {
-      "openingBalanceKeywords": ["開始残高", "期首残高", "前期繰越"],
-      "openingBalanceCounterAccounts": ["元入金", "資本金", "繰越利益剰余金"],
-      "depreciationAccounts": ["減価償却費", "減価償却累計額", "一括償却資産"],
+      "openingBalanceKeywords": ["期首残高", "開始残高", "前期繰越", "前期より繰越", "期首繰越"],
+      "openingBalanceCounterAccounts": ["元入金", "資本金", "繰越利益剰余金", "開始残高", "期首残高"],
+      "depreciationAccounts": ["減価償却費", "減価償却累計額", "一括償却資産償却"],
       "fixedAssetAccounts": ["建物", "建物附属設備", "構築物", "機械装置", "車両運搬具", "工具器具備品", "土地", "ソフトウェア", "一括償却資産", "リース資産"]
     }
   }

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -108,7 +109,7 @@ async function runConvert(values: { profile?: string; input?: string; out?: stri
   }
   writeFileSync(
     join(outDir, 'run.json'),
-    JSON.stringify({ profile: loaded.profile.name, runAt: runAt.toISOString(), input: basename(inputPath), configHashes: loaded.hashes, flags: { dev: values.dev, force: values.force, strict: values.strict }, stats: result.stats, outputWritten: result.outputCsv !== null, durationMs: Date.now() - started }, null, 2),
+    JSON.stringify({ profile: loaded.profile.name, runAt: runAt.toISOString(), input: { fileName: basename(inputPath), encoding: result.dataset.sourceFile.encoding, hadBom: result.dataset.sourceFile.hadBom, physicalRows: result.dataset.sourceFile.physicalRows, sha256: createHash('sha256').update(bytes).digest('hex') }, configHashes: loaded.hashes, flags: { dev: values.dev, force: values.force, strict: values.strict }, stats: result.stats, outputWritten: result.outputCsv !== null, durationMs: Date.now() - started }, null, 2),
     'utf8',
   );
 

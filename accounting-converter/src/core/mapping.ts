@@ -6,6 +6,8 @@ import type { UnmappedItem } from './suggest.js';
 
 export interface MappingOptions {
   departments: ProfileOptions['departments'];
+  tags: NonNullable<ProfileOptions['tags']>;
+  memoTagColumnExists: boolean;
   strict: boolean;
   sourceSystem: Dataset['source'];
 }
@@ -124,7 +126,13 @@ export function applyMappings(ds: Dataset, maps: Maps, opts: MappingOptions): Ma
         else diagnostics.push(diag('W008', 'warning', `部門「${line.departmentRaw}」は出力しない（options.departments=drop）`, { entryId: entry.entryId, sourceRow: line.sourceRow, detail: { kind: 'department', value: line.departmentRaw } }));
       }
       if (line.tagsRaw !== null) {
-        diagnostics.push(diag('W008', 'warning', `タグ「${line.tagsRaw}」は PoC では出力しない`, { entryId: entry.entryId, sourceRow: line.sourceRow, detail: { kind: 'tags', value: line.tagsRaw } }));
+        if (opts.tags === 'memo_tag' && opts.memoTagColumnExists) {
+          mapped.memoTags.push(line.tagsRaw);
+        } else if (opts.tags === 'memo_tag') {
+          diagnostics.push(diag('W008', 'warning', `タグ「${line.tagsRaw}」: options.tags=memo_tag だが出力テンプレートにメモタグ列（from: *.mapped.memoTags）が無いため出力しない`, { entryId: entry.entryId, sourceRow: line.sourceRow, detail: { kind: 'tags', value: line.tagsRaw } }));
+        } else {
+          diagnostics.push(diag('W008', 'warning', `タグ「${line.tagsRaw}」は出力しない（options.tags=drop）`, { entryId: entry.entryId, sourceRow: line.sourceRow, detail: { kind: 'tags', value: line.tagsRaw } }));
+        }
       }
 
       line.mapped = mapped;

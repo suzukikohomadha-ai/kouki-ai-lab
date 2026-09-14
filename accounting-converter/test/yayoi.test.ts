@@ -39,7 +39,7 @@ test('T8 期首残高: W007、出力から除外、期首残高セクション�
   assert.deepEqual(totals, { 現金: [100000, 0], 普通預金: [250000, 0], 元入金: [0, 350000] });
   assert.equal(codes(r, 'I002')[0].detail?.openingBalances, 2);
   const r2 = await run('yayoi', 'yayoi/opening.txt', (p) => {
-    p.options.openingBalances = 'include';
+    p.options.openingBalances = 'include_with_warning';
   });
   assert.equal(bodyRows(r2.outputCsv).length, 3);
 });

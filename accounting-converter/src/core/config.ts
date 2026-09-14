@@ -120,8 +120,9 @@ export interface Detectors {
 
 export interface ProfileOptions {
   departments: 'drop' | 'passthrough';
-  fixedAssets: 'warn' | 'exclude' | 'include';
-  openingBalances: 'exclude_and_report' | 'include';
+  tags?: 'drop' | 'memo_tag';
+  fixedAssets: 'warn' | 'exclude';
+  openingBalances: 'exclude_and_report' | 'include_with_warning';
   invoiceTransitionDates: string[];
   partnerFuzzyThreshold: number;
   detectors: Detectors;
@@ -193,6 +194,19 @@ export function verifyConfig(profile: Profile): VerifyResult {
   }
   if (!['tax_included', 'tax_excluded', 'unknown'].includes(profile.source.amountMode)) {
     issues.push({ severity: 'error', path: 'source.amountMode', message: `amountMode が不正: ${profile.source.amountMode}` });
+  }
+
+  const optionDomains: [keyof ProfileOptions, string[]][] = [
+    ['departments', ['drop', 'passthrough']],
+    ['tags', ['drop', 'memo_tag']],
+    ['fixedAssets', ['warn', 'exclude']],
+    ['openingBalances', ['exclude_and_report', 'include_with_warning']],
+  ];
+  for (const [key, allowed] of optionDomains) {
+    const v = profile.options?.[key];
+    if (v !== undefined && !allowed.includes(String(v))) {
+      issues.push({ severity: 'error', path: `options.${key}`, message: `options.${key} の値が不正: ${String(v)}（許容: ${allowed.join(' | ')}）` });
+    }
   }
 
   const byCode = new Map<string, TaxcodeMapEntry[]>();
