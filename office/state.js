@@ -38,7 +38,7 @@ window.AI_STATE = {
     { id: "T10", title: "美容師業界向け「自動化」サービス構築（コホマダAI）", owner: "メイ", status: "todo", progress: 0, urgency: "low", importance: "low", hint: "サービス要件の整理から", cmd: "", log: [], deliverables: [] },
     { id: "T11", client: "リスペクトマリン", title: "リスペクトマリン案件：ディスカバリーコール準備の最終化", owner: "レン", status: "done", progress: 100, hint: "社長承認済み。あとは社長／営業担当によるディスカバリーコール実施を待つのみ", cmd: "", log: [ { time: "now", text: "Google Drive上に下書き2件（コール準備資料）・見積分析レポート済み。正式法人名（Respect Surveyors/Respect Marine混在）ほか未確認事項多数あり" }, { time: "now", text: "下書き2件が完全重複と判明。ブリーフの先方回答（ポルトガル語）を確認し、T21・T22を反映したコールアジェンダを作成" }, { time: "now", text: "社長が資料確認・承認" } ], deliverables: [ { title: "T11 コール準備統合版", type: "md", at: "now", path: "logs/kohomada_2026-07-28_T11コール準備統合_v1.md" } ] },
     { id: "T12", title: "ファンドコミュニティ構築（コホマダ金融）", owner: "ミナ", status: "todo", progress: 0, urgency: "low", importance: "high", hint: "コミュニティ設計の検討から", cmd: "", log: [], deliverables: [] },
-    { id: "T13", title: "会計ツールのコンバータ構築（コホマダ金融）", owner: "ミナ", status: "todo", progress: 0, urgency: "low", importance: "high", hint: "要件整理から", cmd: "", log: [], deliverables: [] },
+    { id: "T13", title: "会計ツールのコンバータ構築（コホマダ金融）", owner: "リサ・メイ・ミナ", status: "doing", progress: 15, urgency: "low", importance: "high", hint: "弥生/MF→freee移行の課題・実現可能性リサーチ中（並列）。完了後は社長ヒアリングで対象範囲（自社内利用か外部提供の製品か等）を確認予定", cmd: "", log: [ { time: "now", text: "社長より依頼。リサ（移行課題の一次情報調査）・メイ（技術的実現可能性）・ミナ（勘定科目・税区分の会計リスク整理）に並列委任し着手" } ], deliverables: [] },
     { id: "T14", client: "掛軸堂", title: "掛軸堂様：クラウドファンディング支援（KINOTO）", owner: "レン", status: "todo", progress: 0, urgency: "low", importance: "low", hint: "支援内容の整理から", cmd: "", log: [], deliverables: [] },
     { id: "T15", title: "KINOTO用「事業計画書」作成", owner: "レン", status: "todo", progress: 0, urgency: "low", importance: "low", hint: "骨子作成から", cmd: "", log: [], deliverables: [] },
     { id: "T16", title: "KINOTO HP作成", owner: "カエデ", status: "todo", progress: 0, urgency: "low", importance: "low", hint: "構成案の作成から", cmd: "", log: [], deliverables: [] },
@@ -342,6 +342,7 @@ window.AI_STATE = {
   ],
 
   activity: [
+    { time: "now", who: "アイ", text: "📋 T13：会計ツールのコンバータ構築（弥生会計／マネーフォワードクラウド会計→freee会計への移行自動化）の依頼を受付。まずは課題・実現可能性のリサーチ段階として、リサ（各社エクスポート/インポート仕様・freee API・既存の移行の手間の実態を一次情報調査）・メイ（技術アーキテクチャと実現可能性）・ミナ（勘定科目・消費税区分等の会計リスク整理）に並列委任" },
     { time: "now", who: "ジン", text: "✅ T178-182：「最適なものから進めて」の指示を受け、承認不要な範囲（外部契約・対外連絡を伴わない項目）を優先着手。実装3件完了：BGM再生基盤(src/audio.ts新設)・液晶広告VideoTexture基盤(未配置時は静止画へ自動フォールバック)・チル/エモ「見上げビュー」プロトタイプ(ランドマークビル近接でカメラ演出)。いずれもtypecheck/lint/build成功、reduced-motion配慮済み。調査2件完了：都営地下鉄CC BY4.0は商用利用可と原文確認、東京メトロ基本ライセンスは開発者サイトのJS描画・DNS不通で原文未到達のまま未確認。FirebaseとSupabaseの無料枠比較ではFirebaseが容量面で優位だが2026年2月以降バケット作成にカード登録必須という制約を新規発見。⚠️ノヴァ作業中、別セッションと思われる者が同じcityScene.tsを同時編集していた痕跡を検出（衝突は無かったが要確認）" },
     { time: "now", who: "ジン", text: "🚧 T174-177：社長より『繋』拡張構想（新宿/西新宿/歌舞伎町拡大・建物内進入・BGM・液晶広告動画・管理画面・チル/エモスポット・電車時刻表連動）7項目の実現性評価依頼。ノヴァ/メイ/リサ/カエデに並列委任。最大の懸念2点：①エリア拡大は現行アーキ（静的データ方式）が320m時点で既に限界のため大規模再設計が必要、②電車時刻表はJR東日本/京王/小田急が「チャレンジ限定ライセンス」で商用サイト利用に懸念あり（都営/メトロは比較的良好）。動画管理画面はバックエンド新規構築必須" },
     { time: "now", who: "ジン", text: "🏙️ T172/T173：社長より『繋』TSUNAGU 3Dサイト（Draft）の計画書作成依頼。カエデ（体験・ブランド面）・ノヴァ（技術面）に整理を委任し統合、アオイが監査（初稿REVISE→指摘反映しv1完成）。次の最優先アクションはREADMEの8/21分反映（実データ半径320m化）と統合GPU実機性能検証。公開の前提3点（料金照合・問い合わせ導線・法的表示）は社長の判断待ち" },
