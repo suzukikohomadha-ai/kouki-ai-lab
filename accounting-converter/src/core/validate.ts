@@ -41,6 +41,9 @@ export function validate(ds: Dataset, cfg: ValidationConfig): Diagnostic[] {
     if (e.flags.includes('DEPRECIATION')) {
       out.push(diag('W004', 'warning', '減価償却関連科目を含む伝票。freee の固定資産台帳から自動生成される減価償却仕訳と二重計上になる恐れ', { entryId: e.entryId, sourceRow: e.sourceRows[0], detail: { accounts: e.lines.map((l) => l.accountRaw).join('/') } }));
     }
+    if (e.flags.includes('DEPRECIATION_MIXED')) {
+      out.push(diag('W017', 'warning', '償却仕訳に他科目が混在（期中売却の月割償却合算、少額減価償却資産の即時償却等の可能性）。伝票単位で出力に残した', { entryId: e.entryId, sourceRow: e.sourceRows[0], detail: { accounts: e.lines.map((l) => l.accountRaw).join('/') } }));
+    }
     if (e.flags.includes('OPENING_BALANCE')) {
       out.push(diag('W007', 'warning', '期首残高・繰越と思われる伝票（既定で出力から除外し、レポートに集計）', { entryId: e.entryId, sourceRow: e.sourceRows[0] }));
     }

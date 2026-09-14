@@ -5,6 +5,7 @@ export type EntryFlag =
   | 'CLOSING_ADJUSTMENT'
   | 'FIXED_ASSET'
   | 'DEPRECIATION'
+  | 'DEPRECIATION_MIXED'
   | 'COMPOUND';
 
 export type AmountMode = 'tax_included' | 'tax_excluded' | 'unknown';

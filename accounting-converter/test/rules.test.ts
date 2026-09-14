@@ -164,3 +164,46 @@ test('ConvertInput.codec: 注入した codec の decodeBytes が使われる', a
   assert.deepEqual(codes(r, 'I001')[0].detail, { encoding: 'utf8', hadBom: true });
   assert.equal(r.dataset.sourceFile.hadBom, true);
 });
+
+test('固定資産除外の境界（ミナ見解）: 純粋な償却仕訳のみ除外、除却は W003、混在は W017 で残す', async () => {
+  const OUT = '例_対象外';
+  const rows: Row[] = [
+    { no: '1', date: '2026/04/30', dr: { acc: '減価償却費', tax: OUT, amt: 5000 }, cr: { acc: '減価償却累計額', tax: OUT, amt: 5000 }, desc: '間接法の月次償却' },
+    { no: '2', date: '2026/05/10', dr: { acc: '現金', amt: 30000 }, cr: { acc: '車両運搬具', tax: OUT, amt: 100000 }, desc: '除却' },
+    { no: '2', date: '2026/05/10', dr: { acc: '減価償却累計額', tax: OUT, amt: 70000 }, desc: '除却' },
+    { no: '3', date: '2026/06/01', dr: { acc: '減価償却費', tax: '例_課税仕入10%', amt: 220000 }, cr: { acc: '未払金', amt: 220000 }, desc: '少額減価償却資産の即時償却' },
+    { no: '4', date: '2026/07/15', dr: { acc: '減価償却費', tax: OUT, amt: 2000 }, cr: { acc: '固定資産売却益', tax: OUT, amt: 12000 }, desc: '期中売却' },
+    { no: '4', date: '2026/07/15', dr: { acc: '現金', amt: 10000 }, desc: '期中売却' },
+  ];
+  const r = await runRows(rows, (p) => {
+    p.options.fixedAssets = 'exclude';
+  });
+  assert.equal(r.stats.errors, 0, JSON.stringify(r.diagnostics.filter((d) => d.severity === 'error')));
+  const flags = Object.fromEntries(r.dataset.entries.map((e) => [e.voucherNo, [...e.flags].sort()]));
+  assert.deepEqual(flags['1'], ['DEPRECIATION']);
+  assert.deepEqual(flags['2'], ['COMPOUND', 'FIXED_ASSET']);
+  assert.deepEqual(flags['3'], ['DEPRECIATION', 'DEPRECIATION_MIXED']);
+  assert.deepEqual(flags['4'], ['COMPOUND', 'DEPRECIATION', 'DEPRECIATION_MIXED']);
+  assert.deepEqual([...r.excluded.keys()], ['E000001']);
+  assert.equal(codes(r, 'W004').length, 3);
+  assert.equal(codes(r, 'W003').length, 1);
+  assert.equal(codes(r, 'W003')[0].entryId, 'E000002');
+  assert.deepEqual(codes(r, 'W017').map((d) => d.entryId), ['E000003', 'E000004']);
+  assert.ok(r.outputCsv!.includes('例_車両運搬具'));
+  assert.ok(r.outputCsv!.includes('例_固定資産売却益'));
+  assert.ok(r.outputCsv!.includes('例_未払金'));
+  assert.equal(r.report.excluded.entries.length, 1);
+
+  const warn = await runRows(rows);
+  assert.equal(warn.excluded.size, 0);
+  assert.equal(codes(warn, 'W017').length, 2);
+});
+
+test('verifyConfig: detectors の配列型検査', async () => {
+  const { verifyConfig } = await import('../src/core/index.js');
+  const p = exampleProfile('mf');
+  (p.options.detectors as { fixedAssetAccounts: unknown }).fixedAssetAccounts = '建物';
+  const v = verifyConfig(p);
+  assert.equal(v.ok, false);
+  assert.ok(v.issues.some((i) => i.path === 'options.detectors.fixedAssetAccounts'));
+});

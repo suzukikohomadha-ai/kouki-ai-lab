@@ -111,8 +111,8 @@ export async function convert(input: ConvertInput, opts: ConvertOptions = {}): P
     if (e.flags.includes('OPENING_BALANCE') && (profile.options.openingBalances ?? 'exclude_and_report') === 'exclude_and_report') {
       excluded.set(e.entryId, '期首残高・繰越（options.openingBalances=exclude_and_report）');
       excludedOpening++;
-    } else if (e.flags.includes('DEPRECIATION') && profile.options.fixedAssets === 'exclude') {
-      excluded.set(e.entryId, '減価償却関連（options.fixedAssets=exclude。取得仕訳は資金移動のため除外しない）');
+    } else if (e.flags.includes('DEPRECIATION') && !e.flags.includes('DEPRECIATION_MIXED') && profile.options.fixedAssets === 'exclude') {
+      excluded.set(e.entryId, '減価償却仕訳（options.fixedAssets=exclude。償却科目と固定資産科目のみで構成される伝票）');
       excludedFixed++;
     } else if (opts.force && erroredEntryIds.has(e.entryId)) {
       excluded.set(e.entryId, 'エラーを含む伝票（--force により除外）');

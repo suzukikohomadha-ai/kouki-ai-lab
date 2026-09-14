@@ -282,8 +282,15 @@ function detectFlags(entry: JournalEntry, group: ParsedRow[], profile: Profile):
     const counters = d.openingBalanceCounterAccounts ?? ['元入金', '資本金', '繰越利益剰余金', '開始残高', '期首残高'];
     if (accounts.some((a) => inList(counters, a))) flags.add('OPENING_BALANCE');
   }
-  if (accounts.some((a) => inList(d.depreciationAccounts, a))) flags.add('DEPRECIATION');
-  if (accounts.some((a) => inList(d.fixedAssetAccounts, a))) flags.add('FIXED_ASSET');
+  const depAccounts = (d.depreciationAccounts ?? ['減価償却費', '一括償却資産償却']).map(normalizeName);
+  const faAccounts = (d.fixedAssetAccounts ?? []).map(normalizeName);
+  const hasDep = accounts.some((a) => depAccounts.includes(a));
+  const allDepOrFa = accounts.every((a) => depAccounts.includes(a) || faAccounts.includes(a));
+  if (hasDep) {
+    flags.add('DEPRECIATION');
+    if (!allDepOrFa) flags.add('DEPRECIATION_MIXED');
+  }
+  if (accounts.some((a) => faAccounts.includes(a)) && !(hasDep && allDepOrFa)) flags.add('FIXED_ASSET');
   if (group.some((g) => !isBlank(g.closingFlag) && !['0', 'false', 'no', '通常'].includes(g.closingFlag!.toLowerCase()))) flags.add('CLOSING_ADJUSTMENT');
   if (entry.lines.length > 2) flags.add('COMPOUND');
   return [...flags];

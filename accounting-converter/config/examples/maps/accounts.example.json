@@ -20,6 +20,8 @@
     "工具器具備品":   { "freeeAccount": "例_工具器具備品",   "confirmed": true, "source": "manual" },
     "減価償却費":     { "freeeAccount": "例_減価償却費",     "confirmed": true, "source": "manual" },
     "減価償却累計額": { "freeeAccount": "例_減価償却累計額", "confirmed": true, "source": "manual" },
+    "車両運搬具":     { "freeeAccount": "例_車両運搬具",     "confirmed": true, "source": "manual" },
+    "固定資産売却益": { "freeeAccount": "例_固定資産売却益", "confirmed": true, "source": "manual" },
     "資本金":         { "freeeAccount": "例_資本金",         "confirmed": true, "source": "manual" },
     "元入金":         { "freeeAccount": "例_元入金",         "confirmed": true, "source": "manual" },
     "繰越利益剰余金": { "freeeAccount": "例_繰越利益剰余金", "confirmed": true, "source": "manual" }

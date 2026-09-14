@@ -209,6 +209,13 @@ export function verifyConfig(profile: Profile): VerifyResult {
     }
   }
 
+  for (const key of ['depreciationAccounts', 'fixedAssetAccounts', 'openingBalanceKeywords'] as const) {
+    const v = profile.options?.detectors?.[key];
+    if (v !== undefined && !(Array.isArray(v) && v.every((x) => typeof x === 'string'))) {
+      issues.push({ severity: 'error', path: `options.detectors.${key}`, message: `${key} は文字列の配列で指定する` });
+    }
+  }
+
   const byCode = new Map<string, TaxcodeMapEntry[]>();
   for (const e of profile.maps.taxcodes.entries) {
     const list = byCode.get(e.sourceTaxCode) ?? [];
