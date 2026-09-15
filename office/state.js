@@ -26,7 +26,7 @@ window.AI_STATE = {
   },
 
   tasks: [
-    { id: "T225", title: "シフト管理ツール：競合・同種ツールの徹底リサーチ（共通）", owner: "リサ", status: "doing", progress: 10, hint: "リサが3領域（国内SaaS／LINE連携・勤怠一体型・低価格帯／海外・OSS・ノーコード自作）を並列調査中。完了後アオイが監査", cmd: "", log: [ { time: "now", text: "社長より方向転換の指示：構築予定のシフト管理ツールと競合になり得るツールを徹底調査。要件（希望収集・手動作成・確定閲覧・自動作成・スキル制約・エリア割当・アカウント無しスマホ利用・買取店舗業態）を軸にリサへ3並列で委任" } ], deliverables: [] },
+    { id: "T225", title: "シフト管理ツール：競合・同種ツールの徹底リサーチ（共通）", owner: "リサ", status: "doing", progress: 80, hint: "リサ3名の調査完了（国内24件・LINE/勤怠18件・海外/OSS/ノーコード）。統合サマリー作成済み。アオイが監査中。注意：実行環境の制限で公式サイト本文の直接確認ができておらず、検索抜粋ベース", cmd: "", log: [ { time: "now", text: "社長より方向転換の指示：構築予定のシフト管理ツールと競合になり得るツールを徹底調査。要件（希望収集・手動作成・確定閲覧・自動作成・スキル制約・エリア割当・アカウント無しスマホ利用・買取店舗業態）を軸にリサへ3並列で委任" }, { time: "now", text: "リサ3名の報告受領・保存。実行環境のネットワーク制限（社外サイト403）で公式本文の直接閲覧ができず、公式ページの検索抜粋に基づく調査となった旨をアイがcurlで確認し各報告に明記。3報告間の食い違い（oplus提供会社・自動作成料金、Shiftmation社名、シフぽちのペア制約）を統合サマリー§3に整理" }, { time: "now", text: "統合サマリーv1作成。要件①アカウント無し×②自動作成×③対人組み合わせ制約を同時に満たす既存サービスは未確認、が主結論。アオイへ4文書の監査を依頼" } ], deliverables: [ { title: "競合調査_統合サマリー_v1（Draft・監査中）", type: "md", at: "now", path: "logs/common_2026-09-15_シフト管理ツール_競合調査_統合サマリー_v1.md" }, { title: "領域A：国内シフト管理SaaS（24件）", type: "md", at: "now", path: "logs/common_2026-09-15_シフト管理ツール_競合調査_領域A国内SaaS_v1.md" }, { title: "領域B：LINE連携・勤怠一体型・低価格帯（18件）", type: "md", at: "now", path: "logs/common_2026-09-15_シフト管理ツール_競合調査_領域B_LINE連携・勤怠一体型_v1.md" }, { title: "領域C：海外SaaS・OSS・ノーコード自作", type: "md", at: "now", path: "logs/common_2026-09-15_シフト管理ツール_競合調査_領域C_海外SaaS・OSS・ノーコード_v1.md" } ] },
     { id: "T224", title: "シフト管理ツール：外部ヒアリング18項目への回答整理（社長仲介・発注元は別のお客さま）", owner: "アイ", status: "todo", progress: 60, hint: "社長の方向転換（T225の競合調査を先に行う）により保留中。Q1の伝え方（案1／案2）・Q9の返し方は調査結果を見てから判断", cmd: "T224を再開して。案2で§5の短文を確定", log: [ { time: "now", text: "社長へ届いた確認事項18項目（4分類）を受領。社内資料・Notionに前例なし。KINOTO事業コンテキストの既知情報を反映しつつ、社長回答が必要な項目を[要ヒアリング]として整理" }, { time: "now", text: "社長回答：Q1自動作成も入れたい／Q7はお客さまに確認／Q9は意味の説明を依頼。Q7の回答から社長は開発側とお客さまの仲介役と判明し、KINOTO発注前提を撤回してv2を作成" } ], deliverables: [ { title: "シフト管理ツール_ヒアリング回答案_v2（前提修正・Q1/7/9反映）", type: "md", at: "now", path: "logs/common_2026-09-15_シフト管理ツール_ヒアリング回答案_v2.md" }, { title: "シフト管理ツール_ヒアリング回答案_v1", type: "md", at: "now", path: "logs/kinoto_2026-09-15_シフト管理ツール_ヒアリング回答案_v1.md" } ] },
     { id: "T1", client: "ガチャガチャ案件", title: "ガチャガチャ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T2", client: "トップパフォーマー案件", title: "トップパフォーマー案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
@@ -252,7 +252,7 @@ window.AI_STATE = {
 
   employees: [
     { name: "ジン", status: "idle", taskId: "" },
-    { name: "リサ", status: "working", taskId: "T225" },
+    { name: "リサ", status: "idle", taskId: "" },
     { name: "レン", status: "idle", taskId: "" },
     { name: "サトル", status: "idle", taskId: "" },
     { name: "カエデ", status: "idle", taskId: "" },
@@ -261,7 +261,7 @@ window.AI_STATE = {
     { name: "ノヴァ", status: "idle", taskId: "" },
     { name: "ミナ", status: "idle", taskId: "" },
     { name: "リョウ", status: "idle", taskId: "" },
-    { name: "アオイ", status: "review", taskId: "T111" },
+    { name: "アオイ", status: "working", taskId: "T225" },
   ],
 
   // ルーティン業務：事業（コホマダ／KINOTO／FP）ごとの定型運用（note・Instagram・X等）と対象アカウント。
@@ -344,6 +344,7 @@ window.AI_STATE = {
   ],
 
   activity: [
+    { time: "now", who: "アイ", text: "📚 T225：リサ3名の競合調査が完了（国内24件・LINE/勤怠一体型18件・海外/OSS/ノーコード）。統合サマリーを作成しアオイの監査へ" },
     { time: "now", who: "アイ", text: "🔍 T225：社長の方向転換により、シフト管理ツールの競合・同種ツール調査を開始。リサが3領域を並列調査" },
     { time: "now", who: "アイ", text: "📋 T224：シフト管理ツールの確認事項18項目が社長宛に届いたため、回答の下書きを作成。KINOTO既知情報を反映、残りは社長回答待ち（特に1・7・9）" },
     { time: "now", who: "ジン", text: "✅ T178-182：「最適なものから進めて」の指示を受け、承認不要な範囲（外部契約・対外連絡を伴わない項目）を優先着手。実装3件完了：BGM再生基盤(src/audio.ts新設)・液晶広告VideoTexture基盤(未配置時は静止画へ自動フォールバック)・チル/エモ「見上げビュー」プロトタイプ(ランドマークビル近接でカメラ演出)。いずれもtypecheck/lint/build成功、reduced-motion配慮済み。調査2件完了：都営地下鉄CC BY4.0は商用利用可と原文確認、東京メトロ基本ライセンスは開発者サイトのJS描画・DNS不通で原文未到達のまま未確認。FirebaseとSupabaseの無料枠比較ではFirebaseが容量面で優位だが2026年2月以降バケット作成にカード登録必須という制約を新規発見。⚠️ノヴァ作業中、別セッションと思われる者が同じcityScene.tsを同時編集していた痕跡を検出（衝突は無かったが要確認）" },
