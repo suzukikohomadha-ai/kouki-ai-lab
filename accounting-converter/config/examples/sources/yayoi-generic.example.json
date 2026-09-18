@@ -1,0 +1,35 @@
+{
+  "_comment": "テスト専用の架空列順・架空フラグ値。実際の弥生汎用形式の仕様ではない。ヘッダー無し・Shift_JIS・識別フラグ列(index 0)で複合仕訳をグループ化する想定を検証する。",
+  "system": "yayoi_generic",
+  "encoding": "shift_jis",
+  "delimiter": ",",
+  "hasHeader": "auto",
+  "headerSignature": ["例_伝票No", "例_取引日付"],
+  "dateFormats": ["YYYY/MM/DD", "GYY/MM/DD"],
+  "eraTable": { "R": 2018, "H": 1988 },
+  "amountMode": "tax_included",
+  "grouping": {
+    "strategy": "by_flag",
+    "flagColumn": { "index": 0 },
+    "flagValues": { "single": ["例S"], "compoundStart": ["例CS"], "compoundMiddle": ["例CM"], "compoundEnd": ["例CE"] }
+  },
+  "columns": {
+    "voucherNo":         { "index": 1 },
+    "closingFlag":       { "index": 2, "optional": true },
+    "date":              { "index": 3 },
+    "debit.account":     { "index": 4 },
+    "debit.subAccount":  { "index": 5, "optional": true },
+    "debit.department":  { "index": 6, "optional": true },
+    "debit.taxCode":     { "index": 7 },
+    "debit.amount":      { "index": 8 },
+    "debit.taxAmount":   { "index": 9, "optional": true },
+    "credit.account":    { "index": 10 },
+    "credit.subAccount": { "index": 11, "optional": true },
+    "credit.department": { "index": 12, "optional": true },
+    "credit.taxCode":    { "index": 13 },
+    "credit.amount":     { "index": 14 },
+    "credit.taxAmount":  { "index": 15, "optional": true },
+    "description":       { "index": 16 },
+    "memo":              { "index": 21, "optional": true }
+  }
+}
