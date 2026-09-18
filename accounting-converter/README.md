@@ -1,7 +1,7 @@
 # accounting-converter — 会計ツールコンバータ PoC（フェーズ0）
 
 弥生会計／マネーフォワードクラウド会計（MF）の仕訳CSVを、freee会計の仕訳インポート用CSVに変換する **ローカル完結型の CLI** です。
-株式会社コホマダ T13「会計ツールのコンバータ構築」の PoC。設計は `logs/kohomada_2026-09-14_会計ツールコンバータPoC詳細設計_v3.md`（メイ作成。v1→v2→v3 とアオイ監査・ミナ会計見解を反映したもの）に基づきます。設計書と本実装の表記が異なる点は §8 に列挙しており、**実装＝本 README を正**とします。
+株式会社コホマダ T13「会計ツールのコンバータ構築」の PoC。設計は `logs/kohomada_2026-09-14_会計ツールコンバータPoC詳細設計_v4.md`（メイ作成。v1→v2→v3 とアオイ監査・ミナ会計見解を反映し、v4 で v3 の実装乖離を設計書側に反映済み）に基づきます。設計書と本実装の表記が異なる点は §8 に列挙しており、**実装＝本 README を正**とします。
 
 - 本ツールは **データを外部に送信しません**（ネットワーク通信を行うコードを含みません。検査範囲：`src/` の静的 import 検査（`fetch`/`http`/`https`/`net`/`child_process` 等）。依存ライブラリ本体は検査対象外ですが、実行時依存を papaparse・iconv-lite の2つに限定する検査を入れています）。
 - 本ツールは **税務・会計上の判断を行いません**。勘定科目・税区分の対応表は人間（有資格者）が確定し、実行結果の最終確認も有資格者が行ってください。
@@ -83,7 +83,7 @@ npx tsx src/cli/index.ts convert --profile config/examples/profile.yayoi.json --
 
 `config/examples/` と `fixtures/` の列名・税区分名・フラグ値（`例_取引日`、`例S` など）は **テストのために作った架空の名前** で、実際の各社CSV仕様ではありません。
 
-## 4. 設定の埋め方（社長作業・1回限り・目安 20〜40分）
+## 4. 設定の埋め方（社長作業（手順5のみ有資格者）・1回限り・目安 20〜40分）
 
 本番用の設定は次の構成です。転記は **git 管理外のコピー**（`config/profile.json`、`*.local.json`）に対して行います（公式ヘッダー文字列をリポジトリにコミットしてよいかは規約確認待ち（リョウ）のため）。
 
@@ -103,17 +103,17 @@ config/
 
 最短手順：
 
-1. **`npx tsx src/cli/index.ts init-local`**（約1分）。上記のコピーと `profile.json` の参照先書き換えを一括で行います。既存ファイルは上書きしません（やり直すときは `--force`）。
-2. **ファイルを置く**（約10分）。freee ヘルプ「他社会計ソフトから仕訳データを移行する」から仕訳インポート用テンプレート（UTF-8版・Shift-JIS版）をダウンロードし、`config/templates/` に置く。MF は「仕訳帳」から **架空データ数件だけ** を CSV エクスポートして同じ場所に置く（**Excel で開いて保存し直さない**。先頭の0や日付表記が書き換わるため）。ファイル名に顧問先名・事務所名を含めない。
+1. **`npx tsx src/cli/index.ts init-local`**（約1分）。上記のコピーと `profile.json` の参照先書き換えを一括で行います。既存ファイルは上書きしません。`--force` を付けると **編集済みの全 `.local.json` と `profile.json` を破棄して作り直す** ので、やり直したいファイルが1つだけなら `cp config/targets/freee-generic.json config/targets/freee-generic.local.json` のように個別にコピーし直してください。
+2. **ファイルを置く**（約10分）。freee ヘルプ「他社会計ソフトから仕訳データを移行する」から仕訳インポート用テンプレートをダウンロードし、`config/templates/` に置く。UTF-8版と Shift-JIS版の両方があるとされますが、**`adopt-headers --target` に使うのは `target.encoding`（既定 `utf8_bom`）に合う UTF-8 版の1ファイルだけ**（両方に実行すると `templateInfo` が最後のファイルを指し、列名との対応が不整合になる。Shift-JIS で出力したい場合は `encoding` を `shift_jis` にした上で Shift-JIS 版1ファイルに実行）。MF は「仕訳帳」から **架空データ数件だけ** を CSV エクスポートして同じ場所に置く（**Excel で開いて保存し直さない**。先頭の0や日付表記が書き換わるため）。ファイル名に顧問先名・事務所名を含めない。
 3. **`adopt-headers` を各ファイルに実行**（約1分）：
    ```bash
-   npx tsx src/cli/index.ts adopt-headers --target config/targets/freee-generic.local.json --file config/templates/<freeeテンプレート>.csv
+   npx tsx src/cli/index.ts adopt-headers --target config/targets/freee-generic.local.json --file config/templates/<freeeテンプレート UTF-8版>.csv   # target には1ファイルだけ
    npx tsx src/cli/index.ts adopt-headers --source config/sources/mf-journal.local.json  --file config/templates/<MFエクスポート>.csv
    ```
-   指定ファイルの **1行目（ヘッダー）をそのまま読み取り**、設定の `TODO_VERIFY:<推定名>` と突合（NFKC 正規化後の完全一致、または推定名がヘッダー文字列に含まれる/含む場合で候補が1つに絞れるとき）して列名を置き換えます。文字コード（UTF-8 / BOM / Shift_JIS）は自動判定。実行後に「置換した列／未確定の列／削除した列」を表示します。
+   指定ファイルの **1行目（ヘッダー）をそのまま読み取り**、設定の `TODO_VERIFY:<推定名>` と突合（NFKC 正規化後の完全一致、または推定名がヘッダー文字列に含まれる/含む場合で候補が1つに絞れるとき）して列名を置き換えます。文字コード（UTF-8 / BOM / Shift_JIS）は自動判定。実行後に「置換した列／未確定の列／削除した列」を表示します。間違えたファイルで実行してしまったら、`cp config/targets/freee-generic.json config/targets/freee-generic.local.json`（source なら `cp config/sources/mf-journal.json config/sources/mf-journal.local.json`）で該当ファイルだけ元に戻して再実行できます。同じファイルで再実行しても、`from:null` の未確定列は `_todo` を保ったまま残ります。
    - 置き換わる列名は **社長が置いた実ファイルの文字列** であり、AI の推定ではありません。
    - ただし `from`（中間モデルとの対応）は設定側の推定を引き継ぐため、**対応が正しいかは人が確認**してください（`confirmed:false` 相当。「部分一致・要確認」と表示された列は特に）。
-   - `--target`：テンプレートにあって設定に無い列は `from: null`＋`_todo` 付きで追加され、`verify-config` が error にします（中間モデルの項目を指定するか、不要なら列ごと削除）。設定にあってテンプレートに無い列は削除して表示します。`templateInfo`（ファイル名・取得日・sha256・観測した文字コード）も埋めます。
+   - `--target`：テンプレートにあって設定に無い列は `from: null`＋`_todo` 付きで追加され、`verify-config` が error にします（中間モデルの項目を指定するか、不要なら列ごと削除）。設定にあってテンプレートに無い列は削除して表示します。`templateInfo`（ファイル名・`downloadedAt`＝**取り込み実行日**（実際の取得日と異なれば手で修正）・sha256・観測した文字コード）も埋めます。`downloadedFrom` は TODO のまま残るので手順4で URL を記入してください。「部分一致・要確認」で採用した列には `_note` を残します（`verify-config` の検査対象外。確認後に削除してよい）。
    - `--source`：ヘッダーに該当が無い列は `TODO_VERIFY` のまま残して一覧表示します（optional なら削除、必須なら手で指定）。エクスポートにあって設定に無い列も表示します。
    - 弥生（ヘッダー無し想定）は `adopt-headers` の対象外です。`npx tsx src/cli/index.ts inspect --input <弥生エクスポート>` で先頭行を表示し、列 index（0始まり）・識別フラグ列の有無・日付表記（西暦/和暦）を確認して `config/sources/yayoi-generic.local.json` の `index` / `grouping` を手で確定してください（識別フラグ列が無ければ `grouping.strategy` を `by_voucher_no` に）。
 4. **残った `TODO_VERIFY` と `from` を手で確認**（約5分）。`amountMode`（税込/税抜）、`compoundEntries`（複合仕訳の書き方）、`required`、`encoding` は公式ヘルプの記載を見て設定します。金額列のように推定名とヘッダーが食い違って未確定になった列は手で指定します。
@@ -201,7 +201,7 @@ test/         node:test（npm test）
 
 ## 8. 未実装項目・設計書との相違
 
-設計書 v3 との相違（v4 で設計書側を実装に合わせる予定）：
+設計書 v3 との相違（v4 で反映済み・記録として残す）：
 
 - `convert()` は **非同期**（`async`／`Promise<ConvertResult>`）です。v3 §2 の「同期」は誤記。
 - `suggester`／`codec` は `ConvertOptions` ではなく `ConvertInput` に置いています。
@@ -225,7 +225,8 @@ v2 と異なる点：
 
 - `LlmSuggester`（設計書 v4 §8）、`config/approvals.json`、`--i-confirm-external-ai`、W016、`--write-suggestions`。外部AIは社長の承認未了のため未実装。`--suggester` フラグは `noop | rule` のみ受け付け、それ以外はエラー。
 - **`RuleSuggester` は実装済み**（社長回答 D-4「まずルールベースの提案まで」に基づく。v4 §8 では「未実装」とされていた項目）。勘定科目は (i) 正規化後の完全一致 1.0 → (ii) 記号・空白・括弧内除去後の一致 0.9 → (iii) 別名辞書 `maps/account-aliases` 0.8 → (iv) 前方/後方一致 0.5 の順で最大3件、税区分は正規化一致＋税率数字（売上/仕入の語が合えば 0.6、数字のみ 0.4）。候補はレポート §5「未マッピング一覧」の「提案」列に根拠付きで併記されるだけで、**変換には適用されず E002/E003 は解消されない**（人間が対応表に転記して `confirmed:true` にする）。v4 §8.1 の「freee側科目一覧（社長が用意）」は使わず、対応表 `maps/accounts` の `freeeAccount` 値の集合と別名辞書を候補の母集団にしています。別名辞書の同梱例は `例_` 付きの架空で、実在の科目体系を示すものではありません。
-- `init-local`／`adopt-headers` は v4 §6.4 に無い CLI コマンドです（社長回答 B「進めやすいように準備」への対応）。`adopt-headers` はファイルの1行目の文字列を転記するだけで、列名の推定はしません。`TargetColumn._todo`（未確定列の目印）と `templateInfo.encodingObserved` は設計書に無い項目です。
+- `init-local`／`adopt-headers` は v4 §6.4 に無い CLI コマンドです（社長回答 B「進めやすいように準備」への対応）。`adopt-headers` はファイルの1行目の文字列を転記するだけで、列名の推定はしません。`TargetColumn._todo`（未確定列の目印）・`_note`（部分一致採用の記録）と `templateInfo.encodingObserved` は設計書に無い項目です。
+- アオイ監査（2026-09-18）反映：`adopt-headers` の再実行で `from:null` 列の `_todo` が消える穴を修正（`from` が null で TODO_VERIFY からの置換でない列は `_todo` を保持）。レポート §5 の列名を「候補（未適用）」に改め、候補があるときは「変換には適用されていない・数値は確率ではない」旨を1行出します。
 - ブラウザ用 codec の実装。`ConvertInput.codec`（`decodeBytes`/`encodeText` の注入口）は用意し、未指定時は `src/core/encoding.ts`（`iconv-lite`・Node `Buffer` 依存）を使います。ブラウザ版では `TextDecoder('shift_jis')`＋Shift_JIS エンコード可能な別実装を注入する想定（未作成）。
 
 実装上の決め事：

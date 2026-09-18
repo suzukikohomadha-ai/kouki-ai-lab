@@ -69,11 +69,20 @@ test('convert + RuleSuggester: 候補はレポートに併記されるだけで�
   assert.ok(u.suggestions.includes('例_消耗品費'));
   assert.ok(u.suggestions.includes('別名辞書'));
   assert.equal(withRule.dataset.entries[0].lines[0].mapped?.freeeAccount, '');
+  const { renderReportMarkdown } = await import('../src/core/index.js');
+  const md = renderReportMarkdown(withRule.report);
+  assert.ok(md.includes('候補（未適用）'));
+  assert.ok(md.includes('変換には適用されていません'));
+  assert.ok(!renderReportMarkdown(withNoopReport(withRule)).includes('変換には適用されていません'));
   assert.equal(profile.maps.accounts.entries['例_事務用品費'], undefined);
 
   const withNoop = await convert({ bytes, profile, suggester: new NoopSuggester() });
   assert.equal(withNoop.report.unmapped.find((x) => x.kind === 'account')!.suggestions, '');
 });
+
+function withNoopReport(r: Awaited<ReturnType<typeof convert>>) {
+  return { ...r.report, unmapped: r.report.unmapped.map((u) => ({ ...u, suggestions: '' })) };
+}
 
 test('src/core/suggest.ts: RuleSuggester はあるが LlmSuggester は無い（静的検査）', () => {
   const src = readFileSync(join(ROOT, 'src', 'core', 'suggest.ts'), 'utf8');

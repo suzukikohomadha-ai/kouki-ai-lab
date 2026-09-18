@@ -42,6 +42,7 @@ export interface TargetColumn {
   required?: boolean;
   join?: string;
   _todo?: string;
+  _note?: string;
 }
 
 export interface TargetConfig {
@@ -166,7 +167,7 @@ function walkTodo(value: unknown, path: string, out: ConfigIssue[]): void {
   }
   if (value && typeof value === 'object') {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (k === '_comment' || k === '_todo') continue;
+      if (k === '_comment' || k === '_todo' || k === '_note') continue;
       if (k.startsWith(TODO_PREFIX)) out.push({ severity: 'error', path: `${path}.${k}`, message: `未転記のキー: ${k}` });
       walkTodo(v, `${path}.${k}`, out);
     }

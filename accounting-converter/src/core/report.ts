@@ -265,8 +265,9 @@ export function renderReportMarkdown(r: Report): string {
   L.push('## 5. 未マッピング一覧', '');
   if (r.unmapped.length === 0) L.push('未マッピングはありません。');
   else {
-    L.push('| 種別 | 元の値 | 親科目 | 件数 | 借方合計 | 貸方合計 | 初出行 | 提案 |', '|---|---|---|---:|---:|---:|---:|---|');
+    L.push('| 種別 | 元の値 | 親科目 | 件数 | 借方合計 | 貸方合計 | 初出行 | 候補（未適用） |', '|---|---|---|---:|---:|---:|---:|---|');
     for (const u of r.unmapped) L.push(`| ${u.kind} | ${u.sourceValue} | ${u.parentAccount ?? ''} | ${u.count} | ${yen(u.debitTotal)} | ${yen(u.creditTotal)} | ${u.firstRow ?? ''} | ${u.suggestions} |`);
+    if (r.unmapped.some((u) => u.suggestions !== '')) L.push('', '「候補（未適用）」列はローカル規則（文字列一致・別名辞書）による候補で、変換には適用されていません。数値は規則ごとの固定スコアで確率ではありません。対応表に転記して confirmed:true にするまで E002/E003 は解消されません。');
   }
   L.push('');
 
@@ -306,7 +307,7 @@ export function renderReportMarkdown(r: Report): string {
 export function renderReportCsvBundle(r: Report): { accounts: string; unmapped: string; diagnostics: string; taxcodes: string } {
   const accounts = [['元科目名', 'freee科目名', '元・借方', '元・貸方', '変換後・借方', '変換後・貸方', '差額', '件数', '備考'], ...r.accounts.map((a) => [a.sourceAccount, a.freeeAccount, String(a.srcDebit), String(a.srcCredit), String(a.outDebit), String(a.outCredit), String(a.diff), String(a.count), a.note])];
   const taxcodes = [['元税区分', 'freee税区分', '適用日付範囲', '金額合計', '税額合計', '件数'], ...r.taxcodes.map((t) => [t.sourceTaxCode, t.freeeTaxCode, t.period, String(t.amount), String(t.taxAmount), String(t.count)])];
-  const unmapped = [['種別', '元の値', '親科目', '件数', '借方合計', '貸方合計', '初出行', '提案'], ...r.unmapped.map((u) => [u.kind, u.sourceValue, u.parentAccount ?? '', String(u.count), String(u.debitTotal), String(u.creditTotal), String(u.firstRow ?? ''), u.suggestions])];
+  const unmapped = [['種別', '元の値', '親科目', '件数', '借方合計', '貸方合計', '初出行', '候補（未適用）'], ...r.unmapped.map((u) => [u.kind, u.sourceValue, u.parentAccount ?? '', String(u.count), String(u.debitTotal), String(u.creditTotal), String(u.firstRow ?? ''), u.suggestions])];
   const diagnostics = [['code', 'severity', 'entryId', 'sourceRow', 'message', 'detail'], ...r.diagnostics.map((d) => [d.code, d.severity, d.entryId ?? '', String(d.sourceRow ?? ''), d.message, d.detail ? JSON.stringify(d.detail) : ''])];
   return { accounts: toCsv(accounts), taxcodes: toCsv(taxcodes), unmapped: toCsv(unmapped), diagnostics: toCsv(diagnostics) };
 }

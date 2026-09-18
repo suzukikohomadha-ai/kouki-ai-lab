@@ -59,8 +59,11 @@ export function adoptTargetHeaders(target: TargetConfig, headers: string[]): Ado
       continue;
     }
     used.add(m.index);
-    const { _todo: _dropped, ...rest } = col as TargetColumn & { _todo?: string };
-    assignment.set(m.index, { ...rest, name: cleaned[m.index] });
+    const { _todo, _note: _oldNote, ...rest } = col as TargetColumn & { _todo?: string; _note?: string };
+    const next: TargetColumn = { ...rest, name: cleaned[m.index] };
+    if (col.from === null && !isTodo) next._todo = _todo ?? UNRESOLVED_TODO;
+    if (m.how === 'contains') next._note = `adopt-headers: 推定名「${guess}」との部分一致で採用。from の対応を確認すること`;
+    assignment.set(m.index, next);
     if (isTodo || cleaned[m.index] !== col.name) replaced.push({ key: `columns[${m.index}]`, before: col.name, after: cleaned[m.index], how: m.how });
   }
 

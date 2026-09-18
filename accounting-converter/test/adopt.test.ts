@@ -141,3 +141,35 @@ test('CLI init-local → adopt-headers（target/source）→ verify-config の�
   assert.ok(v.out.includes('例_新規列X'));
   assert.ok(!v.out.includes('target.columns[0]'));
 });
+
+test('adoptTargetHeaders: 同じヘッダーで2回実行しても _todo（from:null）は残り verify-config が error になる', () => {
+  const target = readJson<TargetConfig>(join(ROOT, 'config', 'targets', 'freee-generic.json'));
+  const header = ['例_日付', '例_借方勘定科目', '例_借方税区分', '例_借方金額', '例_貸方勘定科目', '例_貸方税区分', '例_貸方金額', '例_新規列X'];
+  const first = adoptTargetHeaders(target, header);
+  const second = adoptTargetHeaders(first.target, header);
+  const x2 = second.target.columns.find((c) => c.name === '例_新規列X')!;
+  assert.equal(x2.from, null);
+  assert.ok(x2._todo, '2回目で _todo が消えている');
+  assert.deepEqual(second.unresolved, []);
+  assert.deepEqual(second.removed, []);
+  assert.equal(second.replaced.length, 0);
+  assert.equal(second.target.columns.filter((c) => c.name === '例_新規列X').length, 1);
+  const third = adoptTargetHeaders(second.target, ['例_日付', '例_新規列X']);
+  assert.ok(third.target.columns[1]._todo);
+  const { profile } = loadProfile(join(ROOT, 'config', 'examples', 'profile.mf.json'));
+  profile.target = { ...profile.target, columns: second.target.columns };
+  const v = verifyConfig(profile);
+  assert.ok(v.issues.some((i) => i.severity === 'error' && i.message.includes('例_新規列X')));
+  const filled = second.target.columns.map((c) => (c.name === '例_新規列X' ? { ...c, from: 'entry.voucherNo' } : c));
+  const fourth = adoptTargetHeaders({ ...second.target, columns: filled }, header);
+  assert.equal(fourth.target.columns.find((c) => c.name === '例_新規列X')!._todo, undefined);
+});
+
+test('adoptTargetHeaders: 部分一致で採用した列には _note が残り、verify-config の TODO 検出には引っかからない', () => {
+  const target = readJson<TargetConfig>(join(ROOT, 'config', 'targets', 'freee-generic.json'));
+  const r = adoptTargetHeaders(target, ['例_日付']);
+  assert.ok(r.target.columns[0]._note?.includes('部分一致'));
+  const { profile } = loadProfile(join(ROOT, 'config', 'examples', 'profile.mf.json'));
+  profile.target = { ...profile.target, columns: [{ ...r.target.columns[0], from: 'entry.date' }] };
+  assert.equal(verifyConfig(profile).todoCount, 0);
+});
