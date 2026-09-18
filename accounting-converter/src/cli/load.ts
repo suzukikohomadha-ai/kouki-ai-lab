@@ -7,7 +7,7 @@ interface ProfileFile {
   name: string;
   source: string;
   target: string;
-  maps: { accounts: string; taxcodes: string; subaccountRules: string; partners: string };
+  maps: { accounts: string; taxcodes: string; subaccountRules: string; partners: string; accountAliases?: string };
   fiscalYear?: { start: string; end: string };
   options: Profile['options'];
 }
@@ -18,7 +18,7 @@ export interface LoadedProfile {
   hashes: Record<string, string>;
 }
 
-function readJson<T>(path: string): T {
+export function readJson<T>(path: string): T {
   let text = readFileSync(path, 'utf8');
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   try {
@@ -46,6 +46,7 @@ export function loadProfile(profilePath: string): LoadedProfile {
     'maps.subaccountRules': rel(pf.maps.subaccountRules),
     'maps.partners': rel(pf.maps.partners),
   };
+  if (pf.maps.accountAliases) files['maps.accountAliases'] = rel(pf.maps.accountAliases);
   const profile: Profile = {
     name: pf.name,
     source: readJson(files.source),
@@ -55,6 +56,7 @@ export function loadProfile(profilePath: string): LoadedProfile {
       taxcodes: readJson(files['maps.taxcodes']),
       subaccountRules: readJson(files['maps.subaccountRules']),
       partners: readJson(files['maps.partners']),
+      accountAliases: files['maps.accountAliases'] ? readJson(files['maps.accountAliases']) : null,
     },
     fiscalYear: pf.fiscalYear,
     options: pf.options,

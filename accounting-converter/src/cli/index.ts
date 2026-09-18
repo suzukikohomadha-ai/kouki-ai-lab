@@ -2,13 +2,17 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { convert, decodeBytes, encodeText, parseCsv, renderReportCsvBundle, renderReportMarkdown, verifyConfig, type EncodingHint } from '../core/index.js';
+import { convert, decodeBytes, encodeText, NoopSuggester, parseCsv, renderReportCsvBundle, renderReportMarkdown, RuleSuggester, verifyConfig, type EncodingHint, type MappingSuggester } from '../core/index.js';
 import { loadProfile } from './load.js';
+import { adoptSourceFile, adoptTargetFile, initLocal } from './setup.js';
 
 const USAGE = `使い方:
   npx tsx src/cli/index.ts inspect       --input <csv> [--encoding auto|utf8|shift_jis]
   npx tsx src/cli/index.ts verify-config --profile <profile.json>
-  npx tsx src/cli/index.ts convert       --profile <profile.json> --input <csv> --out <dir> [--dev] [--force] [--strict]
+  npx tsx src/cli/index.ts convert       --profile <profile.json> --input <csv> --out <dir> [--dev] [--force] [--strict] [--suggester noop|rule]
+  npx tsx src/cli/index.ts init-local    [--config-dir config] [--force]      # 本番用設定（git管理外の .local.json / profile.json）を生成
+  npx tsx src/cli/index.ts adopt-headers --target <targets/x.local.json> --file <公式テンプレート.csv>   # 1行目のヘッダーを列名に取り込む
+  npx tsx src/cli/index.ts adopt-headers --source <sources/x.local.json> --file <実エクスポート.csv>
 
 終了コード: 0=成功(警告なし) 1=警告あり(出力あり) 2=エラーあり(出力なし)または設定検証失敗
 本ツールはネットワーク通信を行いません。`;
@@ -25,6 +29,11 @@ function main(): Promise<number> {
       dev: { type: 'boolean', default: false },
       force: { type: 'boolean', default: false },
       strict: { type: 'boolean', default: false },
+      suggester: { type: 'string', default: 'noop' },
+      'config-dir': { type: 'string', default: 'config' },
+      target: { type: 'string' },
+      source: { type: 'string' },
+      file: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -40,6 +49,10 @@ function main(): Promise<number> {
       return Promise.resolve(runVerify(values.profile));
     case 'convert':
       return runConvert(values);
+    case 'init-local':
+      return Promise.resolve(runInitLocal(values['config-dir'], values.force));
+    case 'adopt-headers':
+      return Promise.resolve(runAdoptHeaders(values.target, values.source, values.file));
     default:
       console.error(`未知のコマンド: ${cmd}\n${USAGE}`);
       return Promise.resolve(2);
@@ -81,7 +94,52 @@ function runVerify(profilePath: string | undefined): number {
   return result.ok ? 0 : 2;
 }
 
-async function runConvert(values: { profile?: string; input?: string; out?: string; dev: boolean; force: boolean; strict: boolean }): Promise<number> {
+function runInitLocal(configDir: string, force: boolean): number {
+  const r = initLocal(configDir, force);
+  console.log('init-local: 本番用設定ファイルを準備しました（git 管理外）');
+  for (const f of r.copied) console.log(`  作成: ${f}`);
+  for (const f of r.skipped) console.log(`  既存のため保持（上書きするには --force）: ${f}`);
+  console.log(`次: 公式テンプレート・実エクスポートを config/templates/ に置き、adopt-headers を実行してください。プロファイル: ${r.profilePath}`);
+  return 0;
+}
+
+function runAdoptHeaders(target: string | undefined, source: string | undefined, file: string | undefined): number {
+  const filePath = need(file, 'file');
+  if ((target ? 1 : 0) + (source ? 1 : 0) !== 1) {
+    console.error('--target か --source のどちらか一方を指定してください');
+    return 2;
+  }
+  if (target) {
+    const { info, result } = adoptTargetFile(target, filePath);
+    console.log(`adopt-headers: ${info.fileName}（${info.encoding}${info.hadBom ? '・BOM付き' : ''}、${info.header.length} 列）→ ${target}`);
+    console.log(`  置換した列（${result.replaced.length}）:`);
+    for (const r of result.replaced) console.log(`    ${r.before} → ${r.after}（${r.how === 'exact' ? '完全一致' : '部分一致・要確認'}）`);
+    console.log(`  未確定の列（${result.unresolved.length}。from:null・_todo を付与。中間モデルの項目を指定するか、不要なら列ごと削除）:`);
+    for (const n of result.unresolved) console.log(`    ${n}`);
+    console.log(`  削除した列（${result.removed.length}。テンプレートのヘッダーに見つからなかった設定側の列）:`);
+    for (const n of result.removed) console.log(`    ${n}`);
+  } else {
+    const { info, result } = adoptSourceFile(source!, filePath);
+    console.log(`adopt-headers: ${info.fileName}（${info.encoding}${info.hadBom ? '・BOM付き' : ''}、${info.header.length} 列）→ ${source}`);
+    console.log(`  置換した列（${result.replaced.length}）:`);
+    for (const r of result.replaced) console.log(`    ${r.key}: ${r.before} → ${r.after}（${r.how === 'exact' ? '完全一致' : '部分一致・要確認'}）`);
+    console.log(`  未確定（${result.unresolved.length}。TODO_VERIFY のまま。エクスポートのヘッダーに該当が無い。optional なら削除、必須なら手で指定）:`);
+    for (const u of result.unresolved) console.log(`    ${u.key}: ${u.value}`);
+    console.log(`  エクスポートにあって設定に無い列（${result.unusedHeaders.length}。必要なら columns に追加）:`);
+    for (const h of result.unusedHeaders) console.log(`    ${h}`);
+  }
+  console.log('注意: 置換した列名は「指定ファイルの1行目の文字列」であり AI の推定ではありません。ただし from（中間モデルとの対応）が正しいかは人が確認してください（confirmed:false 相当）。');
+  console.log('次: npx tsx src/cli/index.ts verify-config --profile config/profile.json');
+  return 0;
+}
+
+function pickSuggester(name: string, aliases: ConstructorParameters<typeof RuleSuggester>[0]): MappingSuggester {
+  if (name === 'rule') return new RuleSuggester(aliases);
+  if (name === 'noop') return new NoopSuggester();
+  throw new Error(`--suggester は noop | rule のいずれか（外部LLMは未承認のため選べません）: ${name}`);
+}
+
+async function runConvert(values: { profile?: string; input?: string; out?: string; dev: boolean; force: boolean; strict: boolean; suggester: string }): Promise<number> {
   const profilePath = need(values.profile, 'profile');
   const inputPath = need(values.input, 'input');
   const outBase = need(values.out, 'out');
@@ -90,7 +148,7 @@ async function runConvert(values: { profile?: string; input?: string; out?: stri
   const bytes = new Uint8Array(readFileSync(inputPath));
   const runAt = new Date();
   const result = await convert(
-    { bytes, profile: loaded.profile, fileName: basename(inputPath), configHashes: loaded.hashes, runAt: runAt.toISOString() },
+    { bytes, profile: loaded.profile, fileName: basename(inputPath), configHashes: loaded.hashes, runAt: runAt.toISOString(), suggester: pickSuggester(values.suggester, loaded.profile.maps.accountAliases ?? null) },
     { dev: values.dev, force: values.force, strict: values.strict },
   );
 
@@ -109,7 +167,7 @@ async function runConvert(values: { profile?: string; input?: string; out?: stri
   }
   writeFileSync(
     join(outDir, 'run.json'),
-    JSON.stringify({ profile: loaded.profile.name, runAt: runAt.toISOString(), input: { fileName: basename(inputPath), encoding: result.dataset.sourceFile.encoding, hadBom: result.dataset.sourceFile.hadBom, physicalRows: result.dataset.sourceFile.physicalRows, sha256: createHash('sha256').update(bytes).digest('hex') }, configHashes: loaded.hashes, flags: { dev: values.dev, force: values.force, strict: values.strict }, stats: result.stats, outputWritten: result.outputCsv !== null, durationMs: Date.now() - started }, null, 2),
+    JSON.stringify({ profile: loaded.profile.name, runAt: runAt.toISOString(), input: { fileName: basename(inputPath), encoding: result.dataset.sourceFile.encoding, hadBom: result.dataset.sourceFile.hadBom, physicalRows: result.dataset.sourceFile.physicalRows, sha256: createHash('sha256').update(bytes).digest('hex') }, configHashes: loaded.hashes, flags: { dev: values.dev, force: values.force, strict: values.strict, suggester: values.suggester }, stats: result.stats, outputWritten: result.outputCsv !== null, durationMs: Date.now() - started }, null, 2),
     'utf8',
   );
 

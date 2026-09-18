@@ -168,7 +168,7 @@ export function buildReport(ds: Dataset, diags: Diagnostic[], ctx: ReportContext
   }
 
   const sugIndex = new Map(ctx.suggestions.map((s) => [s.sourceValue, s]));
-  const unmapped: UnmappedRow[] = ctx.unmapped.map((u) => ({ ...u, suggestions: (sugIndex.get(u.sourceValue)?.candidates ?? []).map((c) => `${c.target}(${c.confidence})`).join('; ') }));
+  const unmapped: UnmappedRow[] = ctx.unmapped.map((u) => ({ ...u, suggestions: (sugIndex.get(u.sourceValue)?.candidates ?? []).map((c) => `${c.target}（${c.confidence.toFixed(1)}・${c.reason}）`).join('; ') }));
 
   const partnerCounts = new Map<string, number>();
   for (const e of ds.entries) if (ctx.outputEntryIds.has(e.entryId)) for (const l of e.lines) {

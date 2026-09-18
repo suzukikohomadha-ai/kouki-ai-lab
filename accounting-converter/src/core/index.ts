@@ -13,6 +13,7 @@ import { taxRateKey, validate } from './validate.js';
 export * from './model.js';
 export * from './config.js';
 export * from './suggest.js';
+export * from './adopt.js';
 export { decodeBytes, encodeText, type EncodingHint, type OutputEncoding } from './encoding.js';
 export { parseCsv, toCsv } from './csv.js';
 export { buildReport, renderReportMarkdown, renderReportCsvBundle, DISCLAIMER, type Report } from './report.js';

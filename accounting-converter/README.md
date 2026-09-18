@@ -47,6 +47,11 @@ npx tsx src/cli/index.ts verify-config --profile config/profile.json
 
 # 変換する（out/<日時>_<プロファイル名>/ に成果物を書き出す）
 npx tsx src/cli/index.ts convert --profile config/profile.json --input in/journal.csv --out out/
+
+# 転記作業の補助（§4）
+npx tsx src/cli/index.ts init-local                                   # 本番用設定（git 管理外）を生成
+npx tsx src/cli/index.ts adopt-headers --target config/targets/freee-generic.local.json --file config/templates/<公式テンプレート>.csv
+npx tsx src/cli/index.ts adopt-headers --source config/sources/mf-journal.local.json  --file config/templates/<MFエクスポート>.csv
 ```
 
 `convert` のオプション：
@@ -56,6 +61,7 @@ npx tsx src/cli/index.ts convert --profile config/profile.json --input in/journa
 | `--dev` | `TODO_VERIFY:` の値を推定名のまま使って実行する（**開発・fixtures用**。W013 を出す。実データには使わない） |
 | `--force` | error のある伝票を除外して残りを出力する（除外一覧はレポートに記載） |
 | `--strict` | 対応表の `confirmed:false` エントリの使用を error に格上げする |
+| `--suggester noop\|rule` | 未マッピング科目・税区分の**候補**をレポートに併記する（既定 `noop`＝なし）。`rule` はローカルの文字列規則＋別名辞書（`maps/account-aliases`）で候補を出す。候補は変換に適用されない（§8 参照） |
 
 終了コード：`0`＝成功（警告なし）／`1`＝警告あり（出力あり）／`2`＝error あり（出力なし）または設定検証失敗。
 
@@ -77,33 +83,42 @@ npx tsx src/cli/index.ts convert --profile config/examples/profile.yayoi.json --
 
 `config/examples/` と `fixtures/` の列名・税区分名・フラグ値（`例_取引日`、`例S` など）は **テストのために作った架空の名前** で、実際の各社CSV仕様ではありません。
 
-## 4. 設定の埋め方（社長作業・1回限り）
+## 4. 設定の埋め方（社長作業・1回限り・目安 20〜40分）
 
-本番用の設定は次の構成です。`config/profile.sample.json` を `config/profile.json` にコピーして使います（`config/profile.json` は git 管理外）。
+本番用の設定は次の構成です。転記は **git 管理外のコピー**（`config/profile.json`、`*.local.json`）に対して行います（公式ヘッダー文字列をリポジトリにコミットしてよいかは規約確認待ち（リョウ）のため）。
 
 ```
 config/
-  profile.sample.json            … 全体を束ねる（会計期間・オプション）
-  sources/mf-journal.json        … MF 仕訳帳CSV の列名（ヘッダー文字列）→ 中間モデル
-  sources/yayoi-generic.json     … 弥生 汎用形式 の列index・識別フラグ → 中間モデル
-  targets/freee-generic.json     … freee インポートCSV の列名・列順
-  maps/accounts.sample.json      … 勘定科目 対応表
-  maps/taxcodes.sample.json      … 税区分 対応表（日付範囲つき）
-  maps/subaccount-rules.sample.json … 補助科目 → 取引先/補助科目/メモタグ の割当ルール
-  maps/partners.sample.json      … 取引先の別名（名寄せ指示）
-  templates/                     … 公式テンプレート・実エクスポートの置き場（git 管理外・コミットしない）
+  profile.sample.json  → profile.json                      … 全体を束ねる（会計期間・オプション）
+  sources/mf-journal.json      → mf-journal.local.json     … MF 仕訳帳CSV の列名（ヘッダー文字列）→ 中間モデル
+  sources/yayoi-generic.json   → yayoi-generic.local.json  … 弥生 汎用形式 の列index・識別フラグ → 中間モデル
+  targets/freee-generic.json   → freee-generic.local.json  … freee インポートCSV の列名・列順
+  maps/accounts.sample.json    → accounts.local.json       … 勘定科目 対応表
+  maps/taxcodes.sample.json    → taxcodes.local.json       … 税区分 対応表（日付範囲つき）
+  maps/subaccount-rules.sample.json → subaccount-rules.local.json … 補助科目 → 取引先/補助科目/メモタグ の割当ルール
+  maps/partners.sample.json    → partners.local.json       … 取引先の別名（名寄せ指示）
+  maps/account-aliases.sample.json → account-aliases.local.json … `--suggester rule` 用の科目別名辞書（候補提示のみ）
+  templates/                   … 公式テンプレート・実エクスポートの置き場（git 管理外・コミットしない）
 ```
 
-手順（設計書 §3.7 と同じ）：
+最短手順：
 
-1. freee ヘルプ「他社会計ソフトから仕訳データを移行する」から仕訳インポート用テンプレート（UTF-8版・Shift-JIS版）をダウンロードし、`config/templates/` に置く。**Excel では開かず**テキストエディタで開く（Excel は先頭の0や日付表記を書き換えるため）。
-   **転記先について**：公式ヘッダー文字列の転記結果をリポジトリにコミットしてよいかは規約確認待ち（リョウ）です。確定までは、転記は git 管理外のコピーに対して行ってください：`config/profile.sample.json` → `config/profile.json`、`config/targets/freee-generic.json` → `config/targets/freee-generic.local.json`、`config/sources/mf-journal.json` → `config/sources/mf-journal.local.json`、`config/sources/yayoi-generic.json` → `config/sources/yayoi-generic.local.json` にコピーし、`config/profile.json` の `source`／`target` の参照先を `.local.json` に書き換える（いずれも `.gitignore` 済み。パスはプロファイルの位置からの相対で解決されます）。以下の手順2・4・5は、この `.local.json` 側に対して行う。
-2. テンプレート1行目のヘッダーを `config/targets/freee-generic.local.json` の `columns[].name` に **列順どおり・文字列完全一致** で転記する（全角/半角・括弧・空白まで一致させる）。テンプレートに無い列は削除し、テンプレートにあって中間モデルに対応が無い列は `"from": null` を追加する。
-3. 同ページに「金額は税込か税抜か」「複合仕訳の書き方」「必須列」「文字コード」「行数上限」の記載があれば、`amountMode` / `compoundEntries` / `required` / `encoding` に反映し、`templateInfo` にファイル名・取得日を記録する。
-4. MF：試用または自社事業所の「仕訳帳」から **架空データ数件だけ** を CSV エクスポートし、ヘッダー行を `config/sources/mf-journal.local.json` の各 `header` に転記する。金額列が税込か、複合仕訳が同一取引Noの複数行か、BOM の有無をメモする。
-5. 弥生：同様に汎用形式で数件エクスポートし、ヘッダー行の有無・文字コード・列順・識別フラグ列の有無・日付表記（西暦/和暦）を確認して、`config/sources/yayoi-generic.local.json` の `index` / `grouping` を確定する（識別フラグ列が無ければ `grouping.strategy` を `by_voucher_no` にする）。
-6. 税区分の対応（`maps/taxcodes`）は、元CSVに実際に出てくる税区分文字列と、freee 側の税区分名称（正式名称は未確認）を **有資格者が確定** し、`confirmed: true` にする。勘定科目（`maps/accounts`）も同様。
-7. `npx tsx src/cli/index.ts verify-config --profile config/profile.json` を実行し、`TODO_VERIFY 残数: 0` かつ「結果: OK」になるまで繰り返す。
+1. **`npx tsx src/cli/index.ts init-local`**（約1分）。上記のコピーと `profile.json` の参照先書き換えを一括で行います。既存ファイルは上書きしません（やり直すときは `--force`）。
+2. **ファイルを置く**（約10分）。freee ヘルプ「他社会計ソフトから仕訳データを移行する」から仕訳インポート用テンプレート（UTF-8版・Shift-JIS版）をダウンロードし、`config/templates/` に置く。MF は「仕訳帳」から **架空データ数件だけ** を CSV エクスポートして同じ場所に置く（**Excel で開いて保存し直さない**。先頭の0や日付表記が書き換わるため）。ファイル名に顧問先名・事務所名を含めない。
+3. **`adopt-headers` を各ファイルに実行**（約1分）：
+   ```bash
+   npx tsx src/cli/index.ts adopt-headers --target config/targets/freee-generic.local.json --file config/templates/<freeeテンプレート>.csv
+   npx tsx src/cli/index.ts adopt-headers --source config/sources/mf-journal.local.json  --file config/templates/<MFエクスポート>.csv
+   ```
+   指定ファイルの **1行目（ヘッダー）をそのまま読み取り**、設定の `TODO_VERIFY:<推定名>` と突合（NFKC 正規化後の完全一致、または推定名がヘッダー文字列に含まれる/含む場合で候補が1つに絞れるとき）して列名を置き換えます。文字コード（UTF-8 / BOM / Shift_JIS）は自動判定。実行後に「置換した列／未確定の列／削除した列」を表示します。
+   - 置き換わる列名は **社長が置いた実ファイルの文字列** であり、AI の推定ではありません。
+   - ただし `from`（中間モデルとの対応）は設定側の推定を引き継ぐため、**対応が正しいかは人が確認**してください（`confirmed:false` 相当。「部分一致・要確認」と表示された列は特に）。
+   - `--target`：テンプレートにあって設定に無い列は `from: null`＋`_todo` 付きで追加され、`verify-config` が error にします（中間モデルの項目を指定するか、不要なら列ごと削除）。設定にあってテンプレートに無い列は削除して表示します。`templateInfo`（ファイル名・取得日・sha256・観測した文字コード）も埋めます。
+   - `--source`：ヘッダーに該当が無い列は `TODO_VERIFY` のまま残して一覧表示します（optional なら削除、必須なら手で指定）。エクスポートにあって設定に無い列も表示します。
+   - 弥生（ヘッダー無し想定）は `adopt-headers` の対象外です。`npx tsx src/cli/index.ts inspect --input <弥生エクスポート>` で先頭行を表示し、列 index（0始まり）・識別フラグ列の有無・日付表記（西暦/和暦）を確認して `config/sources/yayoi-generic.local.json` の `index` / `grouping` を手で確定してください（識別フラグ列が無ければ `grouping.strategy` を `by_voucher_no` に）。
+4. **残った `TODO_VERIFY` と `from` を手で確認**（約5分）。`amountMode`（税込/税抜）、`compoundEntries`（複合仕訳の書き方）、`required`、`encoding` は公式ヘルプの記載を見て設定します。金額列のように推定名とヘッダーが食い違って未確定になった列は手で指定します。
+5. **対応表を有資格者が確定**（時間は科目数による）。`maps/accounts.local.json`・`maps/taxcodes.local.json` に、元CSVに実際に出てくる科目名・税区分文字列と freee 側の名称（正式名称は未確認）を記入し、`confirmed: true` にする。`--suggester rule` で出る候補は転記の参考にできますが、そのままでは適用されません。
+6. **`npx tsx src/cli/index.ts verify-config --profile config/profile.json`** を実行し、`TODO_VERIFY 残数: 0` かつ「結果: OK」になるまで 4〜5 を繰り返す。
 
 `TODO_VERIFY:` の後ろの文字列は「推定名」です。そのまま残すのではなく、必ず公式テンプレート・実エクスポートの文字列に置き換えてください。
 
@@ -151,10 +166,11 @@ src/core/     変換ロジック（純関数。ファイル・ネットワーク
   validate.ts 検証ルール
   output.ts   renderOutput（freee用CSV）
   report.ts   buildReport / renderReportMarkdown / renderReportCsvBundle
-  suggest.ts  MappingSuggester インターフェース＋NoopSuggester
-src/cli/      index.ts（inspect / verify-config / convert）、load.ts（プロファイル読込・ハッシュ）
+  suggest.ts  MappingSuggester インターフェース＋NoopSuggester＋RuleSuggester（ローカル規則・別名辞書）
+  adopt.ts    adoptTargetHeaders / adoptSourceHeaders（ヘッダー文字列と設定の突合。純関数）
+src/cli/      index.ts（inspect / verify-config / convert / init-local / adopt-headers）、load.ts（プロファイル読込・ハッシュ）、setup.ts（init-local・adopt-headers のファイル操作）
 config/       本番用テンプレート（TODO_VERIFY 付き）と examples/（テスト用・架空）
-fixtures/     架空データ（scripts/make-fixtures.ts で生成）
+fixtures/     架空データ（scripts/make-fixtures.ts で生成）。templates/ は adopt-headers テスト用の架空ヘッダーCSV
 test/         node:test（npm test）
 ```
 
@@ -177,7 +193,9 @@ test/         node:test（npm test）
 | T11 | 設定検証（`TODO_VERIFY` 検出、`--dev` で W013） | `config.test.ts` / `cli.test.ts` |
 | T12 | ローカル完結の静的検査 | `local-only.test.ts` |
 | T13 | 往復整合 | `mf.test.ts` |
-| 追加 | W006/W009/W011/W015/E005/E008、CLI 終了コード、正規化ユニット | `rules.test.ts` / `cli.test.ts` / `normalize.test.ts` |
+| 追加 | W006/W009/W011/W015/W017/E005/E008、CLI 終了コード、正規化ユニット | `rules.test.ts` / `cli.test.ts` / `normalize.test.ts` |
+| 追加 | `init-local`（上書きしない／`--force`）、`adopt-headers`（置換・未確定・削除の報告、曖昧一致は置換しない、`_todo` を `verify-config` が検出） | `adopt.test.ts` |
+| 追加 | `RuleSuggester` の各規則（完全一致・記号除去・別名辞書・前方/後方一致・税率数字）と「候補は適用されない」こと、`LlmSuggester` 不在 | `suggest.test.ts` |
 
 `expected/*.json` との比較方式（設計書 §7）ではなく、テストコード内で期待値を直接アサートしています。
 
@@ -205,7 +223,9 @@ v2 と異なる点：
 
 未実装：
 
-- `RuleSuggester`・`LlmSuggester`（v2 §8）。`MappingSuggester` インターフェースと `NoopSuggester` のみ。外部LLMの利用は社長の承認未了のため、`--suggester` フラグ・`config/approvals.json`・W016 も未実装。
+- `LlmSuggester`（設計書 v4 §8）、`config/approvals.json`、`--i-confirm-external-ai`、W016、`--write-suggestions`。外部AIは社長の承認未了のため未実装。`--suggester` フラグは `noop | rule` のみ受け付け、それ以外はエラー。
+- **`RuleSuggester` は実装済み**（社長回答 D-4「まずルールベースの提案まで」に基づく。v4 §8 では「未実装」とされていた項目）。勘定科目は (i) 正規化後の完全一致 1.0 → (ii) 記号・空白・括弧内除去後の一致 0.9 → (iii) 別名辞書 `maps/account-aliases` 0.8 → (iv) 前方/後方一致 0.5 の順で最大3件、税区分は正規化一致＋税率数字（売上/仕入の語が合えば 0.6、数字のみ 0.4）。候補はレポート §5「未マッピング一覧」の「提案」列に根拠付きで併記されるだけで、**変換には適用されず E002/E003 は解消されない**（人間が対応表に転記して `confirmed:true` にする）。v4 §8.1 の「freee側科目一覧（社長が用意）」は使わず、対応表 `maps/accounts` の `freeeAccount` 値の集合と別名辞書を候補の母集団にしています。別名辞書の同梱例は `例_` 付きの架空で、実在の科目体系を示すものではありません。
+- `init-local`／`adopt-headers` は v4 §6.4 に無い CLI コマンドです（社長回答 B「進めやすいように準備」への対応）。`adopt-headers` はファイルの1行目の文字列を転記するだけで、列名の推定はしません。`TargetColumn._todo`（未確定列の目印）と `templateInfo.encodingObserved` は設計書に無い項目です。
 - ブラウザ用 codec の実装。`ConvertInput.codec`（`decodeBytes`/`encodeText` の注入口）は用意し、未指定時は `src/core/encoding.ts`（`iconv-lite`・Node `Buffer` 依存）を使います。ブラウザ版では `TextDecoder('shift_jis')`＋Shift_JIS エンコード可能な別実装を注入する想定（未作成）。
 
 実装上の決め事：

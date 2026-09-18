@@ -53,6 +53,6 @@ test('依存は papaparse と iconv-lite のみ（runtime）', () => {
 test('LLM 実装は同梱しない（NoopSuggester のみ）', () => {
   const src = readFileSync(join(ROOT, 'src', 'core', 'suggest.ts'), 'utf8');
   assert.ok(src.includes('class NoopSuggester'));
+  assert.ok(src.includes('class RuleSuggester'));
   assert.ok(!/class\s+Llm\w*Suggester/.test(src));
-  assert.ok(!/class\s+Rule\w*Suggester/.test(src));
 });

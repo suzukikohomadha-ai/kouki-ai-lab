@@ -1,5 +1,6 @@
 import type { AmountMode, Diagnostic, SourceSystem } from './model.js';
 import { diag } from './model.js';
+import type { AccountAliasesMap } from './suggest.js';
 
 export const TODO_PREFIX = 'TODO_VERIFY';
 
@@ -40,6 +41,7 @@ export interface TargetColumn {
   format?: string;
   required?: boolean;
   join?: string;
+  _todo?: string;
 }
 
 export interface TargetConfig {
@@ -109,6 +111,7 @@ export interface Maps {
   taxcodes: TaxcodesMap;
   subaccountRules: SubaccountRules;
   partners: PartnersMap;
+  accountAliases?: AccountAliasesMap | null;
 }
 
 export interface Detectors {
@@ -163,7 +166,7 @@ function walkTodo(value: unknown, path: string, out: ConfigIssue[]): void {
   }
   if (value && typeof value === 'object') {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (k === '_comment') continue;
+      if (k === '_comment' || k === '_todo') continue;
       if (k.startsWith(TODO_PREFIX)) out.push({ severity: 'error', path: `${path}.${k}`, message: `未転記のキー: ${k}` });
       walkTodo(v, `${path}.${k}`, out);
     }
@@ -178,6 +181,9 @@ export function verifyConfig(profile: Profile): VerifyResult {
   const todoCount = issues.length;
 
   for (const [i, col] of profile.target.columns.entries()) {
+    if (col._todo !== undefined) {
+      issues.push({ severity: 'error', path: `target.columns[${i}]`, message: `列「${col.name}」は adopt-headers で追加された未確定の列（_todo: ${col._todo}）` });
+    }
     if (col.required && (col.from === null || col.from === undefined || col.from === '')) {
       issues.push({ severity: 'error', path: `target.columns[${i}]`, message: `required:true の列「${col.name}」に from がない` });
     }
