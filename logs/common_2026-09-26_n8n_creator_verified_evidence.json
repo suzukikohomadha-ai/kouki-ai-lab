@@ -1,0 +1,22 @@
+{
+  "source_url": "https://n8n.io/creators/koki-suzuki/",
+  "fetched_at": "2026-09-26 (JST, curl via session network)",
+  "fetched_by": "秘書アイ（Claude Code session）",
+  "extraction": "HTML内 <script type=\"application/json\" data-nuxt-data=\"nuxt-app\"> のdevalue形式配列から、username=koki-suzuki のクリエイターオブジェクトをインデックス解決して抽出",
+  "note": "配列内の true リテラルは1箇所（index 630）で、同ページ掲載の他クリエイターも同じインデックスを参照する（devalueの重複排除）。本人にも true が立っていることの証跡であり、本人固有の値という意味ではない",
+  "creator_object_resolved": {
+    "id": 106544,
+    "name": "鈴木光輝（Koki Suzuki）：JP",
+    "username": "koki-suzuki",
+    "bio": "I'm a business developer at Kohomadha Inc., a Japan-based company supporting international trade, overseas market entry, AI/DX adoption, and financial services. As part of that work, I build n8n automation workflows — from AI-powered news digests to approval and notification\nflows — and share reusable templates with the community here on n8n\nCreator Hub.\n",
+    "verified": true,
+    "links": [
+      "www.linkedin.com/in/koki-suzuki"
+    ],
+    "partnerKey": "",
+    "avatar": "https://gravatar.com/avatar/05cddbc672d261ca13ace407ce2f7874a1f19c543297835a38808c8508409459?r=pg&d=retro&size=200",
+    "workflowsCount": 6,
+    "slug": "koki-suzuki",
+    "url": "/creators/koki-suzuki/"
+  }
+}
