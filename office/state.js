@@ -26,7 +26,7 @@ window.AI_STATE = {
   },
 
   tasks: [
-    { id: "T224", title: "ストック型収入の追加リサーチ（Instagram投稿26項目以外）（個人FP）", owner: "リサ", status: "doing", progress: 10, hint: "リサが一次情報ベースで追加候補を調査中", cmd: "", log: [ { time: "now", text: "社長よりInstagram投稿の26項目確認に続き、他のストック型収入のリサーチを依頼。リサに委任、着手" } ], deliverables: [] },
+    { id: "T224", title: "ストック型収入の追加リサーチ（Instagram投稿26項目以外）（個人FP）", owner: "リサ", status: "doing", progress: 70, hint: "リサの調査完了（35項目・4分類・出典付き、Draft）。アオイが監査中", cmd: "", log: [ { time: "now", text: "社長よりInstagram投稿の26項目確認に続き、他のストック型収入のリサーチを依頼。リサに委任、着手" }, { time: "now", text: "リサの調査完了。金融資産型11／権利・知財型9／実物資産・設備型9／仕組み・事業型6の計35項目。FIT単価・LINE分配率等は[未確認]扱い。アオイに監査を委任" } ], deliverables: [ { title: "ストック型収入_追加リサーチ_v1（Draft）", type: "md", at: "now", path: "logs/fp_2026-09-26_ストック型収入_追加リサーチ_v1.md" } ] },
     { id: "T1", client: "ガチャガチャ案件", title: "ガチャガチャ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T2", client: "トップパフォーマー案件", title: "トップパフォーマー案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T3", client: "へウラ案件", title: "へウラ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
