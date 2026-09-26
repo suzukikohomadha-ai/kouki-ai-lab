@@ -26,7 +26,7 @@ window.AI_STATE = {
   },
 
   tasks: [
-    { id: "T224", title: "ストック型収入の追加リサーチ（Instagram投稿26項目以外）（個人FP）", owner: "リサ", status: "review", progress: 100, hint: "完了（社内資料・Draft）。既出26項目以外のストック型収入を35項目（金融資産型11／権利・知財型9／実物資産・設備型9／仕組み・事業型6）に整理、出典・所得区分・業法論点・放置度つき。アオイ監査 PASS WITH CONDITIONS → 条件7点を反映したv2が最終版。FIT2026年度単価・LINEスタンプ分配率・Steam料率・一部賃料相場は[未確認]（二次情報のみ）。社長に確認いただきたいのは①用途（FP相談・note等への転用有無）②AFP/CFP等の保有資格③関心のある項目の深掘り要否。外部公開する場合はURL先内容の突合を含む再監査が必須", cmd: "T224のv2を確認。用途は◯◯、深掘りしたい項目は◯◯", log: [ { time: "now", text: "社長よりInstagram投稿の26項目確認に続き、他のストック型収入のリサーチを依頼。リサに委任、着手" }, { time: "now", text: "リサの調査完了。計35項目。FIT単価・LINE分配率等は[未確認]扱い。アオイに監査を委任" }, { time: "now", text: "アオイ監査 PASS WITH CONDITIONS（社内資料用途）。本文未読の出典に[確認済み事実]が付いていた箇所2件、二次情報ラベル1件、通達35-2の出典格下げ、不自然なURL1件、C6の断定表現、既出26項目リスト未記載の計7点を条件として指摘" }, { time: "now", text: "秘書アイが条件7点＋推奨事項をv2に反映。社長の確認待ち" } ], deliverables: [ { title: "ストック型収入_追加リサーチ_v2（最終版・Draft）", type: "md", at: "now", path: "logs/fp_2026-09-26_ストック型収入_追加リサーチ_v2.md" }, { title: "ストック型収入_追加リサーチ_v1（監査前）", type: "md", at: "now", path: "logs/fp_2026-09-26_ストック型収入_追加リサーチ_v1.md" } ] },
+    { id: "T224", title: "ストック型収入の追加リサーチ（Instagram投稿26項目以外）（個人FP）", owner: "リサ", status: "doing", progress: 85, hint: "社長依頼で再監査中（リサ：出典URL実地確認＋網羅性、アオイ：独立再監査）。v2の要約：既出26項目以外のストック型収入を35項目（金融資産型11／権利・知財型9／実物資産・設備型9／仕組み・事業型6）に整理、出典・所得区分・業法論点・放置度つき。アオイ監査 PASS WITH CONDITIONS → 条件7点を反映したv2が最終版。FIT2026年度単価・LINEスタンプ分配率・Steam料率・一部賃料相場は[未確認]（二次情報のみ）。社長に確認いただきたいのは①用途（FP相談・note等への転用有無）②AFP/CFP等の保有資格③関心のある項目の深掘り要否。外部公開する場合はURL先内容の突合を含む再監査が必須", cmd: "T224のv2を確認。用途は◯◯、深掘りしたい項目は◯◯", log: [ { time: "now", text: "社長よりInstagram投稿の26項目確認に続き、他のストック型収入のリサーチを依頼。リサに委任、着手" }, { time: "now", text: "リサの調査完了。計35項目。FIT単価・LINE分配率等は[未確認]扱い。アオイに監査を委任" }, { time: "now", text: "アオイ監査 PASS WITH CONDITIONS（社内資料用途）。本文未読の出典に[確認済み事実]が付いていた箇所2件、二次情報ラベル1件、通達35-2の出典格下げ、不自然なURL1件、C6の断定表現、既出26項目リスト未記載の計7点を条件として指摘" }, { time: "now", text: "秘書アイが条件7点＋推奨事項をv2に反映。社長の確認待ち" }, { time: "now", text: "社長より「抜け漏れと情報の誤りがないか監査して」と依頼。リサに全出典URLの実地確認＋網羅性チェック、アオイに再監査を並列で委任" } ], deliverables: [ { title: "ストック型収入_追加リサーチ_v2（最終版・Draft）", type: "md", at: "now", path: "logs/fp_2026-09-26_ストック型収入_追加リサーチ_v2.md" }, { title: "ストック型収入_追加リサーチ_v1（監査前）", type: "md", at: "now", path: "logs/fp_2026-09-26_ストック型収入_追加リサーチ_v1.md" } ] },
     { id: "T1", client: "ガチャガチャ案件", title: "ガチャガチャ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T2", client: "トップパフォーマー案件", title: "トップパフォーマー案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T3", client: "へウラ案件", title: "へウラ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
@@ -251,7 +251,7 @@ window.AI_STATE = {
 
   employees: [
     { name: "ジン", status: "idle", taskId: "" },
-    { name: "リサ", status: "idle", taskId: "" },
+    { name: "リサ", status: "working", taskId: "T224" },
     { name: "レン", status: "idle", taskId: "" },
     { name: "サトル", status: "idle", taskId: "" },
     { name: "カエデ", status: "idle", taskId: "" },
