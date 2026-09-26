@@ -11,7 +11,7 @@
 
 - 手順：`.claude/skills/success-case-research/SKILL.md` の手順1〜3を「業務自動化」領域に当てはめて実施。情報源の優先順位は `.claude/rules/evidence-policy.md` に準拠（企業公式事例・プレスリリース → ツール提供元公式カスタマーストーリー → 業界メディア → その他）。
 - 検索語（日英）：Slack customer story AI automation action items／n8n case study Slack AI／Anthropic customer story Slack／Fireflies・Otter・Zoom AI Companion case study／Slack 導入事例 AI 要約 中小企業／Slack リアクション Notion 自動登録 事例／n8n human in the loop Slack approval／Anthropic building effective agents human in the loop／Slack Workflow Builder AI steps 等、計19回のWebSearch。
-- 一次確認：候補のうち22URLをWebFetchで直接読んだ。うち4件は取得不可（`docs.n8n.io/advanced-ai/human-in-the-loop-tools/`＝404→別URLで確認済、`isfnet-services.com/blog/40/slack-case-study`＝404、`isfnet.co.jp` 旧ブログ＝note公式へリダイレクトし該当記事なし、`zapier.com/customer-stories`＝404）。
+- 一次確認：候補のうち29URLをWebFetchで直接読みに行き、25件で本文を確認した（うち24件を⑤に「本文直接確認済み」として掲載。残り1件は `note.com/isfnet_official`＝アイエスエフネット旧ブログのリダイレクト先で、該当記事が無いことを確認しただけのため出典には未掲載）。4件は取得不可（`docs.n8n.io/advanced-ai/human-in-the-loop-tools/`＝404→別URLで確認済、`isfnet-services.com/blog/40/slack-case-study`＝404、`isfnet.co.jp` 旧ブログ＝note公式へリダイレクトし該当記事なし、`zapier.com/customer-stories`＝404）。
 - 確度ラベル：**一次**＝当事者またはツール提供元の公式ページを直接確認／**二次**＝業界メディア等／**検索経由**＝検索結果の要約のみで原文未確認／**伝聞**＝匿名・第三者ベンダー執筆等。
 - 注意：ツール提供元の公式カスタマーストーリーは「一次情報」だが、掲載される数値は多くが顧客の自己申告・体感値・ベンダー内部分析であり、独立した検証はされていない。数値は出典の記載通りに引用し、条件（誰の・何に対する数値か）を併記した。
 
