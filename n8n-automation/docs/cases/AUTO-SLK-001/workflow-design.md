@@ -47,7 +47,7 @@
 - 成功条件：Claude抽出結果がスキーマ検証を通過し、Notionページの作成/更新と✅リアクション付与が完了すること
 - KPI：`[要確認/社長]`
 - ロールバック方法：ワークフローを無効化するだけ。Notionページは残置、Slackは影響を受けない（設計提案v5 2章）
-- 変更履歴：2026-09-27 v1（ドラフト作成、エイト。2026-09-27社長回答「フェーズ1本体の実装から始めてください」を受けて着手。本番接続・実データ書き込みは一切行っていない）／2026-09-27 v2（エイト。n8n-buildにより`workflows/draft/AUTO-SLK-001_slack-case-management.json`を実装。AUTO-COM-001拡張〈2026-09-27実装済み〉を前提とした`outputSchema`呼び出しを含む27ノード構成。Slack Trigger公式ノードではなくWebhook直受信＋Slack Web API直接HTTP呼び出し方式を採用した理由は同JSONのSticky Note・各ノードnotes参照。`[実行環境なしのため未テスト]`。n8n-review〈静的検証・監査〉・n8n-test・n8n-deployは未実施）
+- 変更履歴：2026-09-27 v1（ドラフト作成、エイト。2026-09-27社長回答「フェーズ1本体の実装から始めてください」を受けて着手。本番接続・実データ書き込みは一切行っていない）／2026-09-27 v2（エイト。n8n-buildにより`workflows/draft/AUTO-SLK-001_slack-case-management.json`を実装。AUTO-COM-001拡張〈2026-09-27実装済み〉を前提とした`outputSchema`呼び出しを含む27ノード構成。Slack Trigger公式ノードではなくWebhook直受信＋Slack Web API直接HTTP呼び出し方式を採用した理由は同JSONのSticky Note・各ノードnotes参照。`[実行環境なしのため未テスト]`。n8n-review〈静的検証・監査〉・n8n-test・n8n-deployは未実施）／2026-09-27 v3（エイト。メイのn8n-review指摘を受け、Slack署名検証（HMAC-SHA256、`X-Slack-Signature`／`X-Slack-Request-Timestamp`）を7ノード追加で実装。AUTO-CNT-002のLINE Cryptoノードパターンを踏襲。署名不一致・タイムスタンプ不正のいずれかで以降の処理に進ませず、bot-logへの通知のみ行う設計。署名検証アルゴリズム自体・Cryptoノードの`encoding:'HEX'`指定は本セッションで一次情報未確認のため`[要公式確認][要インスタンス確認]`のまま。詳細は同JSONのSticky Note・各ノードnotes参照）
 
 ## 案の比較（最低2案）
 
@@ -160,7 +160,11 @@
   - `[要確認]` AUTO-COM-001の`outputSchema`拡張（案2）が別タスクとして先に完了しているか
   - `[要インスタンス確認]` Slack Trigger/Slackノードの正確なtypeVersion・パラメータキー名、Execute Workflowノードのtype文字列、`WEBHOOK_URL`・署名検証の実機動作、Slack再送の有無
   - `[要公式確認]` Webhookノードの即時応答オプション名、Execute Workflowノードの「完了を待たない」オプション名
-  - `[ユーザー入力待ち]` 各Credentialの実ID
+  - ~~`[要公式確認]` Slack署名検証アルゴリズム~~ → **2026-09-27、秘書アイが`https://docs.slack.dev/authentication/verifying-requests-from-slack`を直接取得し確認済み**：basestring形式`"v0:" + timestamp + ":" + body`、HMAC-SHA256をhex変換し`v0=`を付与、ヘッダ名`X-Slack-Signature`／`X-Slack-Request-Timestamp`、タイムスタンプ許容300秒、いずれも実装と一致。公式推奨は「timing-safeな比較関数を使う」ことだが、本実装はn8n Codeノードの制約により単純文字列比較（既知のトレードオフとして別途明記、下記「残存リスク」参照）
+  - `[要公式確認][要インスタンス確認]` Cryptoノードの`encoding:'HEX'`指定が実際に機能するか
+  - `[要公式確認]` タイムスタンプのリプレイ許容範囲300秒（5分）の妥当性
+  - `[未実装]` Slack Event Subscriptions設定時の`url_verification`チャレンジ応答
+  - `[ユーザー入力待ち]` 各Credentialの実ID、Slack Signing Secretの実値
   - `[実行環境なしのため未テスト]` 本書のノード構成・ロジックはすべて未実行
 
 ## リスク・注意点

@@ -1,6 +1,6 @@
 # 静的検証結果: workflows/draft/AUTO-SLK-001_slack-case-management.json
 
-検証日時: 2026-09-27T11:29:40.033Z
+検証日時: 2026-09-27T11:37:56.178Z
 結果: 重大な問題なし
 
 ## エラー (0)

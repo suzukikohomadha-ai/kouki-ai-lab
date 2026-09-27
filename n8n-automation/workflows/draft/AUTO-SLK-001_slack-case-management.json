@@ -11,7 +11,7 @@
       "parameters": {
         "width": 1300,
         "height": 400,
-        "content": "## AUTO-SLK-001 Slack案件管理・自動記録（ドラフトv1）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-001/workflow-design.md`（エイト、2026-09-27）。出典：`logs/kohomada_2026-09-26_Slack業務管理自動化_改善提案_v2.md`（T225 v2）・`logs/kohomada_2026-09-26_Slack業務管理自動化_設計提案_v5.md`（T224）。\n\n### 全体の流れ\n📋検知→許可リスト判定→スレッド取得→Bot発言除外・案件キー正規化→Notion重複判定→Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）→信頼度フォールバック分類→Notion Upsert→Slackリアクション・bot-log。\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリ（本番・検証）作成、Bot Token取得、`Slack_案件管理Bot_本番`Credential作成\n2. 実チャンネルID（`#kohomada-projects`）・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え（本JSON中`C0SLKPROJPLACEHOLDER`等）\n3. Notion「📋Slack案件管理・DB」を`notion-database.md`の手順で作成し、実データベースID/データソースIDへ差し替え\n4. AUTO-COM-001の実ワークフローIDへ`slk001-claude-extract`のworkflowId欄を差し替え\n5. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 未確認事項（本体）\n- Slack Trigger/Slackノードの正確なtype・typeVersion・内部パラメータキー名は[要インスタンス確認][要公式確認]（改善提案v2 F1確認済みの『表示名』からの類推）。本ドラフトはSlack Web APIへの直接HTTP Request（AUTO-COM-002のLINE実装・AUTO-COM-001のAnthropic実装と同じ『HTTP Request＋Credential』の house style）で実装しており、公式Slackノードは使用していない\n- Notionページ作成時のparent形式（database_id/data_source_id）は[要公式確認]\n- 本ドラフトは`[実行環境なしのため未テスト]`。すべての未確認事項は`workflow-design.md`「分類」節も参照"
+        "content": "## AUTO-SLK-001 Slack案件管理・自動記録（ドラフトv2）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-001/workflow-design.md`（エイト、2026-09-27）。出典：`logs/kohomada_2026-09-26_Slack業務管理自動化_改善提案_v2.md`（T225 v2）・`logs/kohomada_2026-09-26_Slack業務管理自動化_設計提案_v5.md`（T224）。\n\n### 全体の流れ\n📋検知→**署名検証（HMAC-SHA256、2026-09-27追加）**→許可リスト判定→スレッド取得→Bot発言除外・案件キー正規化→Notion重複判定→Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）→信頼度フォールバック分類→Notion Upsert→Slackリアクション・bot-log。\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリ（本番・検証）作成、Bot Token取得、`Slack_案件管理Bot_本番`Credential作成、**Signing Secretの取得・`crypto`種別Credentialへの設定**\n2. 実チャンネルID（`#kohomada-projects`）・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え（本JSON中`C0SLKPROJPLACEHOLDER`等）\n3. Notion「📋Slack案件管理・DB」を`notion-database.md`の手順で作成し、実データベースID/データソースIDへ差し替え\n4. AUTO-COM-001の実ワークフローIDへ`slk001-claude-extract`のworkflowId欄を差し替え\n5. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 署名検証（2026-09-27追加、AUTO-CNT-002のLINE Cryptoノードパターンを踏襲）\n`X-Slack-Signature`／`X-Slack-Request-Timestamp`ヘッダを使い、Signing SecretでHMAC-SHA256検証する。検証失敗（署名不一致 or タイムスタンプが許容範囲外＝リプレイ攻撃疑い）の場合、以降の処理（許可リスト判定・Notion書き込み・Claude呼び出し）には一切進まず、bot-logへの通知のみ行って終了する。検証アルゴリズム自体は本セッションで一次情報を直接確認しておらず`[要公式確認]`（詳細は各ノードのnotes参照）。\n\n### 未確認事項（本体）\n- Slack Trigger/Slackノードの正確なtype・typeVersion・内部パラメータキー名は[要インスタンス確認][要公式確認]（改善提案v2 F1確認済みの『表示名』からの類推）。本ドラフトはSlack Web APIへの直接HTTP Request（AUTO-COM-002のLINE実装・AUTO-COM-001のAnthropic実装と同じ『HTTP Request＋Credential』の house style）で実装しており、公式Slackノードは使用していない\n- 署名検証のHMACアルゴリズム自体・Cryptoノードの`encoding:'HEX'`指定が実際に機能するかは[要公式確認][要インスタンス確認]\n- Notionページ作成時のparent形式（database_id/data_source_id）は[要公式確認]\n- Slack Event Subscriptions設定時の`url_verification`チャレンジ応答（初回のみSlackが送るハンドシェイク）への対応は本ドラフトで未実装（[未実装]、responseMode='onReceived'は汎用200応答のみのため、Slackアプリ設定時に別途対応が必要になる可能性がある）\n- 本ドラフトは`[実行環境なしのため未テスト]`。すべての未確認事項は`workflow-design.md`「分類」節も参照"
       }
     },
     {
@@ -20,7 +20,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [-1300, 0],
-      "notes": "type/typeVersion(2.1)はn8n公式GitHub `packages/nodes-base/nodes/Webhook/Webhook.node.ts`で確認済み（AUTO-CNT-002での実績を踏襲、2026-08-10参照）。実装方針：公式Slack Triggerノード（n8n-nodes-base.slackTrigger）は本インスタンスでのtype文字列・typeVersion・内部パラメータキー名がいずれも[要インスタンス確認][要公式確認]（改善提案v2 F1は『表示名』のみ確認済みで内部キー名は未確認）であるため、`n8n-workflow-json.md`の『ノードパラメータの正確なキー名を推測で生成しない』原則に照らし、本ドラフトではSlack Events APIのWebhook直受信方式を採用した（workflow-design.mdの案の比較1『案B』相当。3.4.4bで検討した受付/処理分離構成をトリガー確実性の観点から前倒しで採用）。responseMode='onReceived'でSlackの3秒応答ルール（改善提案v2 F10）に対応（n8nが即時200を返す前提、実機で要確認）。options.rawBody=trueは将来の署名検証実装（Slack Signing Secret、改善提案v2 F2・F4）のための布石だが、本ドラフトでは署名検証ノード自体は未実装（[未実装]、次に必要なアクション参照）。pathは仮値、Slack Event Subscriptions側のRequest URLに設定する必要がある（[ユーザー入力待ち]）。",
+      "notes": "type/typeVersion(2.1)はn8n公式GitHub `packages/nodes-base/nodes/Webhook/Webhook.node.ts`で確認済み（AUTO-CNT-002での実績を踏襲、2026-08-10参照）。実装方針：公式Slack Triggerノード（n8n-nodes-base.slackTrigger）は本インスタンスでのtype文字列・typeVersion・内部パラメータキー名がいずれも[要インスタンス確認][要公式確認]（改善提案v2 F1は『表示名』のみ確認済みで内部キー名は未確認）であるため、`n8n-workflow-json.md`の『ノードパラメータの正確なキー名を推測で生成しない』原則に照らし、本ドラフトではSlack Events APIのWebhook直受信方式を採用した（workflow-design.mdの案の比較1『案B』相当。3.4.4bで検討した受付/処理分離構成をトリガー確実性の観点から前倒しで採用）。responseMode='onReceived'でSlackの3秒応答ルール（改善提案v2 F10）に対応（n8nが即時200を返す前提、実機で要確認）。options.rawBody=trueは、直後の署名検証（`生ボディ抽出・署名情報抽出`→`Crypto: Slack署名HMAC計算`→`署名比較・タイムスタンプ検証`→`IF: 署名検証成功か`、2026-09-27実装）に必須（生の文字列でHMAC計算する必要があるため）。pathは仮値、Slack Event Subscriptions側のRequest URLに設定する必要がある（[ユーザー入力待ち]）。",
       "webhookId": "auto-slk-001-reaction-added",
       "parameters": {
         "httpMethod": "POST",
@@ -30,16 +30,116 @@
       }
     },
     {
+      "id": "slk001-extract-signature",
+      "name": "生ボディ抽出・署名情報抽出",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1160, 0],
+      "notes": "【2026-09-27追加・署名検証実装】Slack公式の署名検証方式（`X-Slack-Signature`／`X-Slack-Request-Timestamp`ヘッダ、basestring=`v0:{timestamp}:{raw_body}`をSigning SecretでHMAC-SHA256）は、Slack公式ドキュメント『Verifying requests from Slack』（docs.slack.dev）の一般的な実装知識に基づく。**本セッション中に同ページ本文を直接確認していないため`[要公式確認]`のまま実装した**（改善提案v2 F2・F4はSigning Secret自体の存在・n8n Slack Trigger機能内での署名検証提供は確認済みだが、本ドラフトのような手動実装の検証アルゴリズム自体の一次情報確認ではない）。実装パターンはAUTO-CNT-002『生ボディ抽出・キーワード判定（署名検証はCryptoノードへ分離）』ノードを踏襲（rawBody取得をbinary.dataから行い、JSON再パース・再シリアライズによる署名不一致を避けるため生文字列をそのままCryptoノードへ渡す）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const raw = $input.first().json || {};\nconst headers = raw.headers || {};\nconst binaryRawBody = $input.first().binary && $input.first().binary.data;\n\nlet rawBodyText = '';\ntry {\n  if (binaryRawBody && binaryRawBody.data) {\n    rawBodyText = Buffer.from(binaryRawBody.data, 'base64').toString('utf8');\n  } else if (typeof raw.body === 'string') {\n    rawBodyText = raw.body;\n  } else {\n    rawBodyText = JSON.stringify(raw.body || {});\n  }\n} catch (e) {\n  throw new Error('AUTO-SLK-001: rawBodyの取得に失敗しました。Webhookノードのoptions.rawBody設定を確認してください。detail=' + e.message);\n}\n\nconst slackSignature = headers['x-slack-signature'] || '';\nconst slackTimestamp = headers['x-slack-request-timestamp'] || '';\n\nlet parsedBody = {};\ntry { parsedBody = JSON.parse(rawBodyText); } catch (e) { /* パース失敗時は空のまま。後続の署名検証・許可リスト判定で弾かれる */ }\n\n// Slack公式署名検証のbasestring: 'v0:' + timestamp + ':' + rawBody（Signing Secretで後続CryptoノードがHMAC-SHA256計算）\nconst basestring = `v0:${slackTimestamp}:${rawBodyText}`;\n\nreturn [{ json: { rawBodyText, slackSignature, slackTimestamp, basestring, parsedBody } }];\n"
+      }
+    },
+    {
+      "id": "slk001-crypto-hmac",
+      "name": "Crypto: Slack署名HMAC計算",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [-1000, 0],
+      "notes": "【2026-09-27追加】type/typeVersion(2)・action='hmac'はAUTO-CNT-002『Crypto: LINE署名HMAC計算』ノードでn8n公式ドキュメント・公式GitHub（2026-08-15参照）により確認済みの値をそのまま踏襲。**`encoding: 'HEX'`は本ドラフトでの新規使用であり、n8n Crypto/HMACアクションが実際に`'HEX'`という値を受け付けるかは本インスタンス・公式ドキュメントいずれでも未確認`[要インスタンス確認][要公式確認]`**（AUTO-CNT-002はLINE向けに`'BASE64'`を使用しており確認済みだが、Slackの署名形式は16進数〈hex〉表記のため`'HEX'`相当の指定が必要）。value（`basestring`）は前段Codeノードが組み立てた`v0:{timestamp}:{rawBody}`をそのまま渡す（JSON再パース・再シリアライズによる不一致を避けるため）。Credential自体の新規作成（Slack Signing Secretの実値をhmacSecretに設定）は`[要ユーザー承認・未作成]`。",
+      "credentials": { "crypto": { "id": null, "name": "[要ユーザー承認・未作成] Slack Signing Secret (HMAC) - 案件管理Bot" } },
+      "parameters": {
+        "action": "hmac",
+        "binaryData": false,
+        "value": "={{ $json.basestring }}",
+        "type": "SHA256",
+        "dataPropertyName": "computedSignatureHex",
+        "encoding": "HEX"
+      }
+    },
+    {
+      "id": "slk001-compare-signature",
+      "name": "署名比較・タイムスタンプ検証",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-840, 0],
+      "notes": "computedSignatureHex（Cryptoノードが計算した16進数値）の先頭に`v0=`を付けてSlackの署名形式に整形し、`X-Slack-Signature`ヘッダの値と単純な文字列比較する。AUTO-CNT-002『署名比較（一致判定）』ノードと同じ制約（本インスタンスのCodeノードでは`require('crypto')`が禁止されているためNode.js `crypto.timingSafeEqual`による定数時間比較ができず、単純な文字列比較を許容範囲内のトレードオフとして採用。自己ホストの低トラフィックな社内ボット用途を踏まえた判断、残存リスクとして明記）。あわせてリプレイ攻撃対策として、タイムスタンプが現在時刻から一定範囲内であることを確認する（許容範囲300秒〈5分〉は`[要公式確認]`：Slack公式ドキュメントで一般的に推奨されるとされる値だが、本セッションでは一次情報を直接確認していない）。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const d = $input.first().json;\n\nconst computedHex = d.computedSignatureHex || '';\nconst computedSig = computedHex ? ('v0=' + computedHex) : '';\nconst received = d.slackSignature || '';\n\nconst REPLAY_TOLERANCE_SEC = 300; // [要公式確認] 一般的に知られる5分許容を暫定採用\nconst nowSec = Math.floor(Date.now() / 1000);\nconst tsNum = parseInt(d.slackTimestamp, 10);\nconst timestampFresh = Number.isFinite(tsNum) && Math.abs(nowSec - tsNum) <= REPLAY_TOLERANCE_SEC;\n\nconst signatureMatches = computedSig.length > 0 && received.length > 0 && computedSig === received;\nconst validSignature = signatureMatches && timestampFresh;\n\nreturn [{ json: { ...d, signatureMatches, timestampFresh, validSignature } }];\n"
+      }
+    },
+    {
+      "id": "slk001-if-signature-valid",
+      "name": "IF: 署名検証成功か",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-680, 0],
+      "notes": "署名不一致・タイムスタンプ不正（リプレイ攻撃疑い）のいずれかで検証失敗とし、以降の処理（Notion書き込み・Claude呼び出し）には一切進ませない。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "slk001-cond-sig-valid", "leftValue": "={{ $json.validSignature === true }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "slk001-sigfail-format",
+      "name": "署名検証失敗ログ整形",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-520, 220],
+      "notes": "署名検証に失敗したリクエストはSlack本物からの発信と確認できないため、リクエスト内容（item/channel等）を信頼して使わない。bot-logへの通知のみ行い、以降の処理（リアクション付与等）は一切行わない。",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const ctx = $('生ボディ抽出・署名情報抽出').first().json;\nreturn [{ json: {\n  botLogLine: `[SLK-001] 失敗 | 署名検証NG | Slack署名またはタイムスタンプが不正なリクエストを破棄しました（timestamp=${ctx.slackTimestamp || '不明'}）`\n} }];\n"
+      }
+    },
+    {
+      "id": "slk001-sigfail-botlog",
+      "name": "Slack: chat.postMessage（bot-log、署名検証失敗）",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-360, 220],
+      "notes": "#kohomada-bot-logの実チャンネルIDへ差し替え（[ユーザー入力待ち]、他のbot-logノードと同一プレースホルダー）。",
+      "continueOnFail": true,
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { channel: 'C0SLKBOTLOGPLACEHOLDER', text: $json.botLogLine } }}",
+        "options": { "timeout": 60000 }
+      }
+    },
+    {
+      "id": "slk001-noop-sigfail",
+      "name": "NoOp: 完了（署名検証失敗のため破棄）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-200, 220],
+      "parameters": {}
+    },
+    {
       "id": "slk001-validate-allowlist",
       "name": "入力検証・許可リスト判定",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [-1040, 0],
-      "notes": "Slack Events APIの`reaction_added`イベントペイロード構造（`event.user`/`event.reaction`/`event.item.channel`/`event.item.ts`/`event_id`）は改善提案v2 F6（docs.slack.dev本文読了）に基づく。チャンネル・ユーザー・絵文字の三重許可リスト判定（改善提案v2 3.1『絵文字を付ける人の制限』・3.7.3『事業間分離の二重の安全弁』）。すべて[ユーザー入力待ち]のプレースホルダー値を含む。署名検証（Slack Signing Secret）は本ドラフトに未実装（[未実装]、Sticky Note参照）。",
+      "notes": "Slack Events APIの`reaction_added`イベントペイロード構造（`event.user`/`event.reaction`/`event.item.channel`/`event.item.ts`/`event_id`）は改善提案v2 F6（docs.slack.dev本文読了）に基づく。チャンネル・ユーザー・絵文字の三重許可リスト判定（改善提案v2 3.1『絵文字を付ける人の制限』・3.7.3『事業間分離の二重の安全弁』）。すべて[ユーザー入力待ち]のプレースホルダー値を含む。【2026-09-27更新】署名検証済みリクエストのみここに到達する（`IF: 署名検証成功か`の真分岐）。パース済みイベント本体は`生ボディ抽出・署名情報抽出`ノードの`parsedBody`を明示参照する（同ノードでのJSON.parse結果を再利用し、二重パースを避ける）。",
       "parameters": {
         "mode": "runOnceForAllItems",
         "language": "javaScript",
-        "jsCode": "const raw = $input.first().json || {};\nconst body = raw.body || raw;\nconst evt = body.event || {};\n\nconst user = evt.user || null;\nconst reaction = evt.reaction || null;\nconst item = evt.item || {};\nconst itemChannel = item.channel || null;\nconst itemTs = item.ts || null;\nconst eventTs = evt.event_ts || null;\nconst eventId = body.event_id || null;\n\n// [ユーザー入力待ち] 実際のチャンネルID・Bot User ID・社長のSlackユーザーIDに差し替えること\nconst ALLOWED_CHANNEL_ID = 'C0SLKPROJPLACEHOLDER'; // #kohomada-projects の実チャンネルID\nconst ALLOWED_USER_IDS = ['U0SLKOWNERPLACEHOLDER']; // 絵文字を付けてよい許可ユーザー（当面は社長のみ、改善提案v2 3.1）\nconst TARGET_REACTION = 'clipboard'; // 📋のSlack内部絵文字名 [推測]\n\nconst channelOk = itemChannel === ALLOWED_CHANNEL_ID;\nconst userOk = ALLOWED_USER_IDS.includes(user);\nconst reactionOk = reaction === TARGET_REACTION;\nconst itemTypeOk = (item.type || 'message') === 'message';\n\nconst shouldProcess = channelOk && userOk && reactionOk && itemTypeOk;\nconst reasons = [];\nif (!channelOk) reasons.push('channel_not_allowed');\nif (!userOk) reasons.push('user_not_allowed');\nif (!reactionOk) reasons.push('reaction_not_target');\nif (!itemTypeOk) reasons.push('item_type_not_message');\n\nreturn [{ json: {\n  shouldProcess,\n  skipReason: reasons.join(','),\n  user, reaction, itemChannel, itemTs, eventTs, eventId\n} }];\n"
+        "jsCode": "const body = $('生ボディ抽出・署名情報抽出').first().json.parsedBody || {};\nconst evt = body.event || {};\n\nconst user = evt.user || null;\nconst reaction = evt.reaction || null;\nconst item = evt.item || {};\nconst itemChannel = item.channel || null;\nconst itemTs = item.ts || null;\nconst eventTs = evt.event_ts || null;\nconst eventId = body.event_id || null;\n\n// [ユーザー入力待ち] 実際のチャンネルID・Bot User ID・社長のSlackユーザーIDに差し替えること\nconst ALLOWED_CHANNEL_ID = 'C0SLKPROJPLACEHOLDER'; // #kohomada-projects の実チャンネルID\nconst ALLOWED_USER_IDS = ['U0SLKOWNERPLACEHOLDER']; // 絵文字を付けてよい許可ユーザー（当面は社長のみ、改善提案v2 3.1）\nconst TARGET_REACTION = 'clipboard'; // 📋のSlack内部絵文字名 [推測]\n\nconst channelOk = itemChannel === ALLOWED_CHANNEL_ID;\nconst userOk = ALLOWED_USER_IDS.includes(user);\nconst reactionOk = reaction === TARGET_REACTION;\nconst itemTypeOk = (item.type || 'message') === 'message';\n\nconst shouldProcess = channelOk && userOk && reactionOk && itemTypeOk;\nconst reasons = [];\nif (!channelOk) reasons.push('channel_not_allowed');\nif (!userOk) reasons.push('user_not_allowed');\nif (!reactionOk) reasons.push('reaction_not_target');\nif (!itemTypeOk) reasons.push('item_type_not_message');\n\nreturn [{ json: {\n  shouldProcess,\n  skipReason: reasons.join(','),\n  user, reaction, itemChannel, itemTs, eventTs, eventId\n} }];\n"
       }
     },
     {
@@ -407,7 +507,16 @@
     }
   ],
   "connections": {
-    "Webhook: Slack Events受信（reaction_added）": { "main": [[{ "node": "入力検証・許可リスト判定", "type": "main", "index": 0 }]] },
+    "Webhook: Slack Events受信（reaction_added）": { "main": [[{ "node": "生ボディ抽出・署名情報抽出", "type": "main", "index": 0 }]] },
+    "生ボディ抽出・署名情報抽出": { "main": [[{ "node": "Crypto: Slack署名HMAC計算", "type": "main", "index": 0 }]] },
+    "Crypto: Slack署名HMAC計算": { "main": [[{ "node": "署名比較・タイムスタンプ検証", "type": "main", "index": 0 }]] },
+    "署名比較・タイムスタンプ検証": { "main": [[{ "node": "IF: 署名検証成功か", "type": "main", "index": 0 }]] },
+    "IF: 署名検証成功か": { "main": [
+      [{ "node": "入力検証・許可リスト判定", "type": "main", "index": 0 }],
+      [{ "node": "署名検証失敗ログ整形", "type": "main", "index": 0 }]
+    ] },
+    "署名検証失敗ログ整形": { "main": [[{ "node": "Slack: chat.postMessage（bot-log、署名検証失敗）", "type": "main", "index": 0 }]] },
+    "Slack: chat.postMessage（bot-log、署名検証失敗）": { "main": [[{ "node": "NoOp: 完了（署名検証失敗のため破棄）", "type": "main", "index": 0 }]] },
     "入力検証・許可リスト判定": { "main": [[{ "node": "IF: 処理対象か", "type": "main", "index": 0 }]] },
     "IF: 処理対象か": { "main": [
       [{ "node": "Slack: conversations.replies（スレッド取得）", "type": "main", "index": 0 }],

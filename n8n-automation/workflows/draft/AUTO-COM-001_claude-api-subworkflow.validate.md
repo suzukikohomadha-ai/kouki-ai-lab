@@ -1,6 +1,6 @@
 # 静的検証結果: workflows/draft/AUTO-COM-001_claude-api-subworkflow.json
 
-検証日時: 2026-09-27T11:29:44.417Z
+検証日時: 2026-09-27T11:37:50.955Z
 結果: 重大な問題なし
 
 ## エラー (0)
