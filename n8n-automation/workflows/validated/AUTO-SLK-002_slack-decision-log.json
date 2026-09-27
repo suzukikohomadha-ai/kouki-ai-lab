@@ -7,11 +7,11 @@
       "name": "Sticky Note: 概要",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-1600, -480],
+      "position": [-1600, -620],
       "parameters": {
         "width": 1300,
-        "height": 420,
-        "content": "## AUTO-SLK-002 Slack決定事項・自動記録（ドラフトv2）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-002/workflow-design.md`（エイト、2026-09-27 v2。**2026-09-27、社長回答『1. 新規の専用データベース（📌Slack決定事項・DB）を作る』によりQ4確定済み**）。AUTO-SLK-001（📋案件管理）と同型のパイプラインを、合図の絵文字（📌＝`pushpin`）・監視チャンネル（`#kohomada-notes`）・書き込み先（新規📌Slack決定事項・DB）のみ差し替えて流用する。\n\n### AUTO-SLK-001との主な差分\n- 案件キー：`slack:<channel_id>:<message_ts>`（📌が付けられたメッセージ自体のts。AUTO-SLK-001はスレッド先頭tsを使う`thread_ts`方式で異なる）\n- 決定日：スレッド内最初のメッセージのts→JST日付（`[仮定][要確認]`、slk-extract v1.0に決定日専用フィールドが無いための代替）\n- Notionプロパティ：決定事項・決定日・決定内容・根拠Slackリンク・関連案件（自動設定なし）・事業・要確認・案件キー・最終処理イベントIDの9項目のみ（AI欄/人間欄/システム欄の明示的な分離はAUTO-SLK-001ほど細かくない）\n- 署名検証（2026-09-27追加）はAUTO-SLK-001と同一ロジック（別Slackアプリ・別Signing Secretを使う想定）\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリのスコープに`#kohomada-notes`チャンネルを追加招待、Signing Secretの取得・`crypto`種別Credentialへの設定\n2. 実チャンネルID・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え\n3. Notion「📌Slack決定事項・DB」を`AUTO-SLK-001/notion-database.md`の手順を準用して新規作成し、実データベースID/データソースIDへ差し替え（`workflow-design.md`「Notion DB作成手順」参照）\n4. 専用Notion Credential（`Notion_Slack決定事項DB_本番`）の作成\n5. AUTO-COM-001の実ワークフローIDへ差し替え\n6. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 署名検証（2026-09-27追加）\nAUTO-SLK-001と同一実装（`X-Slack-Signature`／`X-Slack-Request-Timestamp`、HMAC-SHA256）。検証失敗時は以降の処理に進まずbot-logへ通知のみ行う。アルゴリズム自体は本セッションで一次情報未確認`[要公式確認]`（詳細はAUTO-SLK-001の同名ノードnotes参照）。\n\n### 未確認事項\nAUTO-SLK-001と共通の未確認事項（Slack Trigger/Slackノードの正確な仕様、Notionページ作成parent形式、署名検証アルゴリズム・`encoding:'HEX'`指定、`url_verification`チャレンジ応答未実装）に加え、決定日算出ロジック・関連案件自動リンク要否・Upsertロジックの要否・二重タグ（📋と📌の両方が付いた場合）の処理が未確定（`workflow-design.md`「未確認事項」参照）。本ドラフトは`[実行環境なしのため未テスト]`。"
+        "height": 400,
+        "content": "## AUTO-SLK-002 Slack決定事項・自動記録（ドラフトv2）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-002/workflow-design.md`（エイト、2026-09-27 v2。**2026-09-27、社長回答『1. 新規の専用データベース（📌Slack決定事項・DB）を作る』によりQ4確定済み**）。AUTO-SLK-001（📋案件管理）と同型のパイプラインを、合図の絵文字（📌＝`pushpin`）・監視チャンネル（`#kohomada-notes`）・書き込み先（新規📌Slack決定事項・DB）のみ差し替えて流用する。\n\n### AUTO-SLK-001との主な差分\n- 案件キー：`slack:<channel_id>:<message_ts>`（📌が付けられたメッセージ自体のts。AUTO-SLK-001はスレッド先頭tsを使う`thread_ts`方式で異なる）\n- 決定日：スレッド内最初のメッセージのts→JST日付（`[仮定][要確認]`、slk-extract v1.0に決定日専用フィールドが無いための代替）\n- Notionプロパティ：決定事項・決定日・決定内容・根拠Slackリンク・関連案件（自動設定なし）・事業・要確認・案件キー・最終処理イベントIDの9項目のみ（AI欄/人間欄/システム欄の明示的な分離はAUTO-SLK-001ほど細かくない）\n- 署名検証（2026-09-27追加）はAUTO-SLK-001と同一ロジック（別Slackアプリ・別Signing Secretを使う想定）\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリのスコープに`#kohomada-notes`チャンネルを追加招待、Signing Secretの取得・`crypto`種別Credentialへの設定\n2. 実チャンネルID・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え\n3. Notion「📌Slack決定事項・DB」を`AUTO-SLK-001/notion-database.md`の手順を準用して新規作成し、実データベースID/データソースIDへ差し替え（`workflow-design.md`「Notion DB作成手順」参照）\n4. 専用Notion Credential（`Notion_Slack決定事項DB_本番`）の作成\n5. AUTO-COM-001の実ワークフローIDへ差し替え\n6. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 署名検証（2026-09-27追加）\nAUTO-SLK-001と同一実装（`X-Slack-Signature`／`X-Slack-Request-Timestamp`、HMAC-SHA256）。検証失敗時は以降の処理に進まずbot-logへ通知のみ行う。アルゴリズム自体は本セッションで一次情報未確認`[要公式確認]`（詳細はAUTO-SLK-001の同名ノードnotes参照）。\n\n### 未確認事項\nAUTO-SLK-001と共通の未確認事項（Slack Trigger/Slackノードの正確な仕様、Notionページ作成parent形式、署名検証アルゴリズム・`encoding:'HEX'`指定、`Respond to Webhook`ノードの型・パラメータ）に加え、決定日算出ロジック・関連案件自動リンク要否・Upsertロジックの要否・二重タグ（📋と📌の両方が付いた場合）の処理が未確定（`workflow-design.md`「未確認事項」参照）。【2026-09-27対応済み】`url_verification`チャレンジ応答はAUTO-SLK-001と同一ロジックで実装済み。本ドラフトは`[実行環境なしのため未テスト]`。"
       }
     },
     {
@@ -20,12 +20,12 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [-1300, 0],
-      "notes": "AUTO-SLK-001と同じ実装方針（Webhook直受信方式、type/typeVersion確認済み・AUTO-CNT-002実績踏襲）。AUTO-SLK-001とは別のWebhookパス・別のSlackアプリ内Event Subscriptions設定が必要（[ユーザー入力待ち]）。options.rawBody=trueは、直後の署名検証（2026-09-27実装、AUTO-SLK-001と同じロジック）に必須。",
+      "notes": "AUTO-SLK-001と同じ実装方針（Webhook直受信方式、type/typeVersion確認済み・AUTO-CNT-002実績踏襲）。AUTO-SLK-001とは別のWebhookパス・別のSlackアプリ内Event Subscriptions設定が必要（[ユーザー入力待ち]）。options.rawBody=trueは、直後の署名検証（2026-09-27実装、AUTO-SLK-001と同じロジック）に必須。【2026-09-27更新・n8n-review指摘対応】`responseMode`を`'onReceived'`から`'responseNode'`へ変更（url_verificationチャレンジへの動的応答のため。詳細はAUTO-SLK-001の同名ノードnotes参照。Respond to Webhookノード実行後も後続処理が継続するかは[要インスタンス確認]）。",
       "webhookId": "auto-slk-002-reaction-added",
       "parameters": {
         "httpMethod": "POST",
         "path": "slack-slk002-reaction-added",
-        "responseMode": "onReceived",
+        "responseMode": "responseNode",
         "options": { "rawBody": true }
       }
     },
@@ -87,6 +87,67 @@
           ],
           "combinator": "and"
         }
+      }
+    },
+    {
+      "id": "slk002-if-url-verification",
+      "name": "IF: url_verificationチャレンジか",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-600, 0],
+      "notes": "AUTO-SLK-001の同名ノードと同一実装（2026-09-27追加・n8n-review指摘対応）。Slack Events APIの`url_verification`チャレンジ応答が無いとRequest URLの保存自体ができずトリガーが有効化できない。詳細・出典はAUTO-SLK-001の同名ノードnotes参照（本セッションでdocs.slack.dev本文未確認のため`[要公式確認]`のまま実装）。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "slk002-cond-url-verification", "leftValue": "={{ $json.parsedBody && $json.parsedBody.type === 'url_verification' }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "slk002-respond-challenge",
+      "name": "Respond to Webhook: url_verificationチャレンジ応答",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-440, -140],
+      "notes": "AUTO-SLK-001の同名ノードと同一実装。type・typeVersion・パラメータキー名は[要インスタンス確認][要公式確認]（詳細はAUTO-SLK-001の同名ノードnotes参照）。",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { challenge: $json.parsedBody.challenge } }}"
+      }
+    },
+    {
+      "id": "slk002-noop-url-verification",
+      "name": "NoOp: 完了（url_verification応答）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-280, -140],
+      "parameters": {}
+    },
+    {
+      "id": "slk002-respond-ack",
+      "name": "Respond to Webhook: 受付確認応答（即時ack）",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-440, 0],
+      "notes": "AUTO-SLK-001の同名ノードと同一実装。`responseMode:'responseNode'`変更後もワークフローが後続ノードを継続実行することを前提としており、この前提自体が[要インスタンス確認]。",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}"
+      }
+    },
+    {
+      "id": "slk002-respond-sigfail",
+      "name": "Respond to Webhook: 署名検証失敗応答",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-600, 220],
+      "notes": "AUTO-SLK-001の同名ノードと同一実装。リクエスト内容は信頼できないため応答本文には`ok:false`以上の情報を含めない。",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false } }}"
       }
     },
     {
@@ -505,9 +566,16 @@
     "Crypto: Slack署名HMAC計算": { "main": [[{ "node": "署名比較・タイムスタンプ検証", "type": "main", "index": 0 }]] },
     "署名比較・タイムスタンプ検証": { "main": [[{ "node": "IF: 署名検証成功か", "type": "main", "index": 0 }]] },
     "IF: 署名検証成功か": { "main": [
-      [{ "node": "入力検証・許可リスト判定", "type": "main", "index": 0 }],
-      [{ "node": "署名検証失敗ログ整形", "type": "main", "index": 0 }]
+      [{ "node": "IF: url_verificationチャレンジか", "type": "main", "index": 0 }],
+      [{ "node": "Respond to Webhook: 署名検証失敗応答", "type": "main", "index": 0 }]
     ] },
+    "IF: url_verificationチャレンジか": { "main": [
+      [{ "node": "Respond to Webhook: url_verificationチャレンジ応答", "type": "main", "index": 0 }],
+      [{ "node": "Respond to Webhook: 受付確認応答（即時ack）", "type": "main", "index": 0 }]
+    ] },
+    "Respond to Webhook: url_verificationチャレンジ応答": { "main": [[{ "node": "NoOp: 完了（url_verification応答）", "type": "main", "index": 0 }]] },
+    "Respond to Webhook: 受付確認応答（即時ack）": { "main": [[{ "node": "入力検証・許可リスト判定", "type": "main", "index": 0 }]] },
+    "Respond to Webhook: 署名検証失敗応答": { "main": [[{ "node": "署名検証失敗ログ整形", "type": "main", "index": 0 }]] },
     "署名検証失敗ログ整形": { "main": [[{ "node": "Slack: chat.postMessage（bot-log、署名検証失敗）", "type": "main", "index": 0 }]] },
     "Slack: chat.postMessage（bot-log、署名検証失敗）": { "main": [[{ "node": "NoOp: 完了（署名検証失敗のため破棄）", "type": "main", "index": 0 }]] },
     "入力検証・許可リスト判定": { "main": [[{ "node": "IF: 処理対象か", "type": "main", "index": 0 }]] },

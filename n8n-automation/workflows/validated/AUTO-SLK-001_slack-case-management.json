@@ -7,11 +7,11 @@
       "name": "Sticky Note: 概要",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-1600, -480],
+      "position": [-1600, -620],
       "parameters": {
         "width": 1300,
         "height": 400,
-        "content": "## AUTO-SLK-001 Slack案件管理・自動記録（ドラフトv2）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-001/workflow-design.md`（エイト、2026-09-27）。出典：`logs/kohomada_2026-09-26_Slack業務管理自動化_改善提案_v2.md`（T225 v2）・`logs/kohomada_2026-09-26_Slack業務管理自動化_設計提案_v5.md`（T224）。\n\n### 全体の流れ\n📋検知→**署名検証（HMAC-SHA256、2026-09-27追加）**→許可リスト判定→スレッド取得→Bot発言除外・案件キー正規化→Notion重複判定→Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）→信頼度フォールバック分類→Notion Upsert→Slackリアクション・bot-log。\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリ（本番・検証）作成、Bot Token取得、`Slack_案件管理Bot_本番`Credential作成、**Signing Secretの取得・`crypto`種別Credentialへの設定**\n2. 実チャンネルID（`#kohomada-projects`）・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え（本JSON中`C0SLKPROJPLACEHOLDER`等）\n3. Notion「📋Slack案件管理・DB」を`notion-database.md`の手順で作成し、実データベースID/データソースIDへ差し替え\n4. AUTO-COM-001の実ワークフローIDへ`slk001-claude-extract`のworkflowId欄を差し替え\n5. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 署名検証（2026-09-27追加、AUTO-CNT-002のLINE Cryptoノードパターンを踏襲）\n`X-Slack-Signature`／`X-Slack-Request-Timestamp`ヘッダを使い、Signing SecretでHMAC-SHA256検証する。検証失敗（署名不一致 or タイムスタンプが許容範囲外＝リプレイ攻撃疑い）の場合、以降の処理（許可リスト判定・Notion書き込み・Claude呼び出し）には一切進まず、bot-logへの通知のみ行って終了する。検証アルゴリズム自体は本セッションで一次情報を直接確認しておらず`[要公式確認]`（詳細は各ノードのnotes参照）。\n\n### 未確認事項（本体）\n- Slack Trigger/Slackノードの正確なtype・typeVersion・内部パラメータキー名は[要インスタンス確認][要公式確認]（改善提案v2 F1確認済みの『表示名』からの類推）。本ドラフトはSlack Web APIへの直接HTTP Request（AUTO-COM-002のLINE実装・AUTO-COM-001のAnthropic実装と同じ『HTTP Request＋Credential』の house style）で実装しており、公式Slackノードは使用していない\n- 署名検証のHMACアルゴリズム自体・Cryptoノードの`encoding:'HEX'`指定が実際に機能するかは[要公式確認][要インスタンス確認]\n- Notionページ作成時のparent形式（database_id/data_source_id）は[要公式確認]\n- Slack Event Subscriptions設定時の`url_verification`チャレンジ応答（初回のみSlackが送るハンドシェイク）への対応は本ドラフトで未実装（[未実装]、responseMode='onReceived'は汎用200応答のみのため、Slackアプリ設定時に別途対応が必要になる可能性がある）\n- 本ドラフトは`[実行環境なしのため未テスト]`。すべての未確認事項は`workflow-design.md`「分類」節も参照"
+        "content": "## AUTO-SLK-001 Slack案件管理・自動記録（ドラフトv2）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-001/workflow-design.md`（エイト、2026-09-27）。出典：`logs/kohomada_2026-09-26_Slack業務管理自動化_改善提案_v2.md`（T225 v2）・`logs/kohomada_2026-09-26_Slack業務管理自動化_設計提案_v5.md`（T224）。\n\n### 全体の流れ\n📋検知→**署名検証（HMAC-SHA256、2026-09-27追加）**→許可リスト判定→スレッド取得→Bot発言除外・案件キー正規化→Notion重複判定→Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）→信頼度フォールバック分類→Notion Upsert→Slackリアクション・bot-log。\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリ（本番・検証）作成、Bot Token取得、`Slack_案件管理Bot_本番`Credential作成、**Signing Secretの取得・`crypto`種別Credentialへの設定**\n2. 実チャンネルID（`#kohomada-projects`）・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え（本JSON中`C0SLKPROJPLACEHOLDER`等）\n3. Notion「📋Slack案件管理・DB」を`notion-database.md`の手順で作成し、実データベースID/データソースIDへ差し替え\n4. AUTO-COM-001の実ワークフローIDへ`slk001-claude-extract`のworkflowId欄を差し替え\n5. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 署名検証（2026-09-27追加、AUTO-CNT-002のLINE Cryptoノードパターンを踏襲）\n`X-Slack-Signature`／`X-Slack-Request-Timestamp`ヘッダを使い、Signing SecretでHMAC-SHA256検証する。検証失敗（署名不一致 or タイムスタンプが許容範囲外＝リプレイ攻撃疑い）の場合、以降の処理（許可リスト判定・Notion書き込み・Claude呼び出し）には一切進まず、bot-logへの通知のみ行って終了する。検証アルゴリズム自体は本セッションで一次情報を直接確認しておらず`[要公式確認]`（詳細は各ノードのnotes参照）。\n\n### 未確認事項（本体）\n- Slack Trigger/Slackノードの正確なtype・typeVersion・内部パラメータキー名は[要インスタンス確認][要公式確認]（改善提案v2 F1確認済みの『表示名』からの類推）。本ドラフトはSlack Web APIへの直接HTTP Request（AUTO-COM-002のLINE実装・AUTO-COM-001のAnthropic実装と同じ『HTTP Request＋Credential』の house style）で実装しており、公式Slackノードは使用していない\n- 署名検証のHMACアルゴリズム自体・Cryptoノードの`encoding:'HEX'`指定が実際に機能するかは[要公式確認][要インスタンス確認]\n- Notionページ作成時のparent形式（database_id/data_source_id）は[要公式確認]\n- 【2026-09-27対応済み】Slack Event Subscriptions設定時の`url_verification`チャレンジ応答は`IF: url_verificationチャレンジか`→`Respond to Webhook: url_verificationチャレンジ応答`で実装した。ただし`Respond to Webhook`ノード自体の型・パラメータ（`n8n-nodes-base.respondToWebhook`）、JSON応答（`{challenge:...}`）か平文応答が正しいか、`responseMode:'responseNode'`変更後もワークフロー全体が正常に継続実行されるかは、いずれも[要インスタンス確認][要公式確認]のまま（該当ノードのnotes参照）\n- 本ドラフトは`[実行環境なしのため未テスト]`。すべての未確認事項は`workflow-design.md`「分類」節も参照"
       }
     },
     {
@@ -20,12 +20,12 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [-1300, 0],
-      "notes": "type/typeVersion(2.1)はn8n公式GitHub `packages/nodes-base/nodes/Webhook/Webhook.node.ts`で確認済み（AUTO-CNT-002での実績を踏襲、2026-08-10参照）。実装方針：公式Slack Triggerノード（n8n-nodes-base.slackTrigger）は本インスタンスでのtype文字列・typeVersion・内部パラメータキー名がいずれも[要インスタンス確認][要公式確認]（改善提案v2 F1は『表示名』のみ確認済みで内部キー名は未確認）であるため、`n8n-workflow-json.md`の『ノードパラメータの正確なキー名を推測で生成しない』原則に照らし、本ドラフトではSlack Events APIのWebhook直受信方式を採用した（workflow-design.mdの案の比較1『案B』相当。3.4.4bで検討した受付/処理分離構成をトリガー確実性の観点から前倒しで採用）。responseMode='onReceived'でSlackの3秒応答ルール（改善提案v2 F10）に対応（n8nが即時200を返す前提、実機で要確認）。options.rawBody=trueは、直後の署名検証（`生ボディ抽出・署名情報抽出`→`Crypto: Slack署名HMAC計算`→`署名比較・タイムスタンプ検証`→`IF: 署名検証成功か`、2026-09-27実装）に必須（生の文字列でHMAC計算する必要があるため）。pathは仮値、Slack Event Subscriptions側のRequest URLに設定する必要がある（[ユーザー入力待ち]）。",
+      "notes": "type/typeVersion(2.1)はn8n公式GitHub `packages/nodes-base/nodes/Webhook/Webhook.node.ts`で確認済み（AUTO-CNT-002での実績を踏襲、2026-08-10参照）。実装方針：公式Slack Triggerノード（n8n-nodes-base.slackTrigger）は本インスタンスでのtype文字列・typeVersion・内部パラメータキー名がいずれも[要インスタンス確認][要公式確認]（改善提案v2 F1は『表示名』のみ確認済みで内部キー名は未確認）であるため、`n8n-workflow-json.md`の『ノードパラメータの正確なキー名を推測で生成しない』原則に照らし、本ドラフトではSlack Events APIのWebhook直受信方式を採用した（workflow-design.mdの案の比較1『案B』相当。3.4.4bで検討した受付/処理分離構成をトリガー確実性の観点から前倒しで採用）。【2026-09-27更新・n8n-review指摘対応】`responseMode`を`'onReceived'`（固定・カスタマイズ不可の即時応答）から`'responseNode'`へ変更した。理由：Slack Events APIの`url_verification`チャレンジ（Slackアプリ設定時に送られる`{type:'url_verification',challenge:'...'}`）には、受信した`challenge`値をそのまま含む動的なレスポンス本文を返す必要があるが、`'onReceived'`モードは固定応答のみでリクエスト内容に応じた応答を返せない。`'responseNode'`モードでは、後続の`Respond to Webhook`ノード（`n8n-nodes-base.respondToWebhook`、[要インスタンス確認][要公式確認]、本セッションで型・typeVersion・パラメータキー名を一次情報で確認できていない）が実行された時点でHTTPレスポンスが送信される。Slackの3秒応答ルール（改善提案v2 F10）は、署名検証・url_verification判定の直後というワークフロー冒頭の早い段階に`Respond to Webhook`ノードを配置することで満たす設計とした（詳細は`IF: url_verificationチャレンジか`以降のノード群参照）。**`Respond to Webhook`ノード実行後もワークフローの残りのノードが継続実行されるか（n8nの一般的な仕様と認識しているが本セッションでは未検証）は`[要インスタンス確認]`のまま。実機確認が必須。** options.rawBody=trueは署名検証（`生ボディ抽出・署名情報抽出`→`Crypto: Slack署名HMAC計算`→`署名比較・タイムスタンプ検証`→`IF: 署名検証成功か`、2026-09-27実装）に必須（生の文字列でHMAC計算する必要があるため）。pathは仮値、Slack Event Subscriptions側のRequest URLに設定する必要がある（[ユーザー入力待ち]）。",
       "webhookId": "auto-slk-001-reaction-added",
       "parameters": {
         "httpMethod": "POST",
         "path": "slack-slk001-reaction-added",
-        "responseMode": "onReceived",
+        "responseMode": "responseNode",
         "options": { "rawBody": true }
       }
     },
@@ -87,6 +87,67 @@
           ],
           "combinator": "and"
         }
+      }
+    },
+    {
+      "id": "slk001-if-url-verification",
+      "name": "IF: url_verificationチャレンジか",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-600, 0],
+      "notes": "【2026-09-27追加・n8n-review指摘対応】Slack Events APIは、Slackアプリの『Enable Events』設定でRequest URLを保存する際、`{type:'url_verification', challenge:'<ランダム文字列>'}`という一度限りのリクエストを送り、応答本文にその`challenge`値がそのまま含まれることを要求する（一般的に知られるSlack公式仕様。本セッションではdocs.slack.dev本文を直接確認しておらず`[要公式確認]`のまま実装）。これが無いとRequest URLの保存自体ができず、reaction_addedイベントの受信を含めトリガーが一切有効化できない（n8n-review指摘の通り機能ブロッカー）。`parsedBody`は`生ボディ抽出・署名情報抽出`ノードでJSON.parse済みのものを、署名比較後も`{...d}`のスプレッドで保持されている前提で参照する（Cryptoノードが既存フィールドを保持する前提は`slk001-crypto-hmac`のnotesと同じ既知の未検証事項）。",
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            { "id": "slk001-cond-url-verification", "leftValue": "={{ $json.parsedBody && $json.parsedBody.type === 'url_verification' }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "slk001-respond-challenge",
+      "name": "Respond to Webhook: url_verificationチャレンジ応答",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-440, -140],
+      "notes": "【2026-09-27追加・n8n-review指摘対応】type文字列（`n8n-nodes-base.respondToWebhook`）・typeVersion・パラメータキー名（`respondWith`/`responseBody`）はn8nエコシステムで一般的に知られる構造からの類推であり、本セッションでn8n公式ドキュメント・公式GitHubいずれも直接確認していないため`[要インスタンス確認][要公式確認]`。応答本文をJSON `{ challenge: <受信したchallenge値> }`とする実装を選んだが、Slack公式が平文（Content-Type: text/plain、本文=challenge値そのもの）のみを受け付ける可能性もあり、この点も`[要公式確認]`（実機確認時に平文応答への切替も検討すること）。",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { challenge: $json.parsedBody.challenge } }}"
+      }
+    },
+    {
+      "id": "slk001-noop-url-verification",
+      "name": "NoOp: 完了（url_verification応答）",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-280, -140],
+      "parameters": {}
+    },
+    {
+      "id": "slk001-respond-ack",
+      "name": "Respond to Webhook: 受付確認応答（即時ack）",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-440, 0],
+      "notes": "【2026-09-27追加・n8n-review指摘対応】署名検証済み・url_verification以外（＝通常のreaction_addedイベント等）のリクエストに対し、後続の許可リスト判定・Slack/Notion/Claude呼び出し（数秒以上かかりうる）を待たずに即座に200 OKを返す。Slackの3秒応答ルールへの対応をn8nの暗黙の即時応答（旧`onReceived`モード）から、この明示的な`Respond to Webhook`ノードに置き換えた（詳細は`Webhook: Slack Events受信`ノードのnotes参照）。この応答後もワークフローが後続ノード（`入力検証・許可リスト判定`以降）を継続実行することを前提としており、この前提自体が`[要インスタンス確認]`。",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}"
+      }
+    },
+    {
+      "id": "slk001-respond-sigfail",
+      "name": "Respond to Webhook: 署名検証失敗応答",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-600, 220],
+      "notes": "【2026-09-27追加・n8n-review指摘対応】`responseMode`を`'responseNode'`へ変更したことに伴い、署名検証失敗の経路でも明示的な応答が必要になったため追加（レスポンスコード・本文の詳細は`[要インスタンス確認]`、既定の200を想定）。リクエスト内容は信頼できないため、応答本文には`ok:false`以上の情報を含めない。",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false } }}"
       }
     },
     {
@@ -512,9 +573,16 @@
     "Crypto: Slack署名HMAC計算": { "main": [[{ "node": "署名比較・タイムスタンプ検証", "type": "main", "index": 0 }]] },
     "署名比較・タイムスタンプ検証": { "main": [[{ "node": "IF: 署名検証成功か", "type": "main", "index": 0 }]] },
     "IF: 署名検証成功か": { "main": [
-      [{ "node": "入力検証・許可リスト判定", "type": "main", "index": 0 }],
-      [{ "node": "署名検証失敗ログ整形", "type": "main", "index": 0 }]
+      [{ "node": "IF: url_verificationチャレンジか", "type": "main", "index": 0 }],
+      [{ "node": "Respond to Webhook: 署名検証失敗応答", "type": "main", "index": 0 }]
     ] },
+    "IF: url_verificationチャレンジか": { "main": [
+      [{ "node": "Respond to Webhook: url_verificationチャレンジ応答", "type": "main", "index": 0 }],
+      [{ "node": "Respond to Webhook: 受付確認応答（即時ack）", "type": "main", "index": 0 }]
+    ] },
+    "Respond to Webhook: url_verificationチャレンジ応答": { "main": [[{ "node": "NoOp: 完了（url_verification応答）", "type": "main", "index": 0 }]] },
+    "Respond to Webhook: 受付確認応答（即時ack）": { "main": [[{ "node": "入力検証・許可リスト判定", "type": "main", "index": 0 }]] },
+    "Respond to Webhook: 署名検証失敗応答": { "main": [[{ "node": "署名検証失敗ログ整形", "type": "main", "index": 0 }]] },
     "署名検証失敗ログ整形": { "main": [[{ "node": "Slack: chat.postMessage（bot-log、署名検証失敗）", "type": "main", "index": 0 }]] },
     "Slack: chat.postMessage（bot-log、署名検証失敗）": { "main": [[{ "node": "NoOp: 完了（署名検証失敗のため破棄）", "type": "main", "index": 0 }]] },
     "入力検証・許可リスト判定": { "main": [[{ "node": "IF: 処理対象か", "type": "main", "index": 0 }]] },

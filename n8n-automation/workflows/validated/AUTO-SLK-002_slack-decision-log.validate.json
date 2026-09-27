@@ -1,0 +1,10 @@
+{
+  "file": "workflows/draft/AUTO-SLK-002_slack-decision-log.json",
+  "checkedAt": "2026-09-27T11:49:45.562Z",
+  "errors": [],
+  "warnings": [
+    "ノード \"Sticky Note: 概要\" が他のどのノードとも接続されていません（孤立ノードの可能性）。"
+  ],
+  "info": [],
+  "valid": true
+}

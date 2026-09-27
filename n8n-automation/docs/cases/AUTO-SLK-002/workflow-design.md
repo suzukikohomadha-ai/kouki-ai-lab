@@ -116,7 +116,8 @@ AUTO-SLK-001と同型のパイプライン（Slack Trigger→対象判定→ス�
 - `[要ヒアリング]` 想定件数（決定事項の月間件数見込み。改善提案v2 3.8節のヒアリング5問と統合予定。Q4＝格納先とは別軸の未確認事項）
 - ~~`[要公式確認]` Slack署名検証アルゴリズム自体・タイムスタンプ許容範囲300秒の妥当性~~ → 2026-09-27、秘書アイが公式ドキュメントで確認済み（詳細はAUTO-SLK-001/workflow-design.md参照）。`encoding:'HEX'`等のCryptoノードパラメータの実インスタンスでの動作は引き続き`[要インスタンス確認]`
 - `[要公式確認][要インスタンス確認]` Cryptoノードの`encoding:'HEX'`指定
-- `[未実装]` `url_verification`チャレンジ応答
+- ~~`[未実装]` `url_verification`チャレンジ応答~~ → **2026-09-27実装済み**（AUTO-SLK-001と同一ロジック、n8n-review指摘への対応）
+- `[要インスタンス確認]` `Respond to Webhook`ノードの型・typeVersion・パラメータキー名、`responseMode:'responseNode'`変更後の後続処理継続動作（AUTO-SLK-001と共通の未確認事項。JSON応答形式自体は公式に有効と2026-09-27確認済み、詳細はAUTO-SLK-001/workflow-design.md参照）
 - `[実行環境なしのため未テスト]` 本書のノード構成・ロジックはすべて未実行
 
 ## 次に必要なアクション
@@ -129,3 +130,5 @@ AUTO-SLK-001と同型のパイプライン（Slack Trigger→対象判定→ス�
 **2026-09-27追記（v3）**：`workflows/draft/AUTO-SLK-002_slack-decision-log.json`を実装済み（エイト、n8n-build）。AUTO-SLK-001と同型の27ノード構成をベースに、案件キーの基準（`message_ts`）・決定日算出・Notionプロパティ（9項目）をこの設計書の確定仕様どおりに反映した。`[実行環境なしのため未テスト]`。n8n-review・n8n-test・n8n-deployは未実施。
 
 **2026-09-27追記（v4）**：メイのn8n-review指摘を受け、Slack署名検証（HMAC-SHA256）をAUTO-SLK-001と同一ロジックで7ノード追加実装（AUTO-CNT-002のLINE Cryptoノードパターン踏襲）。署名検証失敗時は以降の処理に進ませずbot-logへ通知のみ行う。検証アルゴリズム自体・`encoding:'HEX'`指定は本セッションで一次情報未確認のため`[要公式確認][要インスタンス確認]`のまま（詳細はAUTO-SLK-001の対応ノードnotes参照）。
+
+**2026-09-27追記（v5）**：メイのn8n-review監査「条件付き承認」の指摘2点に対応。(1) AUTO-SLK-001と同一ロジックで`url_verification`チャレンジ応答を実装（`responseMode`を`'responseNode'`へ変更し5ノード追加）。(2) レイアウト警告10件（Sticky Noteとの間隔不足60px）を解消：Sticky Noteの高さを420→400、位置を`[-1600,-480]`から`[-1600,-620]`へ変更し、全ノードとの間隔を80px以上確保。
