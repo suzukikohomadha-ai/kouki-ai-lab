@@ -1,6 +1,6 @@
-# 静的検証結果: workflows/draft/AUTO-COM-001_claude-api-subworkflow.json
+# 静的検証結果: workflows/draft/AUTO-SLK-001_slack-case-management.json
 
-検証日時: 2026-09-27T11:29:44.417Z
+検証日時: 2026-09-27T11:29:40.033Z
 結果: 重大な問題なし
 
 ## エラー (0)

@@ -9,8 +9,8 @@
 - 技術責任者：エイト（n8n Workflow Implementation Engineer）
 - 対象部署：共通基盤（全クラスタ横断）
 - トリガー：Execute Workflow Trigger（他ワークフローのExecute Workflowノードから呼び出される。単独では起動しない）
-- 入力データ：`systemPrompt`（string, 任意）／`userPrompt`（string, 必須）／`model`（string, 任意, 既定 `claude-sonnet-5`）／`maxTokens`（number, 任意, 既定 4000）／`temperature`（number, 任意, 既定 1）
-- 出力データ：成功時 `{ success: true, text, model, stopReason, usage }`。失敗時はワークフロー実行自体が失敗（throw）する。
+- 入力データ：`systemPrompt`（string, 任意）／`userPrompt`（string, 必須）／`model`（string, 任意, 既定 `claude-sonnet-5`）／`maxTokens`（number, 任意, 既定 4000）／`temperature`（number, 任意, 既定 1）／`outputSchema`（object, 任意。**2026-09-27実装**。指定時のみAnthropic Structured Outputsでスキーマ強制。詳細は本ファイル末尾「拡張案：`outputSchema`パラメータの追加」）
+- 出力データ：成功時 `{ success: true, text, model, stopReason, usage }`（`outputSchema`指定時かつJSON.parse成功時は`parsed`キーが追加される）。失敗時はワークフロー実行自体が失敗（throw）する。
 - 前提条件：呼び出し元・本ワークフローともに `anthropicApi` Credentialが利用可能であること。n8n本番登録後、本ワークフローのworkflow IDを呼び出し元のExecute WorkflowノードのworkflowId欄に設定する必要がある。
 - 利用サービス：Anthropic Messages API（`https://api.anthropic.com/v1/messages`）
 - 必要Credential：`anthropicApi` 種別（用途：Claude API呼び出し）。実値・実IDは本ドラフトに含めていない。
@@ -28,7 +28,7 @@
 - 成功条件：Anthropic APIから200番台のレスポンスを受け取り、`content`配列からテキストを抽出できること
 - KPI：`[要確認/社長]`
 - ロールバック方法：本ワークフローを無効化し、呼び出し元ワークフローのExecute Workflowノードを一時的にバイパスする（呼び出し元側の設計変更が必要になる可能性あり）
-- 変更履歴：2026-08-09 v1（ドラフト作成、エイト）／2026-09-27 追記（`outputSchema`拡張の設計メモ、メイ。本体の入出力契約は未変更のドラフトのまま。詳細は本ファイル末尾「拡張案：`outputSchema`パラメータの追加」参照）
+- 変更履歴：2026-08-09 v1（ドラフト作成、エイト）／2026-09-27 追記（`outputSchema`拡張の設計メモ、メイ。本体の入出力契約は未変更のドラフトのまま。詳細は本ファイル末尾「拡張案：`outputSchema`パラメータの追加」参照）／2026-09-27 v2実装（エイト。メイの設計メモの疑似コードどおり`workflows/draft/AUTO-COM-001_claude-api-subworkflow.json`の3ノード〈入力検証・デフォルト適用／リクエストボディ生成／成功レスポンス整形〉を更新し、`outputSchema`対応を実装。既存5パラメータの意味・型・既定値、既存3ノードの既存分岐・接続構造は無変更。n8n本番環境への登録・更新は未実施、`[実行環境なしのため未テスト]`）
 
 ## 案の比較（最低2案）
 
