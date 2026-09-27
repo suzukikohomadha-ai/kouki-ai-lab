@@ -7,11 +7,14 @@
       "name": "Sticky Note: 概要",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-1600, -620],
+      "position": [
+        -1600,
+        -620
+      ],
       "parameters": {
         "width": 1300,
         "height": 400,
-        "content": "## AUTO-SLK-001 Slack案件管理・自動記録（ドラフトv2）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-001/workflow-design.md`（エイト、2026-09-27）。出典：`logs/kohomada_2026-09-26_Slack業務管理自動化_改善提案_v2.md`（T225 v2）・`logs/kohomada_2026-09-26_Slack業務管理自動化_設計提案_v5.md`（T224）。\n\n### 全体の流れ\n📋検知→**署名検証（HMAC-SHA256、2026-09-27追加）**→許可リスト判定→スレッド取得→Bot発言除外・案件キー正規化→Notion重複判定→Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）→信頼度フォールバック分類→Notion Upsert→Slackリアクション・bot-log。\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリ（本番・検証）作成、Bot Token取得、`Slack_案件管理Bot_本番`Credential作成、**Signing Secretの取得・`crypto`種別Credentialへの設定**\n2. 実チャンネルID（`#kohomada-projects`）・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え（本JSON中`C0SLKPROJPLACEHOLDER`等）\n3. Notion「📋Slack案件管理・DB」を`notion-database.md`の手順で作成し、実データベースID/データソースIDへ差し替え\n4. AUTO-COM-001の実ワークフローIDへ`slk001-claude-extract`のworkflowId欄を差し替え\n5. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 署名検証（2026-09-27追加、AUTO-CNT-002のLINE Cryptoノードパターンを踏襲）\n`X-Slack-Signature`／`X-Slack-Request-Timestamp`ヘッダを使い、Signing SecretでHMAC-SHA256検証する。検証失敗（署名不一致 or タイムスタンプが許容範囲外＝リプレイ攻撃疑い）の場合、以降の処理（許可リスト判定・Notion書き込み・Claude呼び出し）には一切進まず、bot-logへの通知のみ行って終了する。検証アルゴリズム自体は本セッションで一次情報を直接確認しておらず`[要公式確認]`（詳細は各ノードのnotes参照）。\n\n### 未確認事項（本体）\n- Slack Trigger/Slackノードの正確なtype・typeVersion・内部パラメータキー名は[要インスタンス確認][要公式確認]（改善提案v2 F1確認済みの『表示名』からの類推）。本ドラフトはSlack Web APIへの直接HTTP Request（AUTO-COM-002のLINE実装・AUTO-COM-001のAnthropic実装と同じ『HTTP Request＋Credential』の house style）で実装しており、公式Slackノードは使用していない\n- 署名検証のHMACアルゴリズム自体・Cryptoノードの`encoding:'HEX'`指定が実際に機能するかは[要公式確認][要インスタンス確認]\n- Notionページ作成時のparent形式（database_id/data_source_id）は[要公式確認]\n- 【2026-09-27対応済み】Slack Event Subscriptions設定時の`url_verification`チャレンジ応答は`IF: url_verificationチャレンジか`→`Respond to Webhook: url_verificationチャレンジ応答`で実装した。ただし`Respond to Webhook`ノード自体の型・パラメータ（`n8n-nodes-base.respondToWebhook`）、JSON応答（`{challenge:...}`）か平文応答が正しいか、`responseMode:'responseNode'`変更後もワークフロー全体が正常に継続実行されるかは、いずれも[要インスタンス確認][要公式確認]のまま（該当ノードのnotes参照）\n- 本ドラフトは`[実行環境なしのため未テスト]`。すべての未確認事項は`workflow-design.md`「分類」節も参照"
+        "content": "## AUTO-SLK-001 Slack案件管理・自動記録（ドラフトv2）\n\n設計書：`n8n-automation/docs/cases/AUTO-SLK-001/workflow-design.md`（エイト、2026-09-27）。出典：`logs/kohomada_2026-09-26_Slack業務管理自動化_改善提案_v2.md`（T225 v2）・`logs/kohomada_2026-09-26_Slack業務管理自動化_設計提案_v5.md`（T224）。\n\n### 全体の流れ\n📋検知→**署名検証（HMAC-SHA256、2026-09-27追加）**→許可リスト判定→スレッド取得→Bot発言除外・案件キー正規化→Notion重複判定→Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）→信頼度フォールバック分類→Notion Upsert→Slackリアクション・bot-log。\n\n### 【重要】本番接続前に必須の作業（[ユーザー入力待ち]多数）\n1. Slackアプリ（本番・検証）作成、Bot Token取得、`Slack_案件管理Bot_本番`Credential作成、**Signing Secretの取得・`crypto`種別Credentialへの設定**\n2. 実チャンネルID（`#kohomada-projects`）・実Bot User ID・社長のSlackユーザーIDへプレースホルダーを差し替え（本JSON中`C0SLKPROJPLACEHOLDER`等）\n3. 【2026-09-27対応済み】Notion「📋Slack案件管理・DB」をアイが実際に作成済み（データベースID d83d16ad-53c4-4dad-94fc-aa51c1868a85／データソースID 32cddaa6-6230-4a8b-9862-917d42668ef1）、本JSONへ反映済み。ただしステータスの選択肢は「未着手・進行中・完了」の3つしか作成できておらず（Notion APIのstatus型は選択肢の追加ができない仕様のため）、「社内確認待ち・先方回答待ち・保留・中止」の4つは社長がNotion UI上で追加する必要がある\n4. AUTO-COM-001の実ワークフローIDへ`slk001-claude-extract`のworkflowId欄を差し替え\n5. `validate-workflow.mjs`・`check-secrets.mjs`の実行（n8n-review、本ドラフトでは未実施）\n\n### 署名検証（2026-09-27追加、AUTO-CNT-002のLINE Cryptoノードパターンを踏襲）\n`X-Slack-Signature`／`X-Slack-Request-Timestamp`ヘッダを使い、Signing SecretでHMAC-SHA256検証する。検証失敗（署名不一致 or タイムスタンプが許容範囲外＝リプレイ攻撃疑い）の場合、以降の処理（許可リスト判定・Notion書き込み・Claude呼び出し）には一切進まず、bot-logへの通知のみ行って終了する。検証アルゴリズム自体は本セッションで一次情報を直接確認しておらず`[要公式確認]`（詳細は各ノードのnotes参照）。\n\n### 未確認事項（本体）\n- Slack Trigger/Slackノードの正確なtype・typeVersion・内部パラメータキー名は[要インスタンス確認][要公式確認]（改善提案v2 F1確認済みの『表示名』からの類推）。本ドラフトはSlack Web APIへの直接HTTP Request（AUTO-COM-002のLINE実装・AUTO-COM-001のAnthropic実装と同じ『HTTP Request＋Credential』の house style）で実装しており、公式Slackノードは使用していない\n- 署名検証のHMACアルゴリズム自体・Cryptoノードの`encoding:'HEX'`指定が実際に機能するかは[要公式確認][要インスタンス確認]\n- Notionページ作成時のparent形式（database_id/data_source_id）は[要公式確認]\n- 【2026-09-27対応済み】Slack Event Subscriptions設定時の`url_verification`チャレンジ応答は`IF: url_verificationチャレンジか`→`Respond to Webhook: url_verificationチャレンジ応答`で実装した。ただし`Respond to Webhook`ノード自体の型・パラメータ（`n8n-nodes-base.respondToWebhook`）、JSON応答（`{challenge:...}`）か平文応答が正しいか、`responseMode:'responseNode'`変更後もワークフロー全体が正常に継続実行されるかは、いずれも[要インスタンス確認][要公式確認]のまま（該当ノードのnotes参照）\n- 本ドラフトは`[実行環境なしのため未テスト]`。すべての未確認事項は`workflow-design.md`「分類」節も参照"
       }
     },
     {
@@ -19,14 +22,19 @@
       "name": "Webhook: Slack Events受信（reaction_added）",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-1300, 0],
+      "position": [
+        -1300,
+        0
+      ],
       "notes": "type/typeVersion(2.1)はn8n公式GitHub `packages/nodes-base/nodes/Webhook/Webhook.node.ts`で確認済み（AUTO-CNT-002での実績を踏襲、2026-08-10参照）。実装方針：公式Slack Triggerノード（n8n-nodes-base.slackTrigger）は本インスタンスでのtype文字列・typeVersion・内部パラメータキー名がいずれも[要インスタンス確認][要公式確認]（改善提案v2 F1は『表示名』のみ確認済みで内部キー名は未確認）であるため、`n8n-workflow-json.md`の『ノードパラメータの正確なキー名を推測で生成しない』原則に照らし、本ドラフトではSlack Events APIのWebhook直受信方式を採用した（workflow-design.mdの案の比較1『案B』相当。3.4.4bで検討した受付/処理分離構成をトリガー確実性の観点から前倒しで採用）。【2026-09-27更新・n8n-review指摘対応】`responseMode`を`'onReceived'`（固定・カスタマイズ不可の即時応答）から`'responseNode'`へ変更した。理由：Slack Events APIの`url_verification`チャレンジ（Slackアプリ設定時に送られる`{type:'url_verification',challenge:'...'}`）には、受信した`challenge`値をそのまま含む動的なレスポンス本文を返す必要があるが、`'onReceived'`モードは固定応答のみでリクエスト内容に応じた応答を返せない。`'responseNode'`モードでは、後続の`Respond to Webhook`ノード（`n8n-nodes-base.respondToWebhook`、[要インスタンス確認][要公式確認]、本セッションで型・typeVersion・パラメータキー名を一次情報で確認できていない）が実行された時点でHTTPレスポンスが送信される。Slackの3秒応答ルール（改善提案v2 F10）は、署名検証・url_verification判定の直後というワークフロー冒頭の早い段階に`Respond to Webhook`ノードを配置することで満たす設計とした（詳細は`IF: url_verificationチャレンジか`以降のノード群参照）。**`Respond to Webhook`ノード実行後もワークフローの残りのノードが継続実行されるか（n8nの一般的な仕様と認識しているが本セッションでは未検証）は`[要インスタンス確認]`のまま。実機確認が必須。** options.rawBody=trueは署名検証（`生ボディ抽出・署名情報抽出`→`Crypto: Slack署名HMAC計算`→`署名比較・タイムスタンプ検証`→`IF: 署名検証成功か`、2026-09-27実装）に必須（生の文字列でHMAC計算する必要があるため）。pathは仮値、Slack Event Subscriptions側のRequest URLに設定する必要がある（[ユーザー入力待ち]）。",
       "webhookId": "auto-slk-001-reaction-added",
       "parameters": {
         "httpMethod": "POST",
         "path": "slack-slk001-reaction-added",
         "responseMode": "responseNode",
-        "options": { "rawBody": true }
+        "options": {
+          "rawBody": true
+        }
       }
     },
     {
@@ -34,7 +42,10 @@
       "name": "生ボディ抽出・署名情報抽出",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-1160, 0],
+      "position": [
+        -1160,
+        0
+      ],
       "notes": "【2026-09-27追加・署名検証実装】Slack公式の署名検証方式（`X-Slack-Signature`／`X-Slack-Request-Timestamp`ヘッダ、basestring=`v0:{timestamp}:{raw_body}`をSigning SecretでHMAC-SHA256）は、Slack公式ドキュメント『Verifying requests from Slack』（docs.slack.dev）の一般的な実装知識に基づく。**本セッション中に同ページ本文を直接確認していないため`[要公式確認]`のまま実装した**（改善提案v2 F2・F4はSigning Secret自体の存在・n8n Slack Trigger機能内での署名検証提供は確認済みだが、本ドラフトのような手動実装の検証アルゴリズム自体の一次情報確認ではない）。実装パターンはAUTO-CNT-002『生ボディ抽出・キーワード判定（署名検証はCryptoノードへ分離）』ノードを踏襲（rawBody取得をbinary.dataから行い、JSON再パース・再シリアライズによる署名不一致を避けるため生文字列をそのままCryptoノードへ渡す）。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -47,9 +58,17 @@
       "name": "Crypto: Slack署名HMAC計算",
       "type": "n8n-nodes-base.crypto",
       "typeVersion": 2,
-      "position": [-1000, 0],
+      "position": [
+        -1000,
+        0
+      ],
       "notes": "【2026-09-27追加】type/typeVersion(2)・action='hmac'はAUTO-CNT-002『Crypto: LINE署名HMAC計算』ノードでn8n公式ドキュメント・公式GitHub（2026-08-15参照）により確認済みの値をそのまま踏襲。**`encoding: 'HEX'`は本ドラフトでの新規使用であり、n8n Crypto/HMACアクションが実際に`'HEX'`という値を受け付けるかは本インスタンス・公式ドキュメントいずれでも未確認`[要インスタンス確認][要公式確認]`**（AUTO-CNT-002はLINE向けに`'BASE64'`を使用しており確認済みだが、Slackの署名形式は16進数〈hex〉表記のため`'HEX'`相当の指定が必要）。value（`basestring`）は前段Codeノードが組み立てた`v0:{timestamp}:{rawBody}`をそのまま渡す（JSON再パース・再シリアライズによる不一致を避けるため）。Credential自体の新規作成（Slack Signing Secretの実値をhmacSecretに設定）は`[要ユーザー承認・未作成]`。",
-      "credentials": { "crypto": { "id": null, "name": "[要ユーザー承認・未作成] Slack Signing Secret (HMAC) - 案件管理Bot" } },
+      "credentials": {
+        "crypto": {
+          "id": null,
+          "name": "[要ユーザー承認・未作成] Slack Signing Secret (HMAC) - 案件管理Bot"
+        }
+      },
       "parameters": {
         "action": "hmac",
         "binaryData": false,
@@ -64,7 +83,10 @@
       "name": "署名比較・タイムスタンプ検証",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-840, 0],
+      "position": [
+        -840,
+        0
+      ],
       "notes": "computedSignatureHex（Cryptoノードが計算した16進数値）の先頭に`v0=`を付けてSlackの署名形式に整形し、`X-Slack-Signature`ヘッダの値と単純な文字列比較する。AUTO-CNT-002『署名比較（一致判定）』ノードと同じ制約（本インスタンスのCodeノードでは`require('crypto')`が禁止されているためNode.js `crypto.timingSafeEqual`による定数時間比較ができず、単純な文字列比較を許容範囲内のトレードオフとして採用。自己ホストの低トラフィックな社内ボット用途を踏まえた判断、残存リスクとして明記）。あわせてリプレイ攻撃対策として、タイムスタンプが現在時刻から一定範囲内であることを確認する（許容範囲300秒〈5分〉は`[要公式確認]`：Slack公式ドキュメントで一般的に推奨されるとされる値だが、本セッションでは一次情報を直接確認していない）。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -77,13 +99,28 @@
       "name": "IF: 署名検証成功か",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-680, 0],
+      "position": [
+        -680,
+        0
+      ],
       "notes": "署名不一致・タイムスタンプ不正（リプレイ攻撃疑い）のいずれかで検証失敗とし、以降の処理（Notion書き込み・Claude呼び出し）には一切進ませない。",
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
-            { "id": "slk001-cond-sig-valid", "leftValue": "={{ $json.validSignature === true }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+            {
+              "id": "slk001-cond-sig-valid",
+              "leftValue": "={{ $json.validSignature === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
           ],
           "combinator": "and"
         }
@@ -94,13 +131,28 @@
       "name": "IF: url_verificationチャレンジか",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-600, 0],
+      "position": [
+        -600,
+        0
+      ],
       "notes": "【2026-09-27追加・n8n-review指摘対応】Slack Events APIは、Slackアプリの『Enable Events』設定でRequest URLを保存する際、`{type:'url_verification', challenge:'<ランダム文字列>'}`という一度限りのリクエストを送り、応答本文にその`challenge`値がそのまま含まれることを要求する（一般的に知られるSlack公式仕様。本セッションではdocs.slack.dev本文を直接確認しておらず`[要公式確認]`のまま実装）。これが無いとRequest URLの保存自体ができず、reaction_addedイベントの受信を含めトリガーが一切有効化できない（n8n-review指摘の通り機能ブロッカー）。`parsedBody`は`生ボディ抽出・署名情報抽出`ノードでJSON.parse済みのものを、署名比較後も`{...d}`のスプレッドで保持されている前提で参照する（Cryptoノードが既存フィールドを保持する前提は`slk001-crypto-hmac`のnotesと同じ既知の未検証事項）。",
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
-            { "id": "slk001-cond-url-verification", "leftValue": "={{ $json.parsedBody && $json.parsedBody.type === 'url_verification' }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+            {
+              "id": "slk001-cond-url-verification",
+              "leftValue": "={{ $json.parsedBody && $json.parsedBody.type === 'url_verification' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
           ],
           "combinator": "and"
         }
@@ -111,7 +163,10 @@
       "name": "Respond to Webhook: url_verificationチャレンジ応答",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-440, -140],
+      "position": [
+        -440,
+        -140
+      ],
       "notes": "【2026-09-27追加・n8n-review指摘対応】type文字列（`n8n-nodes-base.respondToWebhook`）・typeVersion・パラメータキー名（`respondWith`/`responseBody`）はn8nエコシステムで一般的に知られる構造からの類推であり、本セッションでn8n公式ドキュメント・公式GitHubいずれも直接確認していないため`[要インスタンス確認][要公式確認]`。応答本文をJSON `{ challenge: <受信したchallenge値> }`とする実装を選んだが、Slack公式が平文（Content-Type: text/plain、本文=challenge値そのもの）のみを受け付ける可能性もあり、この点も`[要公式確認]`（実機確認時に平文応答への切替も検討すること）。",
       "parameters": {
         "respondWith": "json",
@@ -123,7 +178,10 @@
       "name": "NoOp: 完了（url_verification応答）",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [-280, -140],
+      "position": [
+        -280,
+        -140
+      ],
       "parameters": {}
     },
     {
@@ -131,7 +189,10 @@
       "name": "Respond to Webhook: 受付確認応答（即時ack）",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-440, 0],
+      "position": [
+        -440,
+        0
+      ],
       "notes": "【2026-09-27追加・n8n-review指摘対応】署名検証済み・url_verification以外（＝通常のreaction_addedイベント等）のリクエストに対し、後続の許可リスト判定・Slack/Notion/Claude呼び出し（数秒以上かかりうる）を待たずに即座に200 OKを返す。Slackの3秒応答ルールへの対応をn8nの暗黙の即時応答（旧`onReceived`モード）から、この明示的な`Respond to Webhook`ノードに置き換えた（詳細は`Webhook: Slack Events受信`ノードのnotes参照）。この応答後もワークフローが後続ノード（`入力検証・許可リスト判定`以降）を継続実行することを前提としており、この前提自体が`[要インスタンス確認]`。",
       "parameters": {
         "respondWith": "json",
@@ -143,7 +204,10 @@
       "name": "Respond to Webhook: 署名検証失敗応答",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-600, 220],
+      "position": [
+        -600,
+        220
+      ],
       "notes": "【2026-09-27追加・n8n-review指摘対応】`responseMode`を`'responseNode'`へ変更したことに伴い、署名検証失敗の経路でも明示的な応答が必要になったため追加（レスポンスコード・本文の詳細は`[要インスタンス確認]`、既定の200を想定）。リクエスト内容は信頼できないため、応答本文には`ok:false`以上の情報を含めない。",
       "parameters": {
         "respondWith": "json",
@@ -155,7 +219,10 @@
       "name": "署名検証失敗ログ整形",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-520, 220],
+      "position": [
+        -520,
+        220
+      ],
       "notes": "署名検証に失敗したリクエストはSlack本物からの発信と確認できないため、リクエスト内容（item/channel等）を信頼して使わない。bot-logへの通知のみ行い、以降の処理（リアクション付与等）は一切行わない。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -168,7 +235,10 @@
       "name": "Slack: chat.postMessage（bot-log、署名検証失敗）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [-360, 220],
+      "position": [
+        -360,
+        220
+      ],
       "notes": "#kohomada-bot-logの実チャンネルIDへ差し替え（[ユーザー入力待ち]、他のbot-logノードと同一プレースホルダー）。",
       "continueOnFail": true,
       "parameters": {
@@ -179,7 +249,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { channel: 'C0SLKBOTLOGPLACEHOLDER', text: $json.botLogLine } }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -187,7 +259,10 @@
       "name": "NoOp: 完了（署名検証失敗のため破棄）",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [-200, 220],
+      "position": [
+        -200,
+        220
+      ],
       "parameters": {}
     },
     {
@@ -195,7 +270,10 @@
       "name": "入力検証・許可リスト判定",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-1040, 0],
+      "position": [
+        -1040,
+        0
+      ],
       "notes": "Slack Events APIの`reaction_added`イベントペイロード構造（`event.user`/`event.reaction`/`event.item.channel`/`event.item.ts`/`event_id`）は改善提案v2 F6（docs.slack.dev本文読了）に基づく。チャンネル・ユーザー・絵文字の三重許可リスト判定（改善提案v2 3.1『絵文字を付ける人の制限』・3.7.3『事業間分離の二重の安全弁』）。すべて[ユーザー入力待ち]のプレースホルダー値を含む。【2026-09-27更新】署名検証済みリクエストのみここに到達する（`IF: 署名検証成功か`の真分岐）。パース済みイベント本体は`生ボディ抽出・署名情報抽出`ノードの`parsedBody`を明示参照する（同ノードでのJSON.parse結果を再利用し、二重パースを避ける）。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -208,12 +286,27 @@
       "name": "IF: 処理対象か",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-800, 0],
+      "position": [
+        -800,
+        0
+      ],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
-            { "id": "slk001-cond-target", "leftValue": "={{ $json.shouldProcess === true }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+            {
+              "id": "slk001-cond-target",
+              "leftValue": "={{ $json.shouldProcess === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
           ],
           "combinator": "and"
         }
@@ -224,7 +317,10 @@
       "name": "NoOp: 完了（対象外のためスキップ）",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [-560, 220],
+      "position": [
+        -560,
+        220
+      ],
       "parameters": {}
     },
     {
@@ -232,7 +328,10 @@
       "name": "Slack: conversations.replies（スレッド取得）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [-560, 0],
+      "position": [
+        -560,
+        0
+      ],
       "notes": "GET https://slack.com/api/conversations.replies （出典：改善提案v2 F7、docs.slack.dev本文読了。`ts`はスレッドの親または任意の返信メッセージのtsでよい＝返信側に📋が付いた場合も親を辿れる）。スコープ`channels:history`/`groups:history`が必要（3.7.1）。認証：predefinedCredentialType/slackApiでBot Tokenを想定（credentials未割当、[要ユーザー承認]）。limit=1000固定（本ドラフトはページング未実装、[未実装]、長大スレッドは`messageCount`超過時に将来増分方式へ、workflow-design.md 3.1参照）。",
       "continueOnFail": true,
       "parameters": {
@@ -241,12 +340,25 @@
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "slackApi",
         "sendQuery": true,
-        "queryParameters": { "parameters": [
-          { "name": "channel", "value": "={{ $json.itemChannel }}" },
-          { "name": "ts", "value": "={{ $json.itemTs }}" },
-          { "name": "limit", "value": "1000" }
-        ] },
-        "options": { "timeout": 60000 }
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $json.itemChannel }}"
+            },
+            {
+              "name": "ts",
+              "value": "={{ $json.itemTs }}"
+            },
+            {
+              "name": "limit",
+              "value": "1000"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -254,7 +366,10 @@
       "name": "Bot発言除外・スレッド正規化・案件キー生成",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-320, 0],
+      "position": [
+        -320,
+        0
+      ],
       "notes": "改善提案v2 3.1『Bot自身の投稿がスレッドに混ざる』『返信側に📋が付く』への対応。先頭メッセージのtsを案件キー（`slack:<channel_id>:<thread_ts>`）に正規化する（3.2.1システム欄）。直前ノード（IF: 処理対象か）を経由した`入力検証・許可リスト判定`の出力を明示参照する（AUTO-CNT-002 T115実機テストで確立した、暗黙のパススルーに依存しないパターンを踏襲）。author_role（owner/external/不明）の厳密な判定ロジック（Slackユーザー一覧との突合）は本ドラフトでは未実装のため暫定的に'unknown'とする（[要確認]、Claudeへは会話の文脈から推測させる前提。改善提案v2 3.3.3の設計と部分的に異なる簡略実装）。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -267,7 +382,10 @@
       "name": "Slack: chat.getPermalink（元Slackリンク取得）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [-80, 0],
+      "position": [
+        -80,
+        0
+      ],
       "notes": "GET https://slack.com/api/chat.getPermalink （出典：改善提案v2 F3、n8n公式ドキュメントでMessage > Get permalink操作の存在を確認済み。本ドラフトはSlack Web APIへの直接HTTP呼び出し方式のため、パラメータ名はSlack公式Web API仕様〈channel, message_ts〉に基づく）。",
       "continueOnFail": true,
       "parameters": {
@@ -276,11 +394,21 @@
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "slackApi",
         "sendQuery": true,
-        "queryParameters": { "parameters": [
-          { "name": "channel", "value": "={{ $json.itemChannel }}" },
-          { "name": "message_ts", "value": "={{ $json.threadTs }}" }
-        ] },
-        "options": { "timeout": 60000 }
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $json.itemChannel }}"
+            },
+            {
+              "name": "message_ts",
+              "value": "={{ $json.threadTs }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -288,18 +416,23 @@
       "name": "Notion: 案件キー検索（データソースクエリ）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [160, 0],
-      "notes": "POST /v1/data_sources/{data_source_id}/query （出典：改善提案v2 F14、Notion公式ドキュメント本文読了。`POST /v1/databases/{id}/query`はAPIバージョン2025-09-03で非推奨）。DATA_SOURCE_ID_PLACEHOLDERは`notion-database.md`のDB作成後に実IDへ差し替える（[ユーザー入力待ち]）。改善提案v2 3.2.2手順1。",
+      "position": [
+        160,
+        0
+      ],
+      "notes": "POST /v1/data_sources/{data_source_id}/query （出典：改善提案v2 F14、Notion公式ドキュメント本文読了。`POST /v1/databases/{id}/query`はAPIバージョン2025-09-03で非推奨）。実際のデータソースID（32cddaa6-6230-4a8b-9862-917d42668ef1、2026-09-27にアイが実際に作成した「📋 Slack案件管理・DB」）に差し替え済み。改善提案v2 3.2.2手順1。",
       "continueOnFail": true,
       "parameters": {
         "method": "POST",
-        "url": "https://api.notion.com/v1/data_sources/DATA_SOURCE_ID_PLACEHOLDER/query",
+        "url": "https://api.notion.com/v1/data_sources/32cddaa6-6230-4a8b-9862-917d42668ef1/query",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "notionApi",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { filter: { property: '案件キー', rich_text: { equals: $('Bot発言除外・スレッド正規化・案件キー生成').first().json.caseKey } }, page_size: 2 } }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -307,7 +440,10 @@
       "name": "検索結果判定・event_id重複チェック・モード決定",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [400, 0],
+      "position": [
+        400,
+        0
+      ],
       "notes": "改善提案v2 3.2.2手順2〜4（0件→新規／1件→更新／2件以上→書かずbot-logへ通知）と3.4.1（event_id重複排除）をあわせて実装。既存ページのシステム欄プロパティ名（`最終処理イベントID`・`AI要約`）は`notion-database.md`のプロパティ一覧と一致させている。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -320,14 +456,37 @@
       "name": "IF: 重複スキップか（event_id再送 or 案件キー衝突）",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [640, 0],
+      "position": [
+        640,
+        0
+      ],
       "notes": "改善提案v2 3.4.1（同一event_idの再送は即終了）・3.2.2手順4（案件キー2件以上は書かない）を統合した分岐。",
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
-            { "id": "slk001-cond-dup1", "leftValue": "={{ $json.isDuplicateEvent === true }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } },
-            { "id": "slk001-cond-dup2", "leftValue": "={{ $json.isDuplicateKeyConflict === true }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+            {
+              "id": "slk001-cond-dup1",
+              "leftValue": "={{ $json.isDuplicateEvent === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            },
+            {
+              "id": "slk001-cond-dup2",
+              "leftValue": "={{ $json.isDuplicateKeyConflict === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
           ],
           "combinator": "or"
         }
@@ -338,7 +497,10 @@
       "name": "NoOp: 完了（重複スキップ）",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [880, 220],
+      "position": [
+        880,
+        220
+      ],
       "parameters": {}
     },
     {
@@ -346,7 +508,10 @@
       "name": "Claude用プロンプト生成（system/userプロンプト・スキーマ埋め込み）",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 0],
+      "position": [
+        880,
+        0
+      ],
       "notes": "改善提案v2 3.3.3（プロンプト構造）をそのまま実装。`slk-extract v1.0`スキーマ（`docs/cases/AUTO-SLK-001/schema.json`の`_meta`を除いた内容と同一）をCodeノード内に定数として埋め込む（n8n Codeノードはファイルシステム参照を保証しないための標準的な実装パターン、AUTO-COM-001等の既存パターンと同様）。JST基準日の算出は本ドラフトでは簡略化（UTC日付をそのまま使用、[仮定][要確認]。正確なJST変換は本番実装時に要修正）。モデルはclaude-haiku-4-5第一候補（改善提案v2 3.3.3）、temperature=0、maxTokens=1500`[仮定]`。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -359,23 +524,44 @@
       "name": "Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
-      "position": [1120, 0],
+      "position": [
+        1120,
+        0
+      ],
       "notes": "AUTO-CNT-001／AUTO-CNT-002で実機確認済みの形式（typeVersion厳密に1、workflowIdは単純文字列、source='database'、直前アイテムがそのまま渡される）を踏襲。workflowIdはAUTO-COM-001実装（`workflows/draft/AUTO-COM-001_claude-api-subworkflow.json`）の実ワークフローIDへ差し替えること（[ユーザー入力待ち]）。渡される`outputSchema`は前段のCodeノードが埋め込んだ`slk-extract v1.0`。AUTO-COM-001側の2026-09-27拡張（本タスクで実装済み）が前提。",
       "continueOnFail": true,
-      "parameters": { "source": "database", "workflowId": "AUTO_COM_001_WORKFLOW_ID_PLACEHOLDER" }
+      "parameters": {
+        "source": "database",
+        "workflowId": "AUTO_COM_001_WORKFLOW_ID_PLACEHOLDER"
+      }
     },
     {
       "id": "slk001-if-claude-ok",
       "name": "IF: スキーマ検証・呼び出し成功判定",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1360, 0],
+      "position": [
+        1360,
+        0
+      ],
       "notes": "AUTO-COM-001は`outputSchema`指定時、JSON.parseに成功した場合のみ`parsed`キーを返す（成功時は`success:true`のまま）。ここでは`success===true`かつ`parsed`が存在することの両方を確認する（改善提案v2 3.3.4『スキーマ検証失敗』フォールバックへの分岐）。",
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
-            { "id": "slk001-cond-claude-ok", "leftValue": "={{ $json.success === true && !!$json.parsed }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+            {
+              "id": "slk001-cond-claude-ok",
+              "leftValue": "={{ $json.success === true && !!$json.parsed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
           ],
           "combinator": "and"
         }
@@ -386,7 +572,10 @@
       "name": "失敗時ログ整形",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1600, 220],
+      "position": [
+        1600,
+        220
+      ],
       "notes": "改善提案v2 3.3.4『スキーマ検証失敗／Claude失敗』行：Notionには書かず、⚠️を試み、bot-logに1行残す。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -399,7 +588,10 @@
       "name": "Slack: reactions.add（⚠️、失敗時）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1840, 220],
+      "position": [
+        1840,
+        220
+      ],
       "notes": "POST https://slack.com/api/reactions.add （出典：改善提案v2 F8）。`already_reacted`は成功扱い（3.1）。",
       "continueOnFail": true,
       "parameters": {
@@ -410,7 +602,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { channel: $json.itemChannel, timestamp: $json.itemTs, name: $json.reactionEmoji } }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -418,7 +612,10 @@
       "name": "Slack: chat.postMessage（bot-log、失敗時）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2080, 220],
+      "position": [
+        2080,
+        220
+      ],
       "notes": "POST https://slack.com/api/chat.postMessage。#kohomada-bot-logの実チャンネルIDへ差し替え（[ユーザー入力待ち]）。改善提案v2 3.4.3の書式。",
       "continueOnFail": true,
       "parameters": {
@@ -429,7 +626,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { channel: 'C0SLKBOTLOGPLACEHOLDER', text: $json.botLogLine } }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -437,7 +636,10 @@
       "name": "NoOp: 完了（失敗）",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [2320, 220],
+      "position": [
+        2320,
+        220
+      ],
       "parameters": {}
     },
     {
@@ -445,7 +647,10 @@
       "name": "Notion書き込みペイロード生成（フォールバック分岐含む）",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1600, 0],
+      "position": [
+        1600,
+        0
+      ],
       "notes": "改善提案v2 3.3.4のフォールバック表（正常／要確認／pii_detected非空／injection_suspected）を実装。AI欄・システム欄プロパティ名は`notion-database.md`の一覧と一致させている。人間欄プロパティ（`humanFieldsForCreate`）は新規作成時のみ使用し、更新時のPATCHペイロードには含めない（改善提案v2 3.2.2手順3）。信頼度閾値0.7は`[仮定]`。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -458,12 +663,27 @@
       "name": "IF: 新規 or 更新",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1840, 0],
+      "position": [
+        1840,
+        0
+      ],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
-            { "id": "slk001-cond-mode-new", "leftValue": "={{ $json.mode === 'new' }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+            {
+              "id": "slk001-cond-mode-new",
+              "leftValue": "={{ $json.mode === 'new' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
           ],
           "combinator": "and"
         }
@@ -474,8 +694,11 @@
       "name": "Notion: ページ作成（新規）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2080, -160],
-      "notes": "POST /v1/pages。[要公式確認] Notion APIバージョン2025-09-03以降のページ作成時のparent形式（`database_id`/`data_source_id`）は本セッションで未確認（改善提案v2 F14はクエリエンドポイントの変更のみ確認済み）。本ドラフトは暫定的に`database_id`を使用。NOTION_DATABASE_ID_PLACEHOLDERは実DB作成後に差し替える（[ユーザー入力待ち]）。人間欄（`humanFieldsForCreate`）とAI欄・システム欄（`properties`）を統合して初期値投入（改善提案v2 3.2.2手順2）。",
+      "position": [
+        2080,
+        -160
+      ],
+      "notes": "POST /v1/pages。[要公式確認] Notion APIバージョン2025-09-03以降のページ作成時のparent形式（`database_id`/`data_source_id`）は本セッションで未確認（改善提案v2 F14はクエリエンドポイントの変更のみ確認済み）。本ドラフトは暫定的に`database_id`を使用。実データベースID（d83d16ad-53c4-4dad-94fc-aa51c1868a85）に差し替え済み。人間欄（`humanFieldsForCreate`）とAI欄・システム欄（`properties`）を統合して初期値投入（改善提案v2 3.2.2手順2）。",
       "continueOnFail": true,
       "parameters": {
         "method": "POST",
@@ -484,8 +707,10 @@
         "nodeCredentialType": "notionApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { parent: { database_id: 'NOTION_DATABASE_ID_PLACEHOLDER' }, properties: Object.assign({}, $json.humanFieldsForCreate, $json.properties) } }}",
-        "options": { "timeout": 60000 }
+        "jsonBody": "={{ { parent: { database_id: 'd83d16ad-53c4-4dad-94fc-aa51c1868a85' }, properties: Object.assign({}, $json.humanFieldsForCreate, $json.properties) } }}",
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -493,7 +718,10 @@
       "name": "Notion: ページ更新（AI欄・システム欄のみ）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2080, 160],
+      "position": [
+        2080,
+        160
+      ],
       "notes": "PATCH /v1/pages/{page_id}。人間欄はpropertiesに含めない（含めなければ変更されない、改善提案v2 3.2.2手順3）。",
       "continueOnFail": true,
       "parameters": {
@@ -504,7 +732,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { properties: $json.properties } }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -512,7 +742,10 @@
       "name": "Slack反応・bot-log本文の確定",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2320, 0],
+      "position": [
+        2320,
+        0
+      ],
       "notes": "新規作成／更新いずれのNotion書き込み結果もここへ合流する（n8nの複数ソース→同一ターゲット接続、Mergeノード不使用）。Notion書き込み自体が失敗した場合は⚠️へ格上げする（改善提案v2 3.4.3）。直前ノードの出力ではなく`Notion書き込みペイロード生成`を明示参照してreactionEmoji/botLogLineの既定値を取得する（AUTO-CNT-002パターン踏襲）。",
       "parameters": {
         "mode": "runOnceForAllItems",
@@ -525,7 +758,10 @@
       "name": "Slack: reactions.add（結果に応じたリアクション）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2560, 0],
+      "position": [
+        2560,
+        0
+      ],
       "notes": "POST https://slack.com/api/reactions.add。`already_reacted`は成功扱い（改善提案v2 F8・3.1）。",
       "continueOnFail": true,
       "parameters": {
@@ -536,7 +772,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { channel: $json.itemChannel, timestamp: $json.itemTs, name: $json.reactionEmoji } }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -544,7 +782,10 @@
       "name": "Slack: chat.postMessage（bot-log）",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2800, 0],
+      "position": [
+        2800,
+        0
+      ],
       "notes": "POST https://slack.com/api/chat.postMessage。#kohomada-bot-logの実チャンネルIDへ差し替え（[ユーザー入力待ち]、失敗時ノードと同一プレースホルダー）。",
       "continueOnFail": true,
       "parameters": {
@@ -555,7 +796,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { channel: 'C0SLKBOTLOGPLACEHOLDER', text: $json.botLogLine } }}",
-        "options": { "timeout": 60000 }
+        "options": {
+          "timeout": 60000
+        }
       }
     },
     {
@@ -563,61 +806,410 @@
       "name": "NoOp: 完了（成功）",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [3040, 0],
+      "position": [
+        3040,
+        0
+      ],
       "parameters": {}
     }
   ],
   "connections": {
-    "Webhook: Slack Events受信（reaction_added）": { "main": [[{ "node": "生ボディ抽出・署名情報抽出", "type": "main", "index": 0 }]] },
-    "生ボディ抽出・署名情報抽出": { "main": [[{ "node": "Crypto: Slack署名HMAC計算", "type": "main", "index": 0 }]] },
-    "Crypto: Slack署名HMAC計算": { "main": [[{ "node": "署名比較・タイムスタンプ検証", "type": "main", "index": 0 }]] },
-    "署名比較・タイムスタンプ検証": { "main": [[{ "node": "IF: 署名検証成功か", "type": "main", "index": 0 }]] },
-    "IF: 署名検証成功か": { "main": [
-      [{ "node": "IF: url_verificationチャレンジか", "type": "main", "index": 0 }],
-      [{ "node": "Respond to Webhook: 署名検証失敗応答", "type": "main", "index": 0 }]
-    ] },
-    "IF: url_verificationチャレンジか": { "main": [
-      [{ "node": "Respond to Webhook: url_verificationチャレンジ応答", "type": "main", "index": 0 }],
-      [{ "node": "Respond to Webhook: 受付確認応答（即時ack）", "type": "main", "index": 0 }]
-    ] },
-    "Respond to Webhook: url_verificationチャレンジ応答": { "main": [[{ "node": "NoOp: 完了（url_verification応答）", "type": "main", "index": 0 }]] },
-    "Respond to Webhook: 受付確認応答（即時ack）": { "main": [[{ "node": "入力検証・許可リスト判定", "type": "main", "index": 0 }]] },
-    "Respond to Webhook: 署名検証失敗応答": { "main": [[{ "node": "署名検証失敗ログ整形", "type": "main", "index": 0 }]] },
-    "署名検証失敗ログ整形": { "main": [[{ "node": "Slack: chat.postMessage（bot-log、署名検証失敗）", "type": "main", "index": 0 }]] },
-    "Slack: chat.postMessage（bot-log、署名検証失敗）": { "main": [[{ "node": "NoOp: 完了（署名検証失敗のため破棄）", "type": "main", "index": 0 }]] },
-    "入力検証・許可リスト判定": { "main": [[{ "node": "IF: 処理対象か", "type": "main", "index": 0 }]] },
-    "IF: 処理対象か": { "main": [
-      [{ "node": "Slack: conversations.replies（スレッド取得）", "type": "main", "index": 0 }],
-      [{ "node": "NoOp: 完了（対象外のためスキップ）", "type": "main", "index": 0 }]
-    ] },
-    "Slack: conversations.replies（スレッド取得）": { "main": [[{ "node": "Bot発言除外・スレッド正規化・案件キー生成", "type": "main", "index": 0 }]] },
-    "Bot発言除外・スレッド正規化・案件キー生成": { "main": [[{ "node": "Slack: chat.getPermalink（元Slackリンク取得）", "type": "main", "index": 0 }]] },
-    "Slack: chat.getPermalink（元Slackリンク取得）": { "main": [[{ "node": "Notion: 案件キー検索（データソースクエリ）", "type": "main", "index": 0 }]] },
-    "Notion: 案件キー検索（データソースクエリ）": { "main": [[{ "node": "検索結果判定・event_id重複チェック・モード決定", "type": "main", "index": 0 }]] },
-    "検索結果判定・event_id重複チェック・モード決定": { "main": [[{ "node": "IF: 重複スキップか（event_id再送 or 案件キー衝突）", "type": "main", "index": 0 }]] },
-    "IF: 重複スキップか（event_id再送 or 案件キー衝突）": { "main": [
-      [{ "node": "NoOp: 完了（重複スキップ）", "type": "main", "index": 0 }],
-      [{ "node": "Claude用プロンプト生成（system/userプロンプト・スキーマ埋め込み）", "type": "main", "index": 0 }]
-    ] },
-    "Claude用プロンプト生成（system/userプロンプト・スキーマ埋め込み）": { "main": [[{ "node": "Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）", "type": "main", "index": 0 }]] },
-    "Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）": { "main": [[{ "node": "IF: スキーマ検証・呼び出し成功判定", "type": "main", "index": 0 }]] },
-    "IF: スキーマ検証・呼び出し成功判定": { "main": [
-      [{ "node": "Notion書き込みペイロード生成（フォールバック分岐含む）", "type": "main", "index": 0 }],
-      [{ "node": "失敗時ログ整形", "type": "main", "index": 0 }]
-    ] },
-    "失敗時ログ整形": { "main": [[{ "node": "Slack: reactions.add（⚠️、失敗時）", "type": "main", "index": 0 }]] },
-    "Slack: reactions.add（⚠️、失敗時）": { "main": [[{ "node": "Slack: chat.postMessage（bot-log、失敗時）", "type": "main", "index": 0 }]] },
-    "Slack: chat.postMessage（bot-log、失敗時）": { "main": [[{ "node": "NoOp: 完了（失敗）", "type": "main", "index": 0 }]] },
-    "Notion書き込みペイロード生成（フォールバック分岐含む）": { "main": [[{ "node": "IF: 新規 or 更新", "type": "main", "index": 0 }]] },
-    "IF: 新規 or 更新": { "main": [
-      [{ "node": "Notion: ページ作成（新規）", "type": "main", "index": 0 }],
-      [{ "node": "Notion: ページ更新（AI欄・システム欄のみ）", "type": "main", "index": 0 }]
-    ] },
-    "Notion: ページ作成（新規）": { "main": [[{ "node": "Slack反応・bot-log本文の確定", "type": "main", "index": 0 }]] },
-    "Notion: ページ更新（AI欄・システム欄のみ）": { "main": [[{ "node": "Slack反応・bot-log本文の確定", "type": "main", "index": 0 }]] },
-    "Slack反応・bot-log本文の確定": { "main": [[{ "node": "Slack: reactions.add（結果に応じたリアクション）", "type": "main", "index": 0 }]] },
-    "Slack: reactions.add（結果に応じたリアクション）": { "main": [[{ "node": "Slack: chat.postMessage（bot-log）", "type": "main", "index": 0 }]] },
-    "Slack: chat.postMessage（bot-log）": { "main": [[{ "node": "NoOp: 完了（成功）", "type": "main", "index": 0 }]] }
+    "Webhook: Slack Events受信（reaction_added）": {
+      "main": [
+        [
+          {
+            "node": "生ボディ抽出・署名情報抽出",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生ボディ抽出・署名情報抽出": {
+      "main": [
+        [
+          {
+            "node": "Crypto: Slack署名HMAC計算",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crypto: Slack署名HMAC計算": {
+      "main": [
+        [
+          {
+            "node": "署名比較・タイムスタンプ検証",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "署名比較・タイムスタンプ検証": {
+      "main": [
+        [
+          {
+            "node": "IF: 署名検証成功か",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: 署名検証成功か": {
+      "main": [
+        [
+          {
+            "node": "IF: url_verificationチャレンジか",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook: 署名検証失敗応答",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: url_verificationチャレンジか": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook: url_verificationチャレンジ応答",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook: 受付確認応答（即時ack）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook: url_verificationチャレンジ応答": {
+      "main": [
+        [
+          {
+            "node": "NoOp: 完了（url_verification応答）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook: 受付確認応答（即時ack）": {
+      "main": [
+        [
+          {
+            "node": "入力検証・許可リスト判定",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook: 署名検証失敗応答": {
+      "main": [
+        [
+          {
+            "node": "署名検証失敗ログ整形",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "署名検証失敗ログ整形": {
+      "main": [
+        [
+          {
+            "node": "Slack: chat.postMessage（bot-log、署名検証失敗）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: chat.postMessage（bot-log、署名検証失敗）": {
+      "main": [
+        [
+          {
+            "node": "NoOp: 完了（署名検証失敗のため破棄）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "入力検証・許可リスト判定": {
+      "main": [
+        [
+          {
+            "node": "IF: 処理対象か",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: 処理対象か": {
+      "main": [
+        [
+          {
+            "node": "Slack: conversations.replies（スレッド取得）",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoOp: 完了（対象外のためスキップ）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: conversations.replies（スレッド取得）": {
+      "main": [
+        [
+          {
+            "node": "Bot発言除外・スレッド正規化・案件キー生成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bot発言除外・スレッド正規化・案件キー生成": {
+      "main": [
+        [
+          {
+            "node": "Slack: chat.getPermalink（元Slackリンク取得）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: chat.getPermalink（元Slackリンク取得）": {
+      "main": [
+        [
+          {
+            "node": "Notion: 案件キー検索（データソースクエリ）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: 案件キー検索（データソースクエリ）": {
+      "main": [
+        [
+          {
+            "node": "検索結果判定・event_id重複チェック・モード決定",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "検索結果判定・event_id重複チェック・モード決定": {
+      "main": [
+        [
+          {
+            "node": "IF: 重複スキップか（event_id再送 or 案件キー衝突）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: 重複スキップか（event_id再送 or 案件キー衝突）": {
+      "main": [
+        [
+          {
+            "node": "NoOp: 完了（重複スキップ）",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Claude用プロンプト生成（system/userプロンプト・スキーマ埋め込み）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude用プロンプト生成（system/userプロンプト・スキーマ埋め込み）": {
+      "main": [
+        [
+          {
+            "node": "Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude抽出（AUTO-COM-001経由、outputSchema=slk-extract v1.0）": {
+      "main": [
+        [
+          {
+            "node": "IF: スキーマ検証・呼び出し成功判定",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: スキーマ検証・呼び出し成功判定": {
+      "main": [
+        [
+          {
+            "node": "Notion書き込みペイロード生成（フォールバック分岐含む）",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "失敗時ログ整形",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "失敗時ログ整形": {
+      "main": [
+        [
+          {
+            "node": "Slack: reactions.add（⚠️、失敗時）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: reactions.add（⚠️、失敗時）": {
+      "main": [
+        [
+          {
+            "node": "Slack: chat.postMessage（bot-log、失敗時）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: chat.postMessage（bot-log、失敗時）": {
+      "main": [
+        [
+          {
+            "node": "NoOp: 完了（失敗）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion書き込みペイロード生成（フォールバック分岐含む）": {
+      "main": [
+        [
+          {
+            "node": "IF: 新規 or 更新",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: 新規 or 更新": {
+      "main": [
+        [
+          {
+            "node": "Notion: ページ作成（新規）",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notion: ページ更新（AI欄・システム欄のみ）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: ページ作成（新規）": {
+      "main": [
+        [
+          {
+            "node": "Slack反応・bot-log本文の確定",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion: ページ更新（AI欄・システム欄のみ）": {
+      "main": [
+        [
+          {
+            "node": "Slack反応・bot-log本文の確定",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack反応・bot-log本文の確定": {
+      "main": [
+        [
+          {
+            "node": "Slack: reactions.add（結果に応じたリアクション）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: reactions.add（結果に応じたリアクション）": {
+      "main": [
+        [
+          {
+            "node": "Slack: chat.postMessage（bot-log）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: chat.postMessage（bot-log）": {
+      "main": [
+        [
+          {
+            "node": "NoOp: 完了（成功）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

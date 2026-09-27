@@ -25,12 +25,12 @@
 | # | 項目 | 現状 | 誰が行うか | 備考 |
 |---|---|---|---|---|
 | A1 | n8nインスタンスへの接続情報（`N8N_BASE_URL`・`N8N_API_KEY`） | 本セッションには未設定（`.env`不在を確認済み） | **社長**：Claude Codeのこのクラウド環境の設定（画面上部のメニュー→環境の編集）から、環境変数として追加していただく必要がある。**チャットにキーを直接貼らないでください**。追加後、新しいセッションから反映される | これがあれば、以降の登録・テスト実行はアイが直接n8n APIを叩いて代行できる（2026-08-15社長承認済みの自動化方針の範囲内）。用意しない場合はB案（社長ご自身がn8n UIで手動インポート）になる |
-| A2 | Slackアプリの新規作成（本番用・検証用の2つ、Q6） | 未作成 | **社長**（Slack管理者操作） | Bot Token Scopes：`reactions:read`・`reactions:write`・`channels:history`・`chat:write`・`users:read.email`等（詳細はAUTO-SLK-001/002のCredentialマッピング表）。Signing Secret取得も必須（署名検証に使用） |
+| A2 | Slackアプリの新規作成（本番用・検証用の2つ、Q6確定） | 未作成 | **社長**（Slack管理者操作） | Bot Token Scopes：`reactions:read`・`reactions:write`・`channels:history`・`chat:write`・`users:read.email`等（詳細はAUTO-SLK-001/002のCredentialマッピング表）。Signing Secret取得も必須（署名検証に使用） |
 | A3 | Slack Event Subscriptions設定（Request URL登録） | 未実施 | **社長**（A1でアイがワークフローを本番登録した後、そのWebhook URLをここに設定） | 今回実装した`url_verification`チャレンジ応答が正しく動けば、URL保存時に自動で検証が通る想定。**初回はここで実機確認が必要** |
 | A4 | `#kohomada-projects`・`#kohomada-notes`チャンネルへのBot招待 | 未実施 | **社長** | 招待しないとBotがイベントを受け取れない |
-| A5 | Notion統合（Integration）の新規作成（Q5） | 未作成 | **社長**（Notion管理画面での作成）またはアイが代行可能な範囲を切り分けて相談 | 「📋Slack案件管理・DB」専用に新規作成するか、既存「Notion - n8n」を流用するかは**Q5の回答待ち** |
-| A6 | Notion「📋Slack案件管理・DB」の新規作成 | 未作成 | アイが代行可能（Notion統合済みなら） | 手順は`n8n-automation/docs/cases/AUTO-SLK-001/notion-database.md`に作成済み |
-| A7 | Notion「📌Slack決定事項・DB」の新規作成 | 未作成 | アイが代行可能（Notion統合済みなら） | Q4で確定した新規DB。手順は`AUTO-SLK-002/workflow-design.md`参照 |
+| A5 | Notion統合（Integration）の新規作成（Q5確定：専用作成） | **未作成（要社長操作）** | **社長**（Notion管理画面での作成） | n8nワークフロー自身がSlack案件DB・決定事項DBへ書き込む際に使う専用のNotion統合キー。アイ自身のNotion接続とは別物で、n8n側にAPIキーとして設定する必要があるため、社長の操作が必須 |
+| A6 | Notion「📋Slack案件管理・DB」の新規作成 | ✅ **2026-09-27完成**（アイが実施） | 完了 | データベースID`d83d16ad-53c4-4dad-94fc-aa51c1868a85`。ワークフローJSONにも実ID反映済み。**残作業1点**：「ステータス」プロパティに`社内確認待ち`・`先方回答待ち`・`保留`・`中止`の4選択肢追加が必要（NotionのAPIが既存statusへの選択肢追加に対応していないため、社長がNotion UI上で追加） |
+| A7 | Notion「📌Slack決定事項・DB」の新規作成 | ✅ **2026-09-27完成**（アイが実施） | 完了 | データベースID`d3287c2c-507b-47f9-9dea-a59ac9b79ecb`。📋案件DBへの「関連案件」リレーションも設定済み。ワークフローJSONにも実ID反映済み |
 | A8 | Anthropic APIのCredential共用可否 | 既存「Anthropic - n8n」の共用を想定 | **社長の確認** | 新規Credentialを別途作る必要はない想定だが、共用してよいかの一言確認が欲しい |
 
 ---

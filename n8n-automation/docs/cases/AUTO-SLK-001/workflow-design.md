@@ -150,7 +150,7 @@
 | Slack Credential（本番） | `#kohomada-projects`のイベント検知・リアクション付与・bot-log投稿 | `Slack_案件管理Bot_本番`（新規作成想定、実ID`[ユーザー入力待ち]`） |
 | Slack Credential（検証） | ドライラン・テスト用 | `Slack_案件管理Bot_検証`（新規作成想定） |
 | `anthropicApi` | Claude抽出呼び出し（AUTO-COM-001経由） | 既存「Anthropic - n8n」を想定。実際に共用するかは`[要確認/社長]` |
-| Notion Credential | 「📋Slack案件管理・DB」への読み書き | 改善提案v2 P20推奨の新規統合（`Notion_Slack案件DB_本番`）、実ID`[ユーザー入力待ち]` |
+| Notion Credential | 「📋Slack案件管理・DB」への読み書き | DB自体は2026-09-27作成済み（データベースID`d83d16ad-53c4-4dad-94fc-aa51c1868a85`／データソースID`32cddaa6-6230-4a8b-9862-917d42668ef1`）。n8nワークフロー実行用の専用Notion統合（`Notion_Slack案件DB_本番`）の作成と、このDBへの共有設定は**社長操作が必要**（`[ユーザー入力待ち]`） |
 
 ## 分類
 

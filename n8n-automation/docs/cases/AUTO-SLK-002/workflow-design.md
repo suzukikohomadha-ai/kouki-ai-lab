@@ -101,7 +101,7 @@ AUTO-SLK-001と同型のパイプライン（Slack Trigger→対象判定→ス�
 |---|---|---|
 | Slack Credential | `#kohomada-notes`のイベント検知・リアクション付与 | AUTO-SLK-001と同一Botの想定（実ID`[ユーザー入力待ち]`） |
 | `anthropicApi` | Claude抽出呼び出し（AUTO-COM-001経由） | AUTO-SLK-001と共用想定 |
-| Notion Credential | 「📌Slack決定事項・DB」への書き込み | `Notion_Slack決定事項DB_本番`（新規作成想定、AUTO-SLK-001とは別のCredentialとして分離、確定。実ID`[ユーザー入力待ち]`） |
+| Notion Credential | 「📌Slack決定事項・DB」への書き込み | DB自体は2026-09-27作成済み（データベースID`d3287c2c-507b-47f9-9dea-a59ac9b79ecb`／データソースID`4cffb460-945c-4ac7-9137-8742a88933c8`、📋案件DBへの「関連案件」リレーション設定済み）。n8nワークフロー実行用の専用Notion統合（`Notion_Slack決定事項DB_本番`、AUTO-SLK-001とは別のCredentialとして分離）の作成は**社長操作が必要**（`[ユーザー入力待ち]`） |
 
 ## リスク・注意点
 

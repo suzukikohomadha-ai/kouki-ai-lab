@@ -1,6 +1,6 @@
-# 静的検証結果: workflows/draft/AUTO-SLK-002_slack-decision-log.json
+# 静的検証結果: n8n-automation/workflows/validated/AUTO-SLK-002_slack-decision-log.json
 
-検証日時: 2026-09-27T11:49:45.563Z
+検証日時: 2026-09-27T22:16:32.385Z
 結果: 重大な問題なし
 
 ## エラー (0)
