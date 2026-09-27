@@ -1,0 +1,363 @@
+{
+  "note": "架空のテストデータ（合成データ）。実在する顧客名・会社名・個人名・電話番号・メールアドレスは一切含みません。すべて[実行環境なしのため未テスト]（n8nインスタンス・Anthropic API・Notion API・Google Sheets APIへの実送信・実書き込みは未実施）。管理ID：AUTO-SLK-003。出典：logs/kohomada_2026-09-26_フェーズ1.5詳細設計_v1.md（T227）4節の17ケースをそのまま合成データ化したもの。スキーマはdocs/cases/AUTO-SLK-003/schema.json（slk-extract v1.1）を前提とする。",
+  "schema_version": "slk-extract v1.1",
+  "cases": [
+    {
+      "id": "case-01",
+      "source_candidate": "#1（議事録・決定事項の社内記録、回帰確認のみ）",
+      "description": "議事録相当のSlack会話（📌想定）。フェーズ1.5のスキーマ変更がAUTO-SLK-002（決定事項抽出）の既存動作に影響しないことの回帰確認。新規テストではない。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-notes", "mode": "new" },
+        "thread": [
+          { "ts": "1758960000.000100", "author_role": "owner", "text": "📌 定例メモ：来月の展示会は架空商事株式会社ブースの隣に出す方向で決定。予算は前回と同額で進める。" },
+          { "ts": "1758960060.000200", "author_role": "owner", "text": "ブース装飾は来週までにカエデに相談する。" }
+        ]
+      },
+      "expected": {
+        "note": "本ケースはAUTO-SLK-002（決定事項抽出）の既存プロンプト・スキーマに対する回帰確認であり、v1.1の新規フィールド（contract_status_proposal等）が想定外の値を返さないこと（デフォルト・据え置き値になること）のみを確認する。新規アサーションは追加しない。"
+      }
+    },
+    {
+      "id": "case-02",
+      "description": "「これ来週までにやる」（社長タスク）と「リサに調べてもらおう」（AI割当）が同一スレッドに混在。owner_roleが正しく分岐し、AI割当側のみtask_categoryが設定されることを確認する。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758961000.000100", "author_role": "owner", "text": "架空貿易合同会社との新規案件、見積りは来週までに自分で作る。" },
+          { "ts": "1758961060.000200", "author_role": "owner", "text": "あと、東南アジアの類似市場の状況を一度リサに調べてもらおう。" }
+        ]
+      },
+      "expected": {
+        "next_actions_assertions": [
+          { "text_contains": "見積り", "owner_role": "社長", "kind": "internal_status_update", "task_category": "該当なし" },
+          { "text_contains": "市場", "owner_role": "AIチーム", "kind": "agent_task_candidate", "task_category": "市場調査" }
+        ],
+        "task_category_lookup_result": { "task_category": "市場調査", "担当社員候補": ["リサ"] }
+      }
+    },
+    {
+      "id": "case-03",
+      "description": "「〇〇から依頼きた」の新規案件。既存動作（フェーズ1相当）の回帰確認。新規スキーマの影響がないこと。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758962000.000100", "author_role": "external", "text": "架空フーズ株式会社の田中様（仮名）から、日本向け食品輸入の相談依頼が来ました。" }
+        ]
+      },
+      "expected": {
+        "title_contains": "架空フーズ",
+        "status_proposal": "未着手",
+        "contract_status_proposal": "該当なし",
+        "record_type_proposal": "案件",
+        "trade_terms": { "item": null, "quantity": null, "price_or_amount": null, "payment_terms": null }
+      }
+    },
+    {
+      "id": "case-04a",
+      "description": "「正式にお願いされた、受注です」（信頼度高パターン）。status_proposalが受注になること。ステータス実プロパティへは信頼度に関わらず一切書き込まれないこと。通知・リアクション等、記録以外の動作が発生しないこと（確認リマインド送信はフェーズ2のためスコープ外）。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "update" },
+        "thread": [
+          { "ts": "1758963000.000100", "author_role": "external", "text": "先ほど代表決裁が下り、正式に貴社へお願いすることになりました。受注ということでよろしくお願いします。" },
+          { "ts": "1758963060.000200", "author_role": "owner", "text": "ありがとうございます、承知しました。" }
+        ]
+      },
+      "expected": {
+        "status_proposal": "受注",
+        "overall_confidence_expected_range": [0.85, 1.0],
+        "notion_write_assertions": {
+          "AI提案ステータス": "受注",
+          "ステータス（人間欄・実プロパティ）": "変更されないこと（一切書き込みを行わない）",
+          "confirmation_reminder_sent": false
+        }
+      }
+    },
+    {
+      "id": "case-04b",
+      "description": "「正式にお願いされた、受注です」の信頼度低パターン（曖昧な文脈）。信頼度に関わらずステータス実プロパティへの自動書き込みが発生しないことを確認する。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "update" },
+        "thread": [
+          { "ts": "1758963500.000100", "author_role": "external", "text": "たぶんこれで進めることになると思います、正式な連絡は改めて。" }
+        ]
+      },
+      "expected": {
+        "status_proposal": "受注",
+        "overall_confidence_expected_range": [0.3, 0.6],
+        "ambiguities_non_empty": true,
+        "notion_write_assertions": {
+          "AI提案ステータス": "受注",
+          "要確認": true,
+          "ステータス（人間欄・実プロパティ）": "変更されないこと",
+          "confirmation_reminder_sent": false
+        }
+      }
+    },
+    {
+      "id": "case-05",
+      "description": "英文メールの引用＋「これ日本語で要約して」。immediate_action.kind:translation、output_markdownに要約が入ること、destinationが既定値どおり（notion_page固定）であること。外部調査を伴わないことの誤判定がないこと。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "update" },
+        "thread": [
+          { "ts": "1758964000.000100", "author_role": "external", "text": "Quoted email: \"We would like to confirm the shipment schedule for next month. Please advise the earliest available date.\"" },
+          { "ts": "1758964060.000200", "author_role": "owner", "text": "これ日本語で要約して" }
+        ]
+      },
+      "expected": {
+        "immediate_action": {
+          "requested": true,
+          "kind": "translation",
+          "output_markdown_non_null": true,
+          "destination": "notion_page（n8nルーターにより固定。Claude出力値に関わらず常にnotion_pageへ振り分け）"
+        },
+        "next_actions_agent_task_candidate_present": false
+      }
+    },
+    {
+      "id": "case-06",
+      "description": "「金曜まで」「月末締切」等の期限表現。既存deadlineロジックの回帰確認（新規スキーマの影響がないこと）。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758965000.000100", "author_role": "owner", "text": "この見積り、金曜までに先方へ送る。あと請求書の締めは月末。" }
+        ]
+      },
+      "expected": {
+        "deadline": { "date_is_absolute_jst_date": true, "source_text_contains": "金曜" }
+      }
+    },
+    {
+      "id": "case-07",
+      "description": "📋・📌の合図と長文の状況共有。既存AUTO-SLK-001の回帰確認。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758966000.000100", "author_role": "owner", "text": "📋 架空製造株式会社との共同開発案件、これまでの経緯を整理します。先方は年度内の量産化を希望していて、当社は仕様確認と原価計算を担当。次回打ち合わせは来月上旬予定。" }
+        ]
+      },
+      "expected": {
+        "title_contains": "架空製造",
+        "summary_non_empty": true,
+        "status_proposal_in_enum": true
+      }
+    },
+    {
+      "id": "case-08a",
+      "description": "整形依頼「これ表にまとめて」。immediate_action.kind:reformat_tableになること。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "update" },
+        "thread": [
+          { "ts": "1758967000.000100", "author_role": "external", "text": "候補品目はA商品、B商品、C商品で、数量はそれぞれ100・200・150です。" },
+          { "ts": "1758967060.000200", "author_role": "owner", "text": "これ表にまとめて" }
+        ]
+      },
+      "expected": {
+        "immediate_action": {
+          "requested": true,
+          "kind": "reformat_table",
+          "output_markdown_non_null": true,
+          "destination": "notion_page（n8nルーターにより固定）"
+        }
+      }
+    },
+    {
+      "id": "case-08b",
+      "description": "外部調査を要する依頼「この市場も調べて表にして」。immediate_action.requested:falseとなり、next_actions側でkind:agent_task_candidate・task_category:市場調査として扱われること（誤分類がないか）。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "update" },
+        "thread": [
+          { "ts": "1758967500.000100", "author_role": "owner", "text": "この東南アジアの市場も調べて表にしてほしい" }
+        ]
+      },
+      "expected": {
+        "immediate_action": { "requested": false, "kind": "none", "output_markdown": null },
+        "next_actions_assertions": [
+          { "kind": "agent_task_candidate", "task_category": "市場調査" }
+        ]
+      }
+    },
+    {
+      "id": "case-09",
+      "description": "「契約書送った」→後続スレッドで「先方から返送あった」。contract_status_proposalが送付済み→受領済みと正しく遷移すること。",
+      "input": {
+        "context_step1": { "today": "2026-09-20", "channel": "#kohomada-projects", "mode": "new" },
+        "thread_step1": [
+          { "ts": "1758270000.000100", "author_role": "owner", "text": "架空商事との契約書、先方へ送付しました。" }
+        ],
+        "context_step2": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "update" },
+        "thread_step2": [
+          { "ts": "1758960900.000100", "author_role": "owner", "text": "架空商事から署名済みの契約書が返送されてきました。" }
+        ]
+      },
+      "expected": {
+        "step1_contract_status_proposal": "送付済み",
+        "step2_contract_status_proposal": "受領済み"
+      }
+    },
+    {
+      "id": "case-10",
+      "description": "「クレーム来た」「不満そうだった」。record_type_proposalがクレーム・返品になること。『決定事項』という値が絶対に出力されないこと（enumに含めていないため構造的に保証されるはずだが、念のため確認）。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758968000.000100", "author_role": "external", "text": "納品した商品の一部に不良があったとクレームが来ました。かなり不満そうな口調でした。" }
+        ]
+      },
+      "expected": {
+        "record_type_proposal": "クレーム・返品",
+        "record_type_proposal_never_equals": "決定事項"
+      }
+    },
+    {
+      "id": "case-11",
+      "description": "「〇〇の市場調べて」。task_category:市場調査、n8nルックアップで担当社員候補がリサのみになること。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758969000.000100", "author_role": "owner", "text": "架空共和国の家電市場、一度調べておいてほしい。" }
+        ]
+      },
+      "expected": {
+        "next_actions_assertions": [
+          { "kind": "agent_task_candidate", "task_category": "市場調査" }
+        ],
+        "task_category_lookup_result": { "task_category": "市場調査", "担当社員候補": ["リサ"] }
+      }
+    },
+    {
+      "id": "case-12",
+      "description": "「新しく〇〇やりたい、事業計画まとめたい」。task_category:企画_事業計画、担当社員候補がレンのみになること。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758970000.000100", "author_role": "owner", "text": "新しく架空業界向けのサブスク型サービスをやりたい。事業計画をまとめてほしい。" }
+        ]
+      },
+      "expected": {
+        "next_actions_assertions": [
+          { "kind": "agent_task_candidate", "task_category": "企画_事業計画" }
+        ],
+        "task_category_lookup_result": { "task_category": "企画_事業計画", "担当社員候補": ["レン"] }
+      }
+    },
+    {
+      "id": "case-13a",
+      "description": "貿易商談（品目・数量・単価・決済条件がすべて会話に出る例）。trade_termsの各項目が会話にある分だけ埋まること。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758971000.000100", "author_role": "external", "text": "見積り条件：架空部品A、数量5,000個、単価USD 2.50、決済はL/C at sightでお願いします。" }
+        ]
+      },
+      "expected": {
+        "trade_terms": {
+          "item": "架空部品A",
+          "quantity": "5,000個",
+          "price_or_amount": "USD 2.50",
+          "payment_terms": "L/C at sight"
+        }
+      }
+    },
+    {
+      "id": "case-13b",
+      "description": "貿易商談（一部の情報しか会話に出ない例）。無い項目はnullのままであること（捏造がないこと）。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758971500.000100", "author_role": "external", "text": "架空部品Bを検討中ですが、数量・価格はまだ未定です。" }
+        ]
+      },
+      "expected": {
+        "trade_terms": {
+          "item": "架空部品B",
+          "quantity": null,
+          "price_or_amount": null,
+          "payment_terms": null
+        }
+      }
+    },
+    {
+      "id": "case-14a",
+      "description": "会話に新しい会社名・担当者名が出る例（表記「株式会社架空トレーディング」）。取引先マスタ新規タブへ登録される想定。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758972000.000100", "author_role": "external", "text": "はじめまして、株式会社架空トレーディングの担当・山田（仮名）と申します。" }
+        ]
+      },
+      "expected": {
+        "counterparty_org": "株式会社架空トレーディング",
+        "normalized_key": "架空トレーディング",
+        "sheets_write_assertion": "新規タブ「取引先マスタ【自動登録・確認待ち】」に新規行として追加される想定（既存3シートには一切書き込み・読み取りを行わない）"
+      }
+    },
+    {
+      "id": "case-14b",
+      "description": "同一会社の表記ゆれ（「架空トレーディング」、法人格表記なし）。正規化後の重複判定キーがcase-14aと一致し、新規タブ内で二重登録にならないこと。既存3シート（コンサル【案件】／プロジェクト【自社】／コネクション【一覧】）には一切書き込み・読み取りが行われないこと（追記専用ルールの検証）。",
+      "input": {
+        "context": { "today": "2026-09-28", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1759058400.000100", "author_role": "external", "text": "架空トレーディングの山田です、先日はありがとうございました。" }
+        ]
+      },
+      "expected": {
+        "counterparty_org": "架空トレーディング",
+        "normalized_key": "架空トレーディング",
+        "dedup_assertion": "case-14aの正規化キーと一致するため、新規タブ内で二重登録にならず、転記状況に注記のうえ扱われること（決定的一致のみ、推測結合は行わない）",
+        "existing_3_sheets_untouched": true
+      }
+    },
+    {
+      "id": "case-15",
+      "description": "「〇〇向けの提案書作りたい」。task_category:提案書_営業資料_会議資料、担当社員候補がレン・サトル・カエデの3名になること。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758973000.000100", "author_role": "owner", "text": "架空フーズ向けの提案書、そろそろ作りたい。" }
+        ]
+      },
+      "expected": {
+        "next_actions_assertions": [
+          { "kind": "agent_task_candidate", "task_category": "提案書_営業資料_会議資料" }
+        ],
+        "task_category_lookup_result": { "task_category": "提案書_営業資料_会議資料", "担当社員候補": ["レン", "サトル", "カエデ"] }
+      }
+    },
+    {
+      "id": "case-16",
+      "description": "「契約書きたので見といて」。task_category:契約書レビュー_法務相談、担当社員候補がリョウのみになること。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758974000.000100", "author_role": "external", "text": "契約書のドラフトを送付します。" },
+          { "ts": "1758974060.000200", "author_role": "owner", "text": "契約書きたので見といて。" }
+        ]
+      },
+      "expected": {
+        "next_actions_assertions": [
+          { "kind": "agent_task_candidate", "task_category": "契約書レビュー_法務相談" }
+        ],
+        "task_category_lookup_result": { "task_category": "契約書レビュー_法務相談", "担当社員候補": ["リョウ"] },
+        "contract_status_proposal": "送付済み"
+      }
+    },
+    {
+      "id": "case-17",
+      "description": "「この品目、輸入規制ある？」。task_category:海外法規制調査、担当社員候補がリサ・リョウの2名になること。ambiguitiesに外国法専門家確認必須相当の注記が入ること。",
+      "input": {
+        "context": { "today": "2026-09-27", "channel": "#kohomada-projects", "mode": "new" },
+        "thread": [
+          { "ts": "1758975000.000100", "author_role": "owner", "text": "架空共和国向けに架空部品Cを輸出したいんだけど、この品目、輸入規制ある？" }
+        ]
+      },
+      "expected": {
+        "next_actions_assertions": [
+          { "kind": "agent_task_candidate", "task_category": "海外法規制調査" }
+        ],
+        "task_category_lookup_result": { "task_category": "海外法規制調査", "担当社員候補": ["リサ", "リョウ"] },
+        "ambiguities_contains_note": "外国法専門家確認必須相当の注記（[外国法専門家確認必須]ラベル、evidence-policy.md 3節ラベル一覧）"
+      }
+    }
+  ],
+  "共通の採点基準": "logs/kohomada_2026-09-26_Slack業務管理自動化_改善提案_v2.md 3.3.5節を踏襲：enum一致・boolean一致は完全一致、捏造0件、担当社員候補にリスト外の名前が出力されないこと（担当社員候補はn8nのルックアップ結果でありClaude出力ではないため、この点はn8n側のコードテストとして別途確認）。合格基準（enum一致率・捏造件数の閾値）は[仮定]のまま、パイロットで調整する。"
+}
