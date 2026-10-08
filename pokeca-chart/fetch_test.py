@@ -19,7 +19,7 @@ import urllib.request
 import urllib.robotparser
 
 # ▼▼▼ ここだけ書き換えてください（店側が連絡を取れるメールアドレス） ▼▼▼
-CONTACT = "ここに連絡先メールアドレス"
+CONTACT = os.environ.get("POKECA_CONTACT", "ここに連絡先メールアドレス")
 # ▲▲▲ ここまで ▲▲▲
 
 USER_AGENT = "pokeca-kaitori-chart-test/0.1 (contact: " + CONTACT + ")"
