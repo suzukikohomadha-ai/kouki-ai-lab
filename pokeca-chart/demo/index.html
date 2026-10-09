@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ポケカ買取チャート（仮）UIデモ</title>
+<meta name="description" content="ポケモンカードの買取価格を毎日記録し、カードごと・収録弾ごとの推移をチャートで見られるサイトのUIデモ。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1p:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f4f6fb;--panel:#fff;--ink:#18203a;--muted:#4a546e;--line:#d5dae6;--chip:#eef1f8;
+  --head:#1e2f66;--accent:#1a4fa8;--frame:#ffcb1f;
+  --up:#b3211a;--up-bg:#fde7e4;--up-line:#d9291c;
+  --down:#1a4fa8;--down-bg:#e2ebfa;--down-line:#1e5bb8;
+  --flat:#4a546e;--flat-bg:#e8ebf3;--flat-line:#6b7591;
+  --warn-bg:#fff3c2;--warn-ink:#4a3a00;
+  --f-display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic",sans-serif;
+  --f-body:"M PLUS 1p","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;--r:8px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0f1424;--panel:#171e33;--ink:#e8ebf5;--muted:#9aa3bd;--line:#2a3350;--chip:#212a45;--head:#0b1330;--accent:#7ea2ff;
+  --up:#ff8a80;--up-bg:#3a1f26;--up-line:#ff6b6b;--down:#8ab4ff;--down-bg:#1c2b4d;--down-line:#6aa8ff;
+  --flat:#9aa3bd;--flat-bg:#212a45;--flat-line:#8089a6;--warn-bg:#3a3210;--warn-ink:#f4e3a1;color-scheme:dark}}
+:root[data-theme=dark]{
+  --bg:#0f1424;--panel:#171e33;--ink:#e8ebf5;--muted:#9aa3bd;--line:#2a3350;--chip:#212a45;--head:#0b1330;--accent:#7ea2ff;
+  --up:#ff8a80;--up-bg:#3a1f26;--up-line:#ff6b6b;--down:#8ab4ff;--down-bg:#1c2b4d;--down-line:#6aa8ff;
+  --flat:#9aa3bd;--flat-bg:#212a45;--flat-line:#8089a6;--warn-bg:#3a3210;--warn-ink:#f4e3a1;color-scheme:dark}
+/* 配色切替（緑＝上昇／赤＝下落） */
+:root[data-scheme=green]{--up:#0b6b3a;--up-bg:#dff3e7;--up-line:#12804a;--down:#b3211a;--down-bg:#fde7e4;--down-line:#d9291c}
+@media (prefers-color-scheme:dark){:root[data-scheme=green]:not([data-theme=light]){--up:#6fd9a0;--up-bg:#173a2a;--up-line:#4cc98a;--down:#ff8a80;--down-bg:#3a1f26;--down-line:#ff6b6b}}
+:root[data-scheme=green][data-theme=dark]{--up:#6fd9a0;--up-bg:#173a2a;--up-line:#4cc98a;--down:#ff8a80;--down-bg:#3a1f26;--down-line:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 var(--f-body)}
+a{color:var(--accent)}button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--up-line);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.demo-banner{background:var(--warn-bg);color:var(--warn-ink);font-size:13px;padding:8px 16px;text-align:center}
+header.top{position:sticky;top:0;z-index:5;background:var(--head);color:#fff;border-bottom:4px solid var(--frame)}
+.top-in{max-width:1240px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;min-height:44px;font:inherit;font-family:var(--f-display);font-size:18px;color:#fff;cursor:pointer;white-space:nowrap}
+.brand i{width:14px;height:14px;border-radius:50%;background:#d9291c;border:3px solid #fff;display:inline-block}
+nav{display:flex;gap:4px}
+nav button{background:transparent;color:#fff;border:0;border-radius:4px;padding:0 14px;min-height:44px;font-weight:700;cursor:pointer}
+nav button[aria-current=page]{background:var(--frame);color:#18203a}
+.searchbox{flex:1 1 260px;position:relative;min-width:0}
+.searchbox input{width:100%;min-height:44px;padding:0 14px;border:1px solid #7c89b5;border-radius:999px;background:#fff;color:#18203a}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 30px rgb(0 0 0/.18);max-height:60vh;overflow:auto}
+.suggest a{display:grid;grid-template-columns:1fr auto;gap:0 12px;padding:8px 12px;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+.suggest a:hover,.suggest a.on{background:var(--chip)}
+.suggest small{grid-column:1;color:var(--muted)}
+.upd{font-size:12px;color:#d5dcf0;font-family:var(--f-num)}
+.tgl{background:transparent;border:1px solid #7c89b5;color:#fff;border-radius:999px;min-height:36px;padding:0 12px;cursor:pointer;font-size:12px}
+main{max-width:1240px;margin:0 auto;padding:20px 16px 40px;display:grid;gap:26px}
+h1,h2,h3{margin:0;line-height:1.35}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(20px,3.6vw,28px);text-wrap:balance}
+h2{font-size:16px}h3{font-size:14px}
+.sub{color:var(--muted);font-size:12.5px}
+.crumb{font-size:13px}.crumb button{background:none;border:0;padding:0;min-height:32px;color:var(--accent);text-decoration:underline;cursor:pointer}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.panel.gold{border-top:4px solid var(--frame)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.tile .v{font-family:var(--f-num);font-size:20px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.idx-v{font-family:var(--f-num);font-size:34px;font-weight:600;line-height:1.1}
+.row{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.chip{font-family:var(--f-num);font-size:12.5px;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.chip.up{background:var(--up-bg);color:var(--up)}.chip.down{background:var(--down-bg);color:var(--down)}.chip.flat{background:var(--flat-bg);color:var(--flat)}
+.t-up{color:var(--up)}.t-down{color:var(--down)}.t-flat{color:var(--flat)}
+.note{font-size:12.5px;color:var(--muted);background:var(--chip);border-radius:6px;padding:8px 10px}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border:1px solid #c9a400;border-radius:6px;padding:12px 16px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{min-height:40px;padding:0 14px;border:1px solid var(--head);border-radius:999px;background:var(--panel);cursor:pointer;font-weight:500}
+.tab[aria-pressed=true]{background:var(--head);color:#fff}
+.shelf-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.series{margin-top:16px;font-size:12px;letter-spacing:.12em;color:var(--muted);font-weight:700}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:8px}
+.pack{display:grid;gap:2px;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--frame);border-radius:var(--r);padding:10px 14px;cursor:pointer;min-height:72px}
+.pack:hover{border-color:var(--accent);border-left-color:var(--frame)}
+.pack .code{font-family:var(--f-num);font-size:12px;color:var(--muted)}.pack .pn{font-weight:700;line-height:1.4}.pack .meta{font-size:12px;color:var(--muted)}
+.rank{display:grid}
+.rank button{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:48px;background:none;border:0;border-top:1px solid var(--line);padding:4px 0;text-align:left;cursor:pointer}
+.rank .nm{overflow:hidden}.rank .nm b{font-weight:500;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.rank small{color:var(--muted);font-size:12px;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.filters{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;font-size:13px}
+.filters select,.filters input{min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.filters input[type=number]{width:120px}
+.tbl{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{padding:4px 12px;text-align:left;border-top:1px solid var(--line);white-space:nowrap}
+thead th{background:var(--head);color:#fff;font-size:12px;border-top:0;padding:8px 12px;cursor:pointer;user-select:none}
+th.r,td.r{text-align:right}
+tbody tr:hover{background:var(--chip)}
+td .lk{background:none;border:0;padding:0;min-height:40px;color:var(--accent);text-decoration:underline;cursor:pointer;font-weight:500;text-align:left}
+.rar{display:inline-block;min-width:3.2em;text-align:center;font-family:var(--f-num);font-size:11.5px;padding:1px 6px;border-radius:4px;background:var(--chip)}
+.rar.hi{background:var(--frame);color:#18203a}
+.btn{min-height:44px;padding:0 18px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:999px;cursor:pointer}
+.btn.solid{background:var(--head);border-color:var(--head);color:#fff;font-weight:700}
+.btn.on{background:var(--frame);border-color:var(--head);color:#18203a;font-weight:500}
+.card-top{display:flex;flex-wrap:wrap;gap:16px}
+.cardface{flex:0 0 120px;aspect-ratio:63/88;border:6px solid var(--frame);border-radius:9px;background:var(--head);color:#fff;display:grid;align-content:center;justify-items:center;gap:4px;text-align:center;padding:8px}
+.cardface b{font-size:20px}.cardface span{font-family:var(--f-num);font-size:12px}
+.price-big{font-family:var(--f-num);font-size:36px;font-weight:500;line-height:1.1}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kv div{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px}
+.kv dt{font-size:12px;color:var(--muted)}.kv dd{margin:0;font-family:var(--f-num);font-size:19px}
+.chart svg{display:block;width:100%;height:auto}
+.hist{display:grid;grid-template-columns:80px 1fr 80px;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-family:var(--f-num)}
+.era{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;min-height:44px;padding:6px 14px;border-bottom:1px solid var(--line)}
+.era span.s{font-size:12px;font-weight:500;padding:3px 10px;border-radius:3px}
+.cal{display:grid;grid-template-columns:96px 1fr auto;gap:8px;align-items:center;min-height:44px;border-top:1px solid var(--line);padding:4px 0}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:44px;height:44px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font-size:18px;cursor:pointer}
+.empty{color:var(--muted);padding:24px;text-align:center}
+ul.plain{margin:0;padding-left:20px;display:grid;gap:4px}
+footer{background:var(--head);color:#d5dcf0;font-size:12px}
+footer div{max-width:1240px;margin:0 auto;padding:16px;display:grid;gap:4px}
+</style>
+</head>
+<body>
+<div class="demo-banner">UIデモ：カード名・型番・レアリティ・収録弾は実データです。<b>価格・前日比・店数・チャート・指数はすべてダミー</b>で、実際の買取価格ではありません。</div>
+<header class="top"><div class="top-in">
+  <button class="brand" id="go-top"><i></i><span>ポケカ買取チャート（仮）</span></button>
+  <nav aria-label="メイン"><button data-nav="top">トップ</button><button data-nav="boxes">BOX一覧</button><button data-nav="mine">マイコレクション</button></nav>
+  <div class="searchbox"><label for="q" class="sr" style="position:absolute;left:-9999px">カード名・型番で検索</label>
+    <input id="q" type="search" placeholder="カード名・型番で検索（例：ピカチュウ、134/103）" autocomplete="off"><div class="suggest" id="suggest" hidden></div></div>
+  <button class="tgl" id="scheme" aria-label="上昇と下落の配色を切り替える"></button>
+  <div class="upd">2026/10/08 03:00 更新（1日1回）</div>
+</div></header>
+<main id="view"><div class="empty">データを読み込んでいます…</div></main>
+<footer><div>
+  <span>当サイトは個人が運営する非公式サイトです。株式会社ポケモンおよび関係各社とは関係ありません。</span>
+  <span>カード画像は掲載していません。カード名などは各権利者の商標または登録商標です。</span>
+  <span>掲載している価格は参考値であり、買取価格を保証するものではありません。</span>
+</div></footer>
+
+<script>
+"use strict";
+/* ===== 基本 ===== */
+const TODAY = new Date(2026, 9, 8), DAYS = 120;
+const HI = new Set(["MUR","BWR","FUR","UR","HR","SAR","SSR","CSR","SR","AR","CHR","MA","S","A","K","ACE","PROMO"]);
+const ERAS = [["MEGA",0],["スカーレット&バイオレット",0],["ソード&シールド",0],["サン&ムーン",1],["XY・XY BREAK",1],["BW",1],["旧裏面（第1弾〜第4弾、ジム）",2],["neo",4],["カードe・VS・web",4],["ADV",4],["PCG",3],["DP・DPt",3],["LEGEND",4]];
+const ERA_ST = [["公開中（最大3店平均）","var(--head)","#fff"],["公開中（2店平均）","var(--head)","#fff"],["準備中（2店の見込み）","var(--frame)","#18203a"],["準備中（一部のカードのみ）","var(--frame)","#18203a"],["店を調査中","var(--flat-bg)","var(--ink)"]];
+const S = { sets: [], cards: [], byId: new Map(), bySet: new Map(), setMap: new Map(), vmc: new Map(), shelf: "pack", rank: "gain", period: 90, ready: false };
+const SP = { slug: null, sort: "price", dir: -1, rar: "", min: 0, limit: 200 };
+const store = (() => { const m = {}; return {
+  get(k) { try { return localStorage.getItem(k) ?? m[k] ?? null; } catch { return m[k] ?? null; } },
+  set(k, v) { m[k] = v; try { localStorage.setItem(k, v); } catch {} } }; })();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const yen = n => Math.round(n).toLocaleString("ja-JP") + "円";
+const pct = p => (p > 0 ? "+" : p < 0 ? "−" : "±") + Math.abs(p).toFixed(1) + "%";
+const tone = v => v > 0 ? "up" : v < 0 ? "down" : "flat";
+const dl = ago => { const d = new Date(TODAY); d.setDate(d.getDate() - ago); return (d.getMonth() + 1) + "/" + d.getDate(); };
+const $ = id => document.getElementById(id);
+
+/* ===== ダミー価格（カードIDから決まる。毎回同じ値） ===== */
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const step = v => { const s = v >= 5000 ? 100 : v >= 1000 ? 50 : v >= 100 ? 10 : 1; return Math.max(1, Math.round(v / s) * s); };
+function series(c) {
+  const r = rng(c[0] * 7919 + 13), base = c[5] || 1; let v = 1; const raw = [];
+  for (let t = 0; t < DAYS; t++) { if (r() < 0.6) v *= 1 + (r() - 0.5) * 0.08; raw.push(v); }
+  const k = base / raw[DAYS - 1]; return raw.map(x => step(x * k));
+}
+function vm(c) {
+  let m = S.vmc.get(c[0]); if (m) return m;
+  const h = c[0] % 10, r = rng(c[0] * 31 + 5);
+  const none = h === 0, gap = h === 1 ? 1 + Math.floor(r() * 3) : 0, stale = !none && gap > 0, ok = !none && !stale;
+  const s = series(c), li = DAYS - 1 - gap, last = s[li], prev = s[li - 1];
+  const back = n => { const b = s[li - n]; return b ? (last - b) / b * 100 : 0; };
+  const shops = none ? 1 : (c[0] % 3 === 0 ? 3 : 2), q = (c[0] % 7);
+  m = { c, id: c[0], s, none, stale, ok, gap, li, last, diff: last - prev, pct: prev ? (last - prev) / prev * 100 : 0,
+    p7: back(7), p30: back(30), shops, spread: q < 3 ? "小" : q < 6 ? "中" : "大", boost: ok && c[0] % 5 === 0 };
+  S.vmc.set(c[0], m); return m;
+}
+const chipHtml = (v, text) => `<span class="chip ${tone(v)}">${text}</span>`;
+const dayText = m => m.ok ? `${m.diff > 0 ? "▲ +" : m.diff < 0 ? "▼ −" : "± "}${yen(Math.abs(m.diff))}（${pct(m.pct)}）` : m.stale ? "本日は1店のみ" : "—";
+
+/* ===== チャート ===== */
+function lineChart(vals, labels, color, label) {
+  const W = 800, H = 260, L = 84, R = 12, T = 12, B = 30;
+  let lo = Math.min(...vals), hi = Math.max(...vals); if (lo === hi) { lo -= 1; hi += 1; }
+  const x = i => L + (W - L - R) * (vals.length > 1 ? i / (vals.length - 1) : 0.5), y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const grid = [0, 0.5, 1].map(k => { const v = lo + (hi - lo) * k; return `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-dasharray="4 4"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${yen(v)}</text>`; }).join("");
+  const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const xl = [0, Math.floor((vals.length - 1) / 2), vals.length - 1].map((i, k) => `<text x="${x(i)}" y="${H - 8}" text-anchor="${k === 0 ? "start" : k === 2 ? "end" : "middle"}" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${labels[i]}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${grid}<polygon points="${L},${H - B} ${pts} ${x(vals.length - 1)},${H - B}" fill="${color}" opacity=".12"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/>${xl}</svg>`;
+}
+function spark(vals, color) {
+  const lo = Math.min(...vals), hi = Math.max(...vals), sp = hi - lo;
+  const pts = vals.map((v, i) => `${(i / (vals.length - 1) * 100).toFixed(1)},${(sp ? 3 + (1 - (v - lo) / sp) * 24 : 15).toFixed(1)}`).join(" ");
+  return `<svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true" style="width:100%;height:30px;display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+}
+const lineVar = v => `var(--${tone(v)}-line)`;
+
+/* ===== 起動 ===== */
+async function load() {
+  const [sets, cards] = await Promise.all(["sets", "cards"].map(n => fetch(`data/${n}.json`).then(r => r.json())));
+  S.sets = sets.filter(s => s.count > 0); S.cards = cards;
+  S.sets.forEach(s => S.setMap.set(s.slug, s));
+  cards.forEach(c => { S.byId.set(c[0], c); (S.bySet.get(c[1]) || S.bySet.set(c[1], []).get(c[1])).push(c); });
+  // 全体集計（ダミー価格ベース）
+  const all = cards.map(vm);
+  S.sum = { up: 0, down: 0, flat: 0, lack: 0 };
+  all.forEach(m => { if (!m.ok) S.sum.lack++; else if (m.diff > 0) S.sum.up++; else if (m.diff < 0) S.sum.down++; else S.sum.flat++; });
+  S.pool = all.filter(m => m.ok && m.last >= 300);
+  const cons = S.pool.slice().sort((a, b) => b.last - a.last).slice(0, 300);
+  S.idx = Array.from({ length: DAYS }, (_, t) => cons.reduce((a, m) => a + m.s[t] / m.s[0], 0) / cons.length * 1000);
+  S.ready = true; route();
+}
+function holdings() { try { return JSON.parse(store.get("pokeca-mine") || "{}"); } catch { return {}; } }
+function setHold(h) { store.set("pokeca-mine", JSON.stringify(h)); }
+
+/* ===== ルーティング ===== */
+function route() {
+  if (!S.ready) return;
+  const h = location.hash.slice(1), v = $("view"); let nav = "top";
+  if (h.startsWith("s-") && S.setMap.has(h.slice(2))) { v.innerHTML = setPage(h.slice(2)); nav = "boxes"; }
+  else if (h.startsWith("c-") && S.byId.has(+h.slice(2))) { v.innerHTML = cardPage(+h.slice(2)); nav = "boxes"; }
+  else if (h === "boxes") { v.innerHTML = boxesPage(); nav = "boxes"; }
+  else if (h === "mine") { v.innerHTML = minePage(); nav = "mine"; }
+  else v.innerHTML = topPage();
+  document.querySelectorAll("nav button").forEach(b => { if (b.dataset.nav === nav) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  bind(); scrollTo(0, 0);
+}
+addEventListener("hashchange", route);
+const go = h => { if (location.hash === "#" + h) route(); else location.hash = h; };
+
+/* ===== トップ ===== */
+const rankRow = m => { const s = S.setMap.get(m.c[1]); return `<button data-go="c-${m.id}"><span class="num sub">${m.rank}</span><span class="nm"><b>${esc(m.c[4])}</b><small>${esc(m.c[3])}・${esc(m.c[2])}・${esc(s ? s.name.replace(/^\[[^\]]+\]\s*/, "") : "")}</small></span><span style="text-align:right"><span class="num">${yen(m.last)}</span><br>${chipHtml(m.pct, pct(m.pct))}</span></button>`; };
+function topPage() {
+  const rk = list => list.slice(0, 5).map((m, i) => rankRow({ ...m, rank: i + 1 })).join("");
+  const gain = S.pool.filter(m => m.pct > 0).sort((a, b) => b.pct - a.pct), loss = S.pool.filter(m => m.pct < 0).sort((a, b) => a.pct - b.pct);
+  const last = S.idx[DAYS - 1], d1 = (last / S.idx[DAYS - 2] - 1) * 100, d30 = (last / S.idx[DAYS - 31] - 1) * 100;
+  const ext = hi => S.pool.filter(m => { const w = m.s.slice(-90), ref = hi ? Math.max(...w) : Math.min(...w); return w[89] === ref && w[88] !== ref; }).slice(0, 4);
+  const exRows = list => list.length ? list.map(m => `<button data-go="c-${m.id}" class="rowbtn"><span class="nm"><b>${esc(m.c[4])}</b><small>${esc(m.c[3])}・${esc(m.c[2])}</small></span><span class="num">${yen(m.last)}</span></button>`).join("") : '<div class="note">本日は該当するカードがありません。</div>';
+  const tabBtns = (key, arr) => arr.map(([k, l]) => `<button class="tab" data-${key}="${k}" aria-pressed="${S[key] === k}">${l}</button>`).join("");
+  return `
+  <section class="tiles">
+    <div class="tile"><div class="sub">本日 上昇</div><div class="v t-up">▲ ${S.sum.up.toLocaleString()}枚</div></div>
+    <div class="tile"><div class="sub">本日 下落</div><div class="v t-down">▼ ${S.sum.down.toLocaleString()}枚</div></div>
+    <div class="tile"><div class="sub">変わらず</div><div class="v">${S.sum.flat.toLocaleString()}枚</div></div>
+    <div class="tile"><div class="sub">更新待ち・データ不足</div><div class="v">${S.sum.lack.toLocaleString()}枚</div></div>
+  </section>
+  <section class="grid2">
+    <div class="panel gold"><h2>ポケカ買取指数</h2>
+      <div class="row"><span class="idx-v">${last.toFixed(1)}</span>${chipHtml(d1, "前日比 " + pct(d1))}<span class="num sub">30日前比 ${pct(d30)}</span></div>
+      <div class="chart">${lineChart(S.idx.slice(-90), Array.from({ length: 90 }, (_, i) => dl(89 - i)), lineVar(d1), "ポケカ買取指数の直近90日の推移")}</div>
+      <p class="sub" style="margin:6px 0 0">構成カード（買取価格上位300枚）は固定、${dl(DAYS - 1)}を1000とした値。デモではダミーです。</p></div>
+    <div class="panel"><div class="row" style="justify-content:space-between"><h2>ランキング（前日比）</h2><div class="tabs">${tabBtns("rank", [["gain", "上昇"], ["loss", "下落"]])}</div></div>
+      <div class="rank">${rk(S.rank === "gain" ? gain : loss)}</div>
+      <p class="sub" style="margin:6px 0 0">買取価格300円以上で、2店以上の価格がそろっているカードが対象です。</p></div>
+  </section>
+  <section class="grid2">
+    <div class="panel"><h2>90日ぶりの高値</h2><div>${exRows(ext(true))}</div></div>
+    <div class="panel"><h2>90日ぶりの安値</h2><div>${exRows(ext(false))}</div></div>
+  </section>
+  <section><div class="shelf-head"><div><h1 style="font-size:20px">収録弾から探す</h1><div class="sub">パック・デッキ・プロモごとに、収録カードの買取価格を一覧できます。</div></div>
+    <div class="tabs">${tabBtns("shelf", [["pack", "拡張パック"], ["product", "デッキ・BOX"], ["promo", "プロモ"], ["energy", "基本エネルギー"]])}</div></div>${shelf()}</section>
+  ${newsSection()}${howSection()}`;
+}
+function shelf() {
+  let html = "", cur = null;
+  for (const s of S.sets.filter(s => s.category === S.shelf)) {
+    if (s.series !== cur) { if (cur !== null) html += "</div>"; cur = s.series; html += `<div class="series">${esc(cur)}</div><div class="shelf">`; }
+    html += `<button class="pack" data-go="s-${s.slug}"><span class="code">${esc(s.code || "—")}</span><span class="pn">${esc(s.name.replace(/^\[[^\]]+\]\s*/, ""))}</span><span class="meta">${s.count}種・100円以上 ${s.count100}種</span></button>`;
+  }
+  return html + (cur !== null ? "</div>" : '<p class="empty">該当する収録弾はありません。</p>');
+}
+function newsSection() {
+  const cal = (d, t, ok) => `<div class="cal"><span class="num">${d}</span><b style="font-weight:500">${t}</b><span class="chip ${ok ? "" : "flat"}" style="${ok ? "background:var(--head);color:#fff" : "border:1px solid var(--flat)"}">${ok ? "確定" : "未確定"}</span></div>`;
+  const lk = (u, t) => `<a href="${u}" rel="noopener" style="display:flex;align-items:center;min-height:44px;border-top:1px solid var(--line)">${t}</a>`;
+  return `<section><h2 style="margin-bottom:10px">新商品・公式情報</h2><div class="grid2">
+    <div class="panel"><h3>発売カレンダー</h3>${cal("[発売日]", "[商品名]", true)}${cal("[発売日]", "[商品名]", true)}${cal("[発売日]", "[商品名]", false)}<p class="sub" style="margin:6px 0 0">公式発表を確認して手入力します。最終確認日：[日付]</p></div>
+    <div class="panel"><h3>公式の情報を見る</h3>${lk("https://www.pokemon-card.com/info/", "ポケモンカードゲーム公式　お知らせ")}${lk("https://www.pokemon-card.com/products/", "ポケモンカードゲーム公式　商品情報")}${lk("https://www.pokemon-card.com/rules/", "ポケモンカードゲーム公式　大会ルール・レギュレーション")}${lk("https://www.pokemon-card.com/card-search/", "ポケモンカードゲーム公式　カード検索")}<p class="sub" style="margin:6px 0 0">リンク先は公式サイトです。当サイトは内容を転載しません。</p></div>
+    <div class="panel"><h3>公式YouTubeの最新動画</h3><div class="note" style="min-height:140px;display:grid;place-items:center;border:1px dashed var(--muted)">[公式チャンネルの埋め込みプレーヤー枠]</div><p class="sub" style="margin:6px 0 0">YouTubeが提供する埋め込み機能で表示します。</p></div></div></section>`;
+}
+function howSection() {
+  return `<section class="panel"><h2 style="margin-bottom:6px">この数字の出し方</h2><ul class="plain">
+  <li>買取価格を公開している複数の店から、1日1回、美品の買取価格を集めます。</li>
+  <li>その日に価格を取得できた全店の単純平均を「平均買取価格」とし、何店の平均かを必ず表示します。</li>
+  <li>1店しか取得できなかった日は平均を更新せず、最後に2店以上そろった日の値を日付つきで表示します。</li>
+  <li>店が期間限定で買取価格を引き上げている場合は、その時点の表示価格を使います。買取を受け付けているか確認できない価格は平均に入れません。</li>
+  <li>店名は表示しません。販売価格ではなく、買取価格の参考値です。</li></ul></section>`;
+}
+
+/* ===== BOX一覧 ===== */
+function boxesPage() {
+  return `<section><h1>BOX一覧</h1><p class="sub">収録弾 ${S.sets.length} 件。収録弾を選ぶと、カードの価格表が開きます。</p>
+  <div class="tabs" style="margin-top:8px">${[["pack", "拡張パック"], ["product", "デッキ・BOX"], ["promo", "プロモ"], ["energy", "基本エネルギー"]].map(([k, l]) => `<button class="tab" data-shelf="${k}" aria-pressed="${S.shelf === k}">${l}</button>`).join("")}</div>${shelf()}</section>
+  <section><h2>シリーズ別の対応状況</h2><p class="sub">1996年の第1弾から現在までを対象に、買取価格を取得できる店がそろったシリーズから順に公開します。</p>
+  <div class="panel" style="padding:0;margin-top:8px">${ERAS.map(([n, k]) => `<div class="era"><span style="font-weight:500">${n}</span><span class="s" style="background:${ERA_ST[k][1]};color:${ERA_ST[k][2]}">${ERA_ST[k][0]}</span></div>`).join("")}</div></section>`;
+}
+
+/* ===== 収録弾ページ ===== */
+function setPage(slug) {
+  if (SP.slug !== slug) Object.assign(SP, { slug, rar: "", min: 0, limit: 200, sort: "price", dir: -1 });
+  const s = S.setMap.get(slug), rows = S.bySet.get(slug) || [], rars = [...new Set(rows.map(r => r[2]))];
+  return `<div class="crumb"><button data-go="boxes">BOX一覧</button> ＞ ${esc(s.series)} ＞ ${esc(s.name)}</div>
+  <section style="display:grid;gap:12px"><h1>${esc(s.name)}</h1>
+  <div class="sub">掲載 ${s.count} 種・買取100円以上 ${s.count100} 種</div>
+  <div class="filters"><label for="f-rar">レアリティ</label><select id="f-rar"><option value="">すべて</option>${rars.map(r => `<option ${SP.rar === r ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
+  <label for="f-min">買取価格</label><input id="f-min" type="number" min="0" step="100" value="${SP.min || ""}" placeholder="下限なし"><span>円以上</span></div>
+  <div id="set-table">${setTable()}</div>
+  <p class="sub">平均は、その日に買取価格を取得できた全店で計算します。1店しか取得できなかった日は、最後に2店以上そろった日の平均を日付つきで表示します（更新待ち）。一度もそろっていないカードは「データ不足」です。</p></section>`;
+}
+function setTable() {
+  const key = { price: m => m.ok || m.stale ? m.last : -1, number: m => m.c[3], name: m => m.c[4], rar: m => m.c[2], d1: m => m.ok ? m.pct : -Infinity, d7: m => m.ok ? m.p7 : -Infinity, shops: m => m.shops }[SP.sort];
+  const rows = (S.bySet.get(SP.slug) || []).map(vm).filter(m => (!SP.rar || m.c[2] === SP.rar) && (SP.min <= 0 || ((m.ok || m.stale) && m.last >= SP.min)))
+    .sort((a, b) => { const x = key(a), y = key(b); return (typeof x === "string" ? x.localeCompare(y, "ja", { numeric: true }) : x - y) * SP.dir; });
+  if (!rows.length) return '<p class="empty">条件に合うカードはありません。</p>';
+  const cols = [["number", "型番"], ["rar", "レア"], ["name", "カード名"], ["price", "平均買取価格", "r"], ["d1", "前日比", "r"], ["d7", "7日前比", "r"], ["shops", "算出店数", "r"], [null, "30日チャート"]];
+  const head = cols.map(([k, l, c]) => `<th class="${c || ""}" ${k ? `data-sort="${k}" aria-sort="${SP.sort === k ? (SP.dir > 0 ? "ascending" : "descending") : "none"}"` : ""}>${l}${SP.sort === k ? (SP.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("");
+  const body = rows.slice(0, SP.limit).map(m => `<tr><td class="num">${esc(m.c[3] || "—")}</td><td><span class="rar ${HI.has(m.c[2]) ? "hi" : ""}">${esc(m.c[2])}</span></td>
+    <td><button class="lk" data-go="c-${m.id}">${esc(m.c[4])}</button></td>
+    <td class="r num">${m.none ? '<span class="sub">データ不足</span>' : yen(m.last) + (m.stale ? `<br><span class="sub">${dl(m.gap)} 時点</span>` : "")}</td>
+    <td class="r">${m.ok ? chipHtml(m.pct, (m.diff > 0 ? "▲ " : m.diff < 0 ? "▼ " : "") + pct(m.pct)) : '<span class="sub">' + (m.stale ? "更新待ち" : "—") + "</span>"}</td>
+    <td class="r num ${m.ok ? "t-" + tone(m.p7) : ""}">${m.ok ? pct(m.p7) : "—"}</td>
+    <td class="r sub">${m.ok ? m.shops + "店平均" : m.stale ? "更新待ち" : "1店のみ"}</td>
+    <td style="width:120px">${m.none ? "" : spark(m.s.slice(m.li - 29, m.li + 1), lineVar(m.p30))}</td></tr>`).join("");
+  return `<div class="tbl"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    ${rows.length > SP.limit ? `<div style="margin-top:10px"><button class="btn" data-more>さらに表示（残り${rows.length - SP.limit}件）</button></div>` : ""}`;
+}
+
+/* ===== カード詳細 ===== */
+function cardPage(id) {
+  const c = S.byId.get(id), m = vm(c), s = S.setMap.get(c[1]), held = holdings()[id] || 0;
+  const n = Math.min(S.period, m.li + 1), seg = m.s.slice(m.li + 1 - n, m.li + 1), hi = Math.max(...seg), lo = Math.min(...seg);
+  const yHi = Math.max(...m.s), yHiAgo = DAYS - 1 - m.s.lastIndexOf(yHi);
+  const box = (S.bySet.get(c[1]) || []).map(vm).filter(x => x.ok).sort((a, b) => b.last - a.last), pos = box.findIndex(x => x.id === id);
+  const same = S.cards.filter(x => x[4] === c[4] && x[0] !== id).slice(0, 8);
+  const pills = [[30, "1か月"], [90, "3か月"], [120, "全期間"]].map(([p, l]) => `<button class="tab" data-period="${p}" aria-pressed="${S.period === p}" style="border-radius:4px;min-width:60px">${l}</button>`).join("");
+  const kv = (l, v, cls = "") => `<div><dt>${l}</dt><dd class="${cls}">${v}</dd></div>`;
+  return `<div class="crumb"><button data-go="boxes">BOX一覧</button> ＞ <button data-go="s-${c[1]}">${esc(s ? s.name : c[1])}</button> ＞ ${esc(c[4])}</div>
+  <section class="panel card-top">
+    <div class="cardface" role="img" aria-label="${esc(c[2])} ${esc(c[3])}"><b>${esc(c[2])}</b><span>${esc(c[3] || "型番なし")}</span></div>
+    <div style="flex:1 1 240px;display:grid;gap:6px;align-content:start">
+      <div class="sub">${esc(c[3] || "型番なし")}・${esc(c[2])}・${esc(s ? s.name : "")}</div><h1>${esc(c[4])}</h1>
+      ${pos >= 0 ? `<div class="sub">この収録弾内の買取価格順位：${pos + 1}位（${box.length}枚中）</div>` : ""}
+      <div class="row"><button class="btn ${held ? "on" : ""}" data-add="${id}">＋ ${held ? `マイコレクションに追加（登録済み ${held}枚）` : "マイコレクションに追加"}</button>
+      <a href="https://www.pokemon-card.com/card-search/" rel="noopener">公式カード検索でカードを確認する</a></div></div>
+    <div style="flex:1 1 240px;display:grid;gap:4px;justify-items:end;align-content:start">
+      <div class="sub">平均買取価格（美品）</div><div class="price-big">${m.none ? "データ不足" : yen(m.last)}</div>
+      ${m.ok ? chipHtml(m.diff, "前日比 " + dayText(m)) : ""}
+      <div class="sub">${m.ok ? m.shops + "店平均・10月8日更新" : m.stale ? dl(m.gap) + " 時点の平均（本日は1店のみ）" : ""}</div>
+      ${m.ok ? `<div class="sub">店による価格差：${m.spread}</div>` : ""}${m.boost ? '<span class="chip" style="background:var(--frame);color:#18203a;font-weight:700">強化買取中の店あり</span>' : ""}</div>
+  </section>
+  ${m.stale ? '<div class="warn">本日は買取価格を取得できた店が1店だけのため、平均を更新していません。表示しているのは、最後に2店以上そろった日の平均です。</div>' : ""}
+  ${m.none ? `<div class="panel"><h2>このカードはまだ平均を表示できません</h2><p>2店以上の買取価格がそろった日が一度もないためです。そろった時点から、平均買取価格とチャートを表示します。</p></div>` : `
+  <section class="panel"><div class="row" style="justify-content:space-between"><h2>平均買取価格の推移</h2><div class="tabs">${pills}</div></div>
+    <div class="chart">${lineChart(seg, seg.map((_, i) => dl(DAYS - 1 - m.li + n - 1 - i)), lineVar(m.p30), c[4] + " の平均買取価格の推移。表示期間の高値 " + yen(hi) + "、安値 " + yen(lo))}</div></section>
+  <dl class="kv" style="margin:0">${kv("7日前比", m.ok ? pct(m.p7) : "—", "t-" + tone(m.p7))}${kv("30日前比", pct(m.p30), "t-" + tone(m.p30))}${kv("表示期間の高値", yen(hi))}${kv("表示期間の安値", yen(lo))}${kv("過去の最高値", yen(yHi) + `<div class="sub" style="font-family:var(--f-body);font-size:12px">${dl(yHiAgo)} に記録</div>`)}</dl>
+  <section class="grid2"><div class="panel"><h2 style="margin-bottom:4px">直近7日の推移</h2>
+    <div class="hist sub" style="border:0;font-weight:700"><span>日付</span><span style="text-align:right">平均買取価格</span><span style="text-align:right">算出店数</span></div>
+    ${[0, 1, 2, 3, 4, 5, 6].map(k => `<div class="hist"><span>${dl(k)}</span><span style="text-align:right">${yen(m.s[DAYS - 1 - k])}</span><span style="text-align:right">${m.shops}店</span></div>`).join("")}</div>
+    ${same.length ? `<div class="panel"><h2 style="margin-bottom:4px">同じ名前の別バージョン</h2>${same.map(x => { const v = vm(x), ss = S.setMap.get(x[1]); return `<button class="rowbtn" data-go="c-${x[0]}"><span class="nm"><b style="color:var(--accent);text-decoration:underline">${esc(x[4])}</b><small>${esc(x[3])}・${esc(x[2])}・${esc(ss ? ss.name : "")}</small></span><span class="num">${v.none ? "データ不足" : yen(v.last)}</span></button>`; }).join("")}</div>` : ""}</section>`}
+  <p class="sub">平均買取価格は、買取価格を公開している複数店の価格（美品）を単純平均した参考値です。店名は表示していません。販売価格ではありません。実際の買取価格はカードの状態や各店の査定で変わります。</p>`;
+}
+
+/* ===== マイコレクション ===== */
+function minePage() {
+  const h = holdings(), ids = Object.keys(h).map(Number).filter(i => S.byId.has(i) && h[i] > 0);
+  let body;
+  if (!ids.length) body = `<div class="panel" style="display:grid;gap:12px;justify-items:start"><div>まだカードが登録されていません。カード詳細の「マイコレクションに追加」から登録できます。</div><button class="btn solid" data-sample>サンプルを登録して試す</button></div>`;
+  else {
+    const ms = ids.map(i => vm(S.byId.get(i))), val = back => ms.reduce((a, m) => m.none ? a : a + m.s[Math.min(DAYS - 1 - back, m.li)] * h[m.id], 0);
+    const now = val(0), dd = now - val(1), dm = now - val(30), ser = Array.from({ length: 90 }, (_, k) => val(89 - k));
+    const sg = n => (n > 0 ? "▲ +" : n < 0 ? "▼ −" : "± ") + yen(Math.abs(n));
+    body = `<div class="tiles"><div class="tile" style="border-top:4px solid var(--frame)"><div class="sub">買取評価額の合計</div><div class="v" style="font-size:28px">${yen(now)}</div></div>
+      <div class="tile"><div class="sub">前日比</div><div class="v t-${tone(dd)}">${sg(dd)}</div></div><div class="tile"><div class="sub">30日前比</div><div class="v t-${tone(dm)}">${sg(dm)}</div></div>
+      <div class="tile"><div class="sub">登録枚数</div><div class="v">${ids.reduce((a, i) => a + h[i], 0)}枚</div></div></div>
+      <div class="panel"><h2>評価額の推移（直近90日）</h2><div class="chart">${lineChart(ser, ser.map((_, i) => dl(89 - i)), "var(--head)", "マイコレクションの買取評価額の推移")}</div></div>
+      <div class="tbl"><table style="min-width:720px"><thead><tr><th style="cursor:default">カード</th><th style="cursor:default">枚数</th><th class="r" style="cursor:default">平均買取価格</th><th class="r" style="cursor:default">評価額</th><th style="cursor:default">前日比</th></tr></thead><tbody>
+      ${ms.map(m => `<tr><td><button class="lk" data-go="c-${m.id}">${esc(m.c[4])}</button><div class="sub">${esc(m.c[3])}・${esc(m.c[2])}</div></td>
+        <td><span class="qty"><button data-q="${m.id}" data-d="-1" aria-label="${esc(m.c[4])} ${esc(m.c[3])} を1枚減らす">−</button><span class="num" style="min-width:28px;text-align:center">${h[m.id]}</span><button data-q="${m.id}" data-d="1" aria-label="${esc(m.c[4])} ${esc(m.c[3])} を1枚増やす">＋</button></span></td>
+        <td class="r num">${m.none ? "データ不足" : yen(m.last)}${m.stale ? `<br><span class="sub">${dl(m.gap)} 時点</span>` : ""}</td><td class="r num">${m.none ? "—" : yen(m.last * h[m.id])}</td>
+        <td class="num t-${m.ok ? tone(m.diff) : "flat"}">${m.ok ? sg(m.diff * h[m.id]) : "—"}</td></tr>`).join("")}</tbody></table></div>
+      <p class="sub">評価額は平均買取価格（美品）×枚数の参考値です。更新待ちのカードは最後にそろった日の平均で計算し、「データ不足」のカードは合計に含めません。実際の買取額はカードの状態や各店の査定で変わります。</p>`;
+  }
+  return `<section style="display:grid;gap:16px"><h1>マイコレクション</h1><p class="sub">手持ちのカードと枚数を登録すると、買取評価額の合計と値動きがわかります。登録内容はこの端末にだけ保存します。</p>${body}</section>`;
+}
+
+/* ===== 操作 ===== */
+function bind() {
+  const v = $("view");
+  v.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  v.querySelectorAll("[data-rank]").forEach(b => b.onclick = () => { S.rank = b.dataset.rank; route(); });
+  v.querySelectorAll("[data-shelf]").forEach(b => b.onclick = () => { S.shelf = b.dataset.shelf; const y = scrollY; route(); scrollTo(0, y); });
+  v.querySelectorAll("[data-period]").forEach(b => b.onclick = () => { S.period = +b.dataset.period; const y = scrollY; route(); scrollTo(0, y); });
+  v.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const h = holdings(), i = b.dataset.add; h[i] = (h[i] || 0) + 1; setHold(h); const y = scrollY; route(); scrollTo(0, y); });
+  v.querySelectorAll("[data-sample]").forEach(b => b.onclick = () => { const top = S.pool.slice().sort((a, b) => b.last - a.last); setHold({ [top[2].id]: 1, [top[10].id]: 2, [top[40].id]: 4, [top[120].id]: 1 }); route(); });
+  v.querySelectorAll("[data-q]").forEach(b => b.onclick = () => { const h = holdings(), i = b.dataset.q; h[i] = Math.max(0, (h[i] || 0) + +b.dataset.d); if (!h[i]) delete h[i]; setHold(h); const y = scrollY; route(); scrollTo(0, y); });
+  const rerender = () => { $("set-table").innerHTML = setTable(); bindTable(); };
+  const r = $("f-rar"), m = $("f-min");
+  if (r) r.onchange = () => { SP.rar = r.value; SP.limit = 200; rerender(); };
+  if (m) m.oninput = () => { SP.min = +m.value || 0; SP.limit = 200; rerender(); };
+  function bindTable() {
+    v.querySelectorAll("th[data-sort]").forEach(th => th.onclick = () => { const k = th.dataset.sort; SP.dir = SP.sort === k ? -SP.dir : (["price", "d1", "d7", "shops"].includes(k) ? -1 : 1); SP.sort = k; rerender(); });
+    v.querySelectorAll("[data-more]").forEach(b => b.onclick = () => { SP.limit += 400; rerender(); });
+    v.querySelectorAll("#set-table [data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  }
+  if ($("set-table")) bindTable();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => go(b.dataset.nav));
+$("go-top").onclick = () => go("top");
+
+/* ===== 配色切替 ===== */
+function applyScheme(g) { document.documentElement.dataset.scheme = g ? "green" : "red"; $("scheme").textContent = g ? "配色：緑＝上昇／赤＝下落" : "配色：赤＝上昇／青＝下落"; store.set("pokeca-scheme", g ? "green" : "red"); }
+$("scheme").onclick = () => { applyScheme(document.documentElement.dataset.scheme !== "green"); route(); };
+applyScheme(store.get("pokeca-scheme") === "green");
+
+/* ===== 検索 ===== */
+const norm = s => s.normalize("NFKC").toLowerCase().replace(/[ァ-ン]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60)).replace(/\s+/g, "");
+let nc = null, hits = [], sel = -1;
+const q = $("q"), sg = $("suggest");
+q.addEventListener("input", () => {
+  const t = norm(q.value); if (!t || !S.ready) { sg.hidden = true; return; }
+  nc ??= S.cards.map(c => norm(c[4] + c[3]));
+  hits = []; for (let i = 0; i < S.cards.length && hits.length < 500; i++) if (nc[i].includes(t)) hits.push(S.cards[i]);
+  hits.sort((a, b) => (b[5] || 0) - (a[5] || 0)); sel = -1;
+  sg.innerHTML = hits.length ? `<div class="sub" style="padding:6px 12px">${hits.length >= 500 ? "500件以上" : hits.length + "件"}に一致（上位30件を表示）</div>` + hits.slice(0, 30).map(c => { const s = S.setMap.get(c[1]), m = vm(c); return `<a href="#c-${c[0]}"><span>${esc(c[4])}</span><span class="num">${m.none ? "データ不足" : yen(m.last)}</span><small>${esc(s ? s.name : c[1])}・${esc(c[3])}・${esc(c[2])}</small></a>`; }).join("") : '<div class="empty">一致するカードはありません。カード名の一部や型番で試してください。</div>';
+  sg.hidden = false;
+});
+q.addEventListener("keydown", e => {
+  const as = [...sg.querySelectorAll("a")]; if (sg.hidden || !as.length) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + as.length) % as.length; as.forEach((a, i) => a.classList.toggle("on", i === sel)); as[sel].scrollIntoView({ block: "nearest" }); }
+  else if (e.key === "Enter") { e.preventDefault(); const a = as[Math.max(sel, 0)]; location.hash = a.getAttribute("href").slice(1); sg.hidden = true; q.value = ""; q.blur(); }
+  else if (e.key === "Escape") sg.hidden = true;
+});
+sg.addEventListener("click", () => { sg.hidden = true; q.value = ""; });
+document.addEventListener("click", e => { if (!e.target.closest(".searchbox")) sg.hidden = true; });
+
+load().catch(() => { $("view").innerHTML = '<p class="empty">データを読み込めませんでした。このページはHTTPサーバー経由で開いてください（例：<code>python3 -m http.server</code>）。</p>'; });
+</script>
+<style>.rowbtn{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;min-height:48px;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:4px 0;text-align:left;cursor:pointer}.rowbtn .nm b{font-weight:500;display:block}.rowbtn small{color:var(--muted);font-size:12px}</style>
+</body>
+</html>
