@@ -120,14 +120,14 @@ footer div{max-width:1240px;margin:0 auto;padding:16px;display:grid;gap:4px}
 </style>
 </head>
 <body>
-<div class="demo-banner">UIデモ：カード名・型番・レアリティ・収録弾は実データです。<b>価格・前日比・店数・チャート・指数はすべてダミー</b>で、実際の買取価格ではありません。</div>
+<div class="demo-banner">UIデモ：カード名・型番・レアリティ・収録弾は、買取店の買取表とみられる共有データから取り込んだもので、公式情報との照合は一部のみです。<br><b>価格・前日比・店数・価格差・強化買取・チャート・指数・ランキング・順位・枚数の集計・評価額・更新日時・対応状況はすべてダミー</b>で、実在の価格とは無関係です。</div>
 <header class="top"><div class="top-in">
   <button class="brand" id="go-top"><i></i><span>ポケカ買取チャート（仮）</span></button>
   <nav aria-label="メイン"><button data-nav="top">トップ</button><button data-nav="boxes">BOX一覧</button><button data-nav="mine">マイコレクション</button></nav>
   <div class="searchbox"><label for="q" class="sr" style="position:absolute;left:-9999px">カード名・型番で検索</label>
-    <input id="q" type="search" placeholder="カード名・型番で検索（例：ピカチュウ、134/103）" autocomplete="off"><div class="suggest" id="suggest" hidden></div></div>
+    <input id="q" type="search" placeholder="カード名・型番で検索（例：ピカチュウ、201/165）" autocomplete="off"><div class="suggest" id="suggest" hidden></div></div>
   <button class="tgl" id="scheme" aria-label="上昇と下落の配色を切り替える"></button>
-  <div class="upd">2026/10/08 03:00 更新（1日1回）</div>
+  <div class="upd">更新日時：ダミー（本番は1日1回更新）</div>
 </div></header>
 <main id="view"><div class="empty">データを読み込んでいます…</div></main>
 <footer><div>
@@ -141,8 +141,8 @@ footer div{max-width:1240px;margin:0 auto;padding:16px;display:grid;gap:4px}
 /* ===== 基本 ===== */
 const TODAY = new Date(2026, 9, 8), DAYS = 120;
 const HI = new Set(["MUR","BWR","FUR","UR","HR","SAR","SSR","CSR","SR","AR","CHR","MA","S","A","K","ACE","PROMO"]);
-const ERAS = [["MEGA",0],["スカーレット&バイオレット",0],["ソード&シールド",0],["サン&ムーン",1],["XY・XY BREAK",1],["BW",1],["旧裏面（第1弾〜第4弾、ジム）",2],["neo",4],["カードe・VS・web",4],["ADV",4],["PCG",3],["DP・DPt",3],["LEGEND",4]];
-const ERA_ST = [["公開中（最大3店平均）","var(--head)","#fff"],["公開中（2店平均）","var(--head)","#fff"],["準備中（2店の見込み）","var(--frame)","#18203a"],["準備中（一部のカードのみ）","var(--frame)","#18203a"],["店を調査中","var(--flat-bg)","var(--ink)"]];
+const ERAS = [["MEGA",0],["スカーレット&バイオレット",0],["ソード&シールド",0],["サン&ムーン",1],["XY・XY BREAK",1],["BW",1],["LEGEND",4],["DP・DPt",3],["PCG",3],["ADV",4],["カードe・VS・web",4],["neo",4],["第1弾〜第4弾・ジム",2]];
+const ERA_ST = [["予定：最大3店平均","var(--head)","#fff"],["予定：2店平均","var(--head)","#fff"],["予定：2店の見込み（調査中）","var(--frame)","#18203a"],["予定：一部のカードのみ（調査中）","var(--frame)","#18203a"],["店を調査中","var(--flat-bg)","var(--ink)"]];
 const S = { sets: [], cards: [], byId: new Map(), bySet: new Map(), setMap: new Map(), vmc: new Map(), shelf: "pack", rank: "gain", period: 90, ready: false };
 const SP = { slug: null, sort: "price", dir: -1, rar: "", min: 0, limit: 200 };
 const store = (() => { const m = {}; return {
@@ -155,11 +155,13 @@ const tone = v => v > 0 ? "up" : v < 0 ? "down" : "flat";
 const dl = ago => { const d = new Date(TODAY); d.setDate(d.getDate() - ago); return (d.getMonth() + 1) + "/" + d.getDate(); };
 const $ = id => document.getElementById(id);
 
-/* ===== ダミー価格（カードIDから決まる。毎回同じ値） ===== */
+/* ===== ダミー価格（カードIDとレアリティから決まる。実在の価格とは無関係） ===== */
+const TIER = { FUR: [3000, 60000], MUR: [3000, 60000], BWR: [3000, 60000], UR: [1000, 30000], SAR: [1000, 30000], CSR: [500, 10000], SSR: [500, 10000], HR: [500, 10000], SR: [300, 8000], CHR: [200, 3000], AR: [50, 1500], PROMO: [10, 3000] };
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function dummyBase(c) { const [lo, hi] = TIER[c[2]] || [5, 400], u = rng(c[0] * 104729 + 7)(); return lo * Math.pow(hi / lo, u * u); }
 const step = v => { const s = v >= 5000 ? 100 : v >= 1000 ? 50 : v >= 100 ? 10 : 1; return Math.max(1, Math.round(v / s) * s); };
 function series(c) {
-  const r = rng(c[0] * 7919 + 13), base = c[5] || 1; let v = 1; const raw = [];
+  const r = rng(c[0] * 7919 + 13), base = dummyBase(c); let v = 1; const raw = [];
   for (let t = 0; t < DAYS; t++) { if (r() < 0.6) v *= 1 + (r() - 0.5) * 0.08; raw.push(v); }
   const k = base / raw[DAYS - 1]; return raw.map(x => step(x * k));
 }
@@ -228,13 +230,13 @@ addEventListener("hashchange", route);
 const go = h => { if (location.hash === "#" + h) route(); else location.hash = h; };
 
 /* ===== トップ ===== */
-const rankRow = m => { const s = S.setMap.get(m.c[1]); return `<button data-go="c-${m.id}"><span class="num sub">${m.rank}</span><span class="nm"><b>${esc(m.c[4])}</b><small>${esc(m.c[3])}・${esc(m.c[2])}・${esc(s ? s.name.replace(/^\[[^\]]+\]\s*/, "") : "")}</small></span><span style="text-align:right"><span class="num">${yen(m.last)}</span><br>${chipHtml(m.pct, pct(m.pct))}</span></button>`; };
+const rankRow = m => { const s = S.setMap.get(m.c[1]); return `<button data-go="c-${m.id}"><span class="num sub">${m.rank}</span><span class="nm"><b>${esc(m.c[4])}</b><small>${esc(m.c[3] || "型番なし")}・${esc(m.c[2])}・${m.shops}店平均・${esc(s ? s.name.replace(/^\[[^\]]+\]\s*/, "") : "")}</small></span><span style="text-align:right"><span class="num">${yen(m.last)}</span><br>${chipHtml(m.pct, pct(m.pct))}</span></button>`; };
 function topPage() {
   const rk = list => list.slice(0, 5).map((m, i) => rankRow({ ...m, rank: i + 1 })).join("");
   const gain = S.pool.filter(m => m.pct > 0).sort((a, b) => b.pct - a.pct), loss = S.pool.filter(m => m.pct < 0).sort((a, b) => a.pct - b.pct);
   const last = S.idx[DAYS - 1], d1 = (last / S.idx[DAYS - 2] - 1) * 100, d30 = (last / S.idx[DAYS - 31] - 1) * 100;
-  const ext = hi => S.pool.filter(m => { const w = m.s.slice(-90), ref = hi ? Math.max(...w) : Math.min(...w); return w[89] === ref && w[88] !== ref; }).slice(0, 4);
-  const exRows = list => list.length ? list.map(m => `<button data-go="c-${m.id}" class="rowbtn"><span class="nm"><b>${esc(m.c[4])}</b><small>${esc(m.c[3])}・${esc(m.c[2])}</small></span><span class="num">${yen(m.last)}</span></button>`).join("") : '<div class="note">本日は該当するカードがありません。</div>';
+  const ext = hi => S.pool.filter(m => { const w = m.s.slice(-90), past = w.slice(0, 89); return hi ? w[89] > Math.max(...past) : w[89] < Math.min(...past); }).sort((a, b) => b.last - a.last).slice(0, 4);
+  const exRows = list => list.length ? list.map(m => `<button data-go="c-${m.id}" class="rowbtn"><span class="nm"><b>${esc(m.c[4])}</b><small>${esc(m.c[3] || "型番なし")}・${esc(m.c[2])}・${m.shops}店平均</small></span><span class="num">${yen(m.last)}</span></button>`).join("") : '<div class="note">本日は該当するカードがありません。</div>';
   const tabBtns = (key, arr) => arr.map(([k, l]) => `<button class="tab" data-${key}="${k}" aria-pressed="${S[key] === k}">${l}</button>`).join("");
   return `
   <section class="tiles">
@@ -247,39 +249,41 @@ function topPage() {
     <div class="panel gold"><h2>ポケカ買取指数</h2>
       <div class="row"><span class="idx-v">${last.toFixed(1)}</span>${chipHtml(d1, "前日比 " + pct(d1))}<span class="num sub">30日前比 ${pct(d30)}</span></div>
       <div class="chart">${lineChart(S.idx.slice(-90), Array.from({ length: 90 }, (_, i) => dl(89 - i)), lineVar(d1), "ポケカ買取指数の直近90日の推移")}</div>
-      <p class="sub" style="margin:6px 0 0">構成カード（買取価格上位300枚）は固定、${dl(DAYS - 1)}を1000とした値。デモではダミーです。</p></div>
+      <p class="sub" style="margin:6px 0 0">構成：直近の買取価格上位300枚（固定）。各カードの値動き率の単純平均で、${dl(DAYS - 1)}＝1000。数値はダミーです。</p></div>
     <div class="panel"><div class="row" style="justify-content:space-between"><h2>ランキング（前日比）</h2><div class="tabs">${tabBtns("rank", [["gain", "上昇"], ["loss", "下落"]])}</div></div>
       <div class="rank">${rk(S.rank === "gain" ? gain : loss)}</div>
       <p class="sub" style="margin:6px 0 0">買取価格300円以上で、2店以上の価格がそろっているカードが対象です。</p></div>
   </section>
   <section class="grid2">
-    <div class="panel"><h2>90日ぶりの高値</h2><div>${exRows(ext(true))}</div></div>
-    <div class="panel"><h2>90日ぶりの安値</h2><div>${exRows(ext(false))}</div></div>
+    <div class="panel"><h2>直近90日の高値を更新</h2><div>${exRows(ext(true))}</div></div>
+    <div class="panel"><h2>直近90日の安値を更新</h2><div>${exRows(ext(false))}</div></div>
   </section>
+  <p class="sub" style="margin:-14px 0 0">本日の平均が、それまでの89日間のどの日よりも高い（安い）カード。対象はランキングと同じ（300円以上・2店以上）。価格の高い順に最大4枚。</p>
   <section><div class="shelf-head"><div><h1 style="font-size:20px">収録弾から探す</h1><div class="sub">パック・デッキ・プロモごとに、収録カードの買取価格を一覧できます。</div></div>
     <div class="tabs">${tabBtns("shelf", [["pack", "拡張パック"], ["product", "デッキ・BOX"], ["promo", "プロモ"], ["energy", "基本エネルギー"]])}</div></div>${shelf()}</section>
   ${newsSection()}${howSection()}`;
 }
 function shelf() {
   let html = "", cur = null;
-  for (const s of S.sets.filter(s => s.category === S.shelf)) {
+  const order = [...new Set(S.sets.map(s => s.series))];
+  for (const s of S.sets.filter(s => s.category === S.shelf).sort((a, b) => order.indexOf(a.series) - order.indexOf(b.series))) {
     if (s.series !== cur) { if (cur !== null) html += "</div>"; cur = s.series; html += `<div class="series">${esc(cur)}</div><div class="shelf">`; }
-    html += `<button class="pack" data-go="s-${s.slug}"><span class="code">${esc(s.code || "—")}</span><span class="pn">${esc(s.name.replace(/^\[[^\]]+\]\s*/, ""))}</span><span class="meta">${s.count}種・100円以上 ${s.count100}種</span></button>`;
+    html += `<button class="pack" data-go="s-${s.slug}"><span class="code">${esc(s.code || "—")}</span><span class="pn">${esc(s.name.replace(/^\[[^\]]+\]\s*/, ""))}</span><span class="meta">掲載 ${s.count}種</span></button>`;
   }
   return html + (cur !== null ? "</div>" : '<p class="empty">該当する収録弾はありません。</p>');
 }
 function newsSection() {
-  const cal = (d, t, ok) => `<div class="cal"><span class="num">${d}</span><b style="font-weight:500">${t}</b><span class="chip ${ok ? "" : "flat"}" style="${ok ? "background:var(--head);color:#fff" : "border:1px solid var(--flat)"}">${ok ? "確定" : "未確定"}</span></div>`;
+  const cal = (d, t, ok) => `<div class="cal"><span class="num">${d}</span><b style="font-weight:500">${t}</b><span class="chip ${ok ? "" : "flat"}" style="${ok ? "background:var(--head);color:#fff" : "border:1px solid var(--flat)"}">${ok ? "確定（見本）" : "未確定（見本）"}</span></div>`;
   const lk = (u, t) => `<a href="${u}" rel="noopener" style="display:flex;align-items:center;min-height:44px;border-top:1px solid var(--line)">${t}</a>`;
   return `<section><h2 style="margin-bottom:10px">新商品・公式情報</h2><div class="grid2">
     <div class="panel"><h3>発売カレンダー</h3>${cal("[発売日]", "[商品名]", true)}${cal("[発売日]", "[商品名]", true)}${cal("[発売日]", "[商品名]", false)}<p class="sub" style="margin:6px 0 0">公式発表を確認して手入力します。最終確認日：[日付]</p></div>
-    <div class="panel"><h3>公式の情報を見る</h3>${lk("https://www.pokemon-card.com/info/", "ポケモンカードゲーム公式　お知らせ")}${lk("https://www.pokemon-card.com/products/", "ポケモンカードゲーム公式　商品情報")}${lk("https://www.pokemon-card.com/rules/", "ポケモンカードゲーム公式　大会ルール・レギュレーション")}${lk("https://www.pokemon-card.com/card-search/", "ポケモンカードゲーム公式　カード検索")}<p class="sub" style="margin:6px 0 0">リンク先は公式サイトです。当サイトは内容を転載しません。</p></div>
+    <div class="panel"><h3>公式の情報を見る</h3>${lk("https://www.pokemon-card.com/info/", "ポケモンカードゲーム公式　ニュース")}${lk("https://www.pokemon-card.com/products/", "ポケモンカードゲーム公式　商品情報")}${lk("https://www.pokemon-card.com/rules/", "ポケモンカードゲーム公式　大会ルール・レギュレーション")}${lk("https://www.pokemon-card.com/card-search/", "ポケモンカードゲーム公式　カード検索")}<p class="sub" style="margin:6px 0 0">リンク先は公式サイトです。当サイトは内容を転載しません。</p></div>
     <div class="panel"><h3>公式YouTubeの最新動画</h3><div class="note" style="min-height:140px;display:grid;place-items:center;border:1px dashed var(--muted)">[公式チャンネルの埋め込みプレーヤー枠]</div><p class="sub" style="margin:6px 0 0">YouTubeが提供する埋め込み機能で表示します。</p></div></div></section>`;
 }
 function howSection() {
-  return `<section class="panel"><h2 style="margin-bottom:6px">この数字の出し方</h2><ul class="plain">
+  return `<section class="panel"><h2 style="margin-bottom:6px">この数字の出し方（予定の仕様）</h2><ul class="plain">
   <li>買取価格を公開している複数の店から、1日1回、美品の買取価格を集めます。</li>
-  <li>その日に価格を取得できた全店の単純平均を「平均買取価格」とし、何店の平均かを必ず表示します。</li>
+  <li>その日に価格を取得できた全店の単純平均を「平均買取価格」とし、価格表・カード詳細・ランキングでは何店の平均かを表示します。</li>
   <li>1店しか取得できなかった日は平均を更新せず、最後に2店以上そろった日の値を日付つきで表示します。</li>
   <li>店が期間限定で買取価格を引き上げている場合は、その時点の表示価格を使います。買取を受け付けているか確認できない価格は平均に入れません。</li>
   <li>店名は表示しません。販売価格ではなく、買取価格の参考値です。</li></ul></section>`;
@@ -287,9 +291,9 @@ function howSection() {
 
 /* ===== BOX一覧 ===== */
 function boxesPage() {
-  return `<section><h1>BOX一覧</h1><p class="sub">収録弾 ${S.sets.length} 件。収録弾を選ぶと、カードの価格表が開きます。</p>
+  return `<section><h1>BOX一覧</h1><p class="sub">収録弾 ${S.sets.length} 件（掲載カードのあるもの）。収録弾を選ぶと、カードの価格表が開きます。</p>
   <div class="tabs" style="margin-top:8px">${[["pack", "拡張パック"], ["product", "デッキ・BOX"], ["promo", "プロモ"], ["energy", "基本エネルギー"]].map(([k, l]) => `<button class="tab" data-shelf="${k}" aria-pressed="${S.shelf === k}">${l}</button>`).join("")}</div>${shelf()}</section>
-  <section><h2>シリーズ別の対応状況</h2><p class="sub">1996年の第1弾から現在までを対象に、買取価格を取得できる店がそろったシリーズから順に公開します。</p>
+  <section><h2>シリーズ別の対応予定（ダミー）</h2><p class="sub">本番では1996年の第1弾から現在までを対象に、買取価格を取得できる店がそろったシリーズから順に公開する予定です。まだ公開しているシリーズはありません。このデモに収録しているのはBW以降のみです。並びは新しい順。「PCG」「ADV」などは市場で使われる通称です。</p>
   <div class="panel" style="padding:0;margin-top:8px">${ERAS.map(([n, k]) => `<div class="era"><span style="font-weight:500">${n}</span><span class="s" style="background:${ERA_ST[k][1]};color:${ERA_ST[k][2]}">${ERA_ST[k][0]}</span></div>`).join("")}</div></section>`;
 }
 
@@ -299,11 +303,11 @@ function setPage(slug) {
   const s = S.setMap.get(slug), rows = S.bySet.get(slug) || [], rars = [...new Set(rows.map(r => r[2]))];
   return `<div class="crumb"><button data-go="boxes">BOX一覧</button> ＞ ${esc(s.series)} ＞ ${esc(s.name)}</div>
   <section style="display:grid;gap:12px"><h1>${esc(s.name)}</h1>
-  <div class="sub">掲載 ${s.count} 種・買取100円以上 ${s.count100} 種</div>
+  <div class="sub">掲載 ${s.count} 種</div>
   <div class="filters"><label for="f-rar">レアリティ</label><select id="f-rar"><option value="">すべて</option>${rars.map(r => `<option ${SP.rar === r ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
   <label for="f-min">買取価格</label><input id="f-min" type="number" min="0" step="100" value="${SP.min || ""}" placeholder="下限なし"><span>円以上</span></div>
   <div id="set-table">${setTable()}</div>
-  <p class="sub">平均は、その日に買取価格を取得できた全店で計算します。1店しか取得できなかった日は、最後に2店以上そろった日の平均を日付つきで表示します（更新待ち）。一度もそろっていないカードは「データ不足」です。</p></section>`;
+  <p class="sub">（予定の仕様）平均は、その日に買取価格を取得できた全店で計算します。1店しか取得できなかった日は、最後に2店以上そろった日の平均を日付つきで表示します（更新待ち）。一度もそろっていないカードは「データ不足」です。</p></section>`;
 }
 function setTable() {
   const key = { price: m => m.ok || m.stale ? m.last : -1, number: m => m.c[3], name: m => m.c[4], rar: m => m.c[2], d1: m => m.ok ? m.pct : -Infinity, d7: m => m.ok ? m.p7 : -Infinity, shops: m => m.shops }[SP.sort];
@@ -312,7 +316,7 @@ function setTable() {
   if (!rows.length) return '<p class="empty">条件に合うカードはありません。</p>';
   const cols = [["number", "型番"], ["rar", "レア"], ["name", "カード名"], ["price", "平均買取価格", "r"], ["d1", "前日比", "r"], ["d7", "7日前比", "r"], ["shops", "算出店数", "r"], [null, "30日チャート"]];
   const head = cols.map(([k, l, c]) => `<th class="${c || ""}" ${k ? `data-sort="${k}" aria-sort="${SP.sort === k ? (SP.dir > 0 ? "ascending" : "descending") : "none"}"` : ""}>${l}${SP.sort === k ? (SP.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("");
-  const body = rows.slice(0, SP.limit).map(m => `<tr><td class="num">${esc(m.c[3] || "—")}</td><td><span class="rar ${HI.has(m.c[2]) ? "hi" : ""}">${esc(m.c[2])}</span></td>
+  const body = rows.slice(0, SP.limit).map(m => `<tr><td class="num">${esc(m.c[3] || "型番なし")}</td><td><span class="rar ${HI.has(m.c[2]) ? "hi" : ""}">${esc(m.c[2])}</span></td>
     <td><button class="lk" data-go="c-${m.id}">${esc(m.c[4])}</button></td>
     <td class="r num">${m.none ? '<span class="sub">データ不足</span>' : yen(m.last) + (m.stale ? `<br><span class="sub">${dl(m.gap)} 時点</span>` : "")}</td>
     <td class="r">${m.ok ? chipHtml(m.pct, (m.diff > 0 ? "▲ " : m.diff < 0 ? "▼ " : "") + pct(m.pct)) : '<span class="sub">' + (m.stale ? "更新待ち" : "—") + "</span>"}</td>
@@ -327,7 +331,7 @@ function setTable() {
 function cardPage(id) {
   const c = S.byId.get(id), m = vm(c), s = S.setMap.get(c[1]), held = holdings()[id] || 0;
   const n = Math.min(S.period, m.li + 1), seg = m.s.slice(m.li + 1 - n, m.li + 1), hi = Math.max(...seg), lo = Math.min(...seg);
-  const yHi = Math.max(...m.s), yHiAgo = DAYS - 1 - m.s.lastIndexOf(yHi);
+  const upto = m.s.slice(0, m.li + 1), yHi = Math.max(...upto), yHiAgo = DAYS - 1 - upto.lastIndexOf(yHi);
   const box = (S.bySet.get(c[1]) || []).map(vm).filter(x => x.ok).sort((a, b) => b.last - a.last), pos = box.findIndex(x => x.id === id);
   const same = S.cards.filter(x => x[4] === c[4] && x[0] !== id).slice(0, 8);
   const pills = [[30, "1か月"], [90, "3か月"], [120, "全期間"]].map(([p, l]) => `<button class="tab" data-period="${p}" aria-pressed="${S.period === p}" style="border-radius:4px;min-width:60px">${l}</button>`).join("");
@@ -343,19 +347,19 @@ function cardPage(id) {
     <div style="flex:1 1 240px;display:grid;gap:4px;justify-items:end;align-content:start">
       <div class="sub">平均買取価格（美品）</div><div class="price-big">${m.none ? "データ不足" : yen(m.last)}</div>
       ${m.ok ? chipHtml(m.diff, "前日比 " + dayText(m)) : ""}
-      <div class="sub">${m.ok ? m.shops + "店平均・10月8日更新" : m.stale ? dl(m.gap) + " 時点の平均（本日は1店のみ）" : ""}</div>
+      <div class="sub">${m.ok ? m.shops + "店平均" : m.stale ? dl(m.gap) + " 時点の平均（本日は1店のみ）" : ""}</div>
       ${m.ok ? `<div class="sub">店による価格差：${m.spread}</div>` : ""}${m.boost ? '<span class="chip" style="background:var(--frame);color:#18203a;font-weight:700">強化買取中の店あり</span>' : ""}</div>
   </section>
   ${m.stale ? '<div class="warn">本日は買取価格を取得できた店が1店だけのため、平均を更新していません。表示しているのは、最後に2店以上そろった日の平均です。</div>' : ""}
   ${m.none ? `<div class="panel"><h2>このカードはまだ平均を表示できません</h2><p>2店以上の買取価格がそろった日が一度もないためです。そろった時点から、平均買取価格とチャートを表示します。</p></div>` : `
   <section class="panel"><div class="row" style="justify-content:space-between"><h2>平均買取価格の推移</h2><div class="tabs">${pills}</div></div>
     <div class="chart">${lineChart(seg, seg.map((_, i) => dl(DAYS - 1 - m.li + n - 1 - i)), lineVar(m.p30), c[4] + " の平均買取価格の推移。表示期間の高値 " + yen(hi) + "、安値 " + yen(lo))}</div></section>
-  <dl class="kv" style="margin:0">${kv("7日前比", m.ok ? pct(m.p7) : "—", "t-" + tone(m.p7))}${kv("30日前比", pct(m.p30), "t-" + tone(m.p30))}${kv("表示期間の高値", yen(hi))}${kv("表示期間の安値", yen(lo))}${kv("過去の最高値", yen(yHi) + `<div class="sub" style="font-family:var(--f-body);font-size:12px">${dl(yHiAgo)} に記録</div>`)}</dl>
+  <dl class="kv" style="margin:0">${kv("7日前比", m.ok ? pct(m.p7) : "—", m.ok ? "t-" + tone(m.p7) : "")}${kv("30日前比", m.ok ? pct(m.p30) : "—", m.ok ? "t-" + tone(m.p30) : "")}${kv("表示期間の高値", yen(hi))}${kv("表示期間の安値", yen(lo))}${kv("記録中の最高値", yen(yHi) + `<div class="sub" style="font-family:var(--f-body);font-size:12px">${dl(yHiAgo)} に記録</div>`)}</dl>
   <section class="grid2"><div class="panel"><h2 style="margin-bottom:4px">直近7日の推移</h2>
     <div class="hist sub" style="border:0;font-weight:700"><span>日付</span><span style="text-align:right">平均買取価格</span><span style="text-align:right">算出店数</span></div>
-    ${[0, 1, 2, 3, 4, 5, 6].map(k => `<div class="hist"><span>${dl(k)}</span><span style="text-align:right">${yen(m.s[DAYS - 1 - k])}</span><span style="text-align:right">${m.shops}店</span></div>`).join("")}</div>
-    ${same.length ? `<div class="panel"><h2 style="margin-bottom:4px">同じ名前の別バージョン</h2>${same.map(x => { const v = vm(x), ss = S.setMap.get(x[1]); return `<button class="rowbtn" data-go="c-${x[0]}"><span class="nm"><b style="color:var(--accent);text-decoration:underline">${esc(x[4])}</b><small>${esc(x[3])}・${esc(x[2])}・${esc(ss ? ss.name : "")}</small></span><span class="num">${v.none ? "データ不足" : yen(v.last)}</span></button>`; }).join("")}</div>` : ""}</section>`}
-  <p class="sub">平均買取価格は、買取価格を公開している複数店の価格（美品）を単純平均した参考値です。店名は表示していません。販売価格ではありません。実際の買取価格はカードの状態や各店の査定で変わります。</p>`;
+    ${[0, 1, 2, 3, 4, 5, 6].map(k => k < m.gap ? `<div class="hist"><span>${dl(k)}</span><span style="text-align:right">—（未更新）</span><span style="text-align:right">1店のみ</span></div>` : `<div class="hist"><span>${dl(k)}</span><span style="text-align:right">${yen(m.s[DAYS - 1 - k])}</span><span style="text-align:right">${m.shops}店</span></div>`).join("")}</div>
+    ${same.length ? `<div class="panel"><h2 style="margin-bottom:4px">同じ名前の別バージョン</h2>${same.map(x => { const v = vm(x), ss = S.setMap.get(x[1]); return `<button class="rowbtn" data-go="c-${x[0]}"><span class="nm"><b style="color:var(--accent);text-decoration:underline">${esc(x[4])}</b><small>${esc(x[3] || "型番なし")}・${esc(x[2])}・${esc(ss ? ss.name : "")}</small></span><span class="num">${v.none ? "データ不足" : yen(v.last)}</span></button>`; }).join("")}</div>` : ""}</section>`}
+  <p class="sub">（予定の仕様）平均買取価格は、買取価格を公開している複数店の価格（美品）を単純平均した参考値です。店名は表示していません。販売価格ではありません。実際の買取価格はカードの状態や各店の査定で変わります。</p>`;
 }
 
 /* ===== マイコレクション ===== */
@@ -372,7 +376,7 @@ function minePage() {
       <div class="tile"><div class="sub">登録枚数</div><div class="v">${ids.reduce((a, i) => a + h[i], 0)}枚</div></div></div>
       <div class="panel"><h2>評価額の推移（直近90日）</h2><div class="chart">${lineChart(ser, ser.map((_, i) => dl(89 - i)), "var(--head)", "マイコレクションの買取評価額の推移")}</div></div>
       <div class="tbl"><table style="min-width:720px"><thead><tr><th style="cursor:default">カード</th><th style="cursor:default">枚数</th><th class="r" style="cursor:default">平均買取価格</th><th class="r" style="cursor:default">評価額</th><th style="cursor:default">前日比</th></tr></thead><tbody>
-      ${ms.map(m => `<tr><td><button class="lk" data-go="c-${m.id}">${esc(m.c[4])}</button><div class="sub">${esc(m.c[3])}・${esc(m.c[2])}</div></td>
+      ${ms.map(m => `<tr><td><button class="lk" data-go="c-${m.id}">${esc(m.c[4])}</button><div class="sub">${esc(m.c[3] || "型番なし")}・${esc(m.c[2])}</div></td>
         <td><span class="qty"><button data-q="${m.id}" data-d="-1" aria-label="${esc(m.c[4])} ${esc(m.c[3])} を1枚減らす">−</button><span class="num" style="min-width:28px;text-align:center">${h[m.id]}</span><button data-q="${m.id}" data-d="1" aria-label="${esc(m.c[4])} ${esc(m.c[3])} を1枚増やす">＋</button></span></td>
         <td class="r num">${m.none ? "データ不足" : yen(m.last)}${m.stale ? `<br><span class="sub">${dl(m.gap)} 時点</span>` : ""}</td><td class="r num">${m.none ? "—" : yen(m.last * h[m.id])}</td>
         <td class="num t-${m.ok ? tone(m.diff) : "flat"}">${m.ok ? sg(m.diff * h[m.id]) : "—"}</td></tr>`).join("")}</tbody></table></div>
@@ -418,8 +422,8 @@ q.addEventListener("input", () => {
   const t = norm(q.value); if (!t || !S.ready) { sg.hidden = true; return; }
   nc ??= S.cards.map(c => norm(c[4] + c[3]));
   hits = []; for (let i = 0; i < S.cards.length && hits.length < 500; i++) if (nc[i].includes(t)) hits.push(S.cards[i]);
-  hits.sort((a, b) => (b[5] || 0) - (a[5] || 0)); sel = -1;
-  sg.innerHTML = hits.length ? `<div class="sub" style="padding:6px 12px">${hits.length >= 500 ? "500件以上" : hits.length + "件"}に一致（上位30件を表示）</div>` + hits.slice(0, 30).map(c => { const s = S.setMap.get(c[1]), m = vm(c); return `<a href="#c-${c[0]}"><span>${esc(c[4])}</span><span class="num">${m.none ? "データ不足" : yen(m.last)}</span><small>${esc(s ? s.name : c[1])}・${esc(c[3])}・${esc(c[2])}</small></a>`; }).join("") : '<div class="empty">一致するカードはありません。カード名の一部や型番で試してください。</div>';
+  hits.sort((a, b) => vm(b).last - vm(a).last); sel = -1;
+  sg.innerHTML = hits.length ? `<div class="sub" style="padding:6px 12px">${hits.length >= 500 ? "500件以上" : hits.length + "件"}に一致（上位30件を表示）</div>` + hits.slice(0, 30).map(c => { const s = S.setMap.get(c[1]), m = vm(c); return `<a href="#c-${c[0]}"><span>${esc(c[4])}</span><span class="num">${m.none ? "データ不足" : yen(m.last)}</span><small>${esc(s ? s.name : c[1])}・${esc(c[3] || "型番なし")}・${esc(c[2])}・${m.none ? "1店のみ" : m.stale ? "更新待ち" : m.shops + "店平均"}</small></a>`; }).join("") : '<div class="empty">一致するカードはありません。カード名の一部や型番で試してください。</div>';
   sg.hidden = false;
 });
 q.addEventListener("keydown", e => {
