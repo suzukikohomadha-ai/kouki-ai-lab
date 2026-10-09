@@ -30,8 +30,10 @@ Before we publish, could you please confirm the following?
 3. Could you share any official images or videos (and the required credit lines) that we may use? We will not use material from your website without your permission.
 4. Some figures in your answers, such as "more than 25,000 flights a year" and "a positive return on investment in less than a year", will be presented as information provided by SOMNIACS. Please let us know if you would prefer different wording, or if any figures should not be published.
 5. May we mention AREA15, the Leonardo da Vinci Museum in Rome and Grande Experiences by name? For the 25,000-flights figure, which year (or period) does it refer to?
-6. Are there any usage conditions we should mention, such as age, height, weight or health restrictions, and how wheelchair users usually take part?
-7. If Japanese venues contact us after reading the article, who on your side should we introduce them to?
+   We noticed that the Grande Experiences website presents the Rome installation as "Fly da Vinci" without mentioning Birdly, so we want to make sure that naming it as a Birdly installation is fine with you and your client.
+6. Could you share any public materials (product sheet, press release or web page) about Birdly World Editor, Birdly Moments, 3D Gaussian Splatting and the bird-migration experience, and the recommended floor space including queue and viewing area?
+7. Are there any usage conditions we should mention, such as age, height, weight or health restrictions, and how wheelchair users usually take part?
+8. If Japanese venues contact us after reading the article, who on your side should we introduce them to?
 
 If possible, we would appreciate your confirmation on behalf of SOMNIACS, so that we can note in the article that the comments are used with the company's permission.
 
