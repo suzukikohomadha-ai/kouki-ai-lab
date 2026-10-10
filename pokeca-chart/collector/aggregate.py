@@ -1,8 +1,9 @@
 """日次集計（引き継ぎ資料 3.2）。
 
-通常: 2店以上 → 単純平均と店数 / 更新待ち: 1店のみ → 最後に2店以上そろった日の平均
-データ不足: 2店以上そろった日が一度もない。SOLDOUT の価格は平均に入れない。
+通常: 2店以上 → 中央値と店数（2026-10-10 社長決定で平均から変更） / 更新待ち: 1店のみ → 最後に2店以上そろった日の値
+データ不足: 2店以上そろった日が一度もない。SOLDOUT の価格は計算に入れない。
 """
+import statistics
 
 
 def aggregate_day(con, day):
@@ -12,7 +13,7 @@ def aggregate_day(con, day):
         prices = [r[0] for r in cur.execute(
             "SELECT price FROM price WHERE card_id=? AND day=? AND soldout=0", (cid, day))]
         if len(prices) >= 2:
-            row = (cid, day, round(sum(prices) / len(prices)), len(prices), "normal", day)
+            row = (cid, day, round(statistics.median(prices)), len(prices), "normal", day)
         else:
             last = cur.execute(
                 "SELECT day, avg_price, shop_count FROM daily WHERE card_id=? AND day<? "

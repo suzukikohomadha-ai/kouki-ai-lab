@@ -8,12 +8,13 @@
 - プロモは型番そのもの（例 277/XY-P）で判定する
 - 同じ店に同じキーが複数ある（レアリティ違い・仕様違い）場合は、誤って混ぜないよう照合せず、店ごとの単独行にする
 - 型番のない商品、旧弾（買取チャンピオン）は照合せず単独行（人の確認が必要）
-- SOLDOUT の価格は平均に入れない。平均は2店以上そろったときだけ出す（3.2）
+- SOLDOUT の価格は計算に入れない。代表値は中央値（2026-10-10 社長決定。平均から変更）で、2店以上そろったときだけ出す
 """
 import argparse
 import csv
 import re
 import sqlite3
+import statistics
 import unicodedata
 from collections import defaultdict
 
@@ -40,11 +41,12 @@ def key_of(r):
             return None
         code, head = norm_code(m.group(1)), m.group(2)
     else:
-        m = re.match(r"^(\d+)/\d+$", num)
+        m = re.match(r"^(\d+)/(\d+)$", num)
         if not m:
             return None
-        head = m.group(1)
-    return (code, str(int(head))) if code else None
+        return (code, str(int(m.group(1))), str(int(m.group(2)))) if code else None
+    # ゴールデンホビーは分母がないので空にしておき、あとで分母つきのキーに寄せる
+    return (code, str(int(head)), "") if code else None
 
 
 def norm_name(n):
@@ -60,8 +62,24 @@ def set_title(n):
     return n
 
 
+def variant(row):
+    """カード名から仕様違いを見分ける印を取り出す（ミラーの柄など）。戻り値は（基本名, 印の集合）"""
+    t = unicodedata.normalize("NFKC", (row["name"] or "") + " " + (row["rarity"] or ""))
+    tok = set()
+    if "マスターボール" in t or "マスター柄" in t: tok.add("マスターボール")
+    if "モンスターボール" in t or "モンスター柄" in t: tok.add("モンスターボール")
+    if "エネルギーマーク" in t: tok.add("エネルギーマーク")
+    if "ボール柄" in t and not tok & {"マスターボール", "モンスターボール"}: tok.add("ボール")
+    if "ロケット団マーク" in t or "Rロゴ" in t: tok.add("ロケット団")
+    if "エラー" in t: tok.add("エラー")
+    # ミラー・キラ・ホイルは店ごとの呼び方の違い（光る加工の版）として同じ扱いにする
+    if tok or "ミラー" in t or "キラ" in t or "ホイル" in t: tok.add("ミラー")
+    base = re.sub(r"[\(（【\[][^\)）】\]]*[\)）】\]]", "", unicodedata.normalize("NFKC", row["name"] or ""))
+    return re.sub(r"\s+", "", base), frozenset(tok)
+
+
 def split_group(shops):
-    """同じキーで店内に複数行あるグループを、名前（＋収録弾名）が一致するものどうしでまとめ直す。
+    """同じキーで店内に複数行あるグループを、基本名と仕様（ミラーの柄など）が一致するものどうしでまとめ直す。
     一致が1対1に決まらないものは要確認の単独行にする"""
     used, res = set(), []
     base = max(shops, key=lambda s: len(shops[s]))
@@ -70,7 +88,7 @@ def split_group(shops):
         for s, v in shops.items():
             if s == base:
                 continue
-            cand = [x for x in v if id(x) not in used and norm_name(x["name"]) == norm_name(r["name"])]
+            cand = [x for x in v if id(x) not in used and variant(x) == variant(r)]
             if len(cand) > 1:
                 t = set_title(r["set_name"])
                 cand = [x for x in cand if t and (t in set_title(x["set_name"]) or set_title(x["set_name"]) in t)]
@@ -78,17 +96,30 @@ def split_group(shops):
                 grp[s] = cand
                 used.add(id(cand[0]))
         used.add(id(r))
-        res.append(("照合済み（名前で判定）" if len(grp) > 1 else "同じ型番が複数あり要確認", grp))
+        res.append(("照合済み（名前で判定）" if len(grp) > 1 else "1店のみ（仕様違いあり）", grp))
     for s, v in shops.items():
         for x in v:
             if id(x) not in used:
-                res.append(("同じ型番が複数あり要確認", {s: [x]}))
+                res.append(("1店のみ（仕様違いあり）", {s: [x]}))
     return res
 
 
 def build(con, day):
     rows = [dict(zip([d[0] for d in cur.description], v)) for cur in [con.execute(
         "SELECT * FROM raw_price WHERE day=?", (day,))] for v in cur.fetchall()]
+    # 同じ商品なのに店ごとに弾コードが違うもの（例：THE BEST OF XY は遊々亭 [HP]、ドラゴンスター【XY】）を
+    # 収録弾名の一致で遊々亭のコードにそろえる
+    titles = defaultdict(set)
+    for x in rows:
+        if x["shop"] == "yuyutei" and x["set_code"]:
+            titles[set_title(x["set_name"])].add(x["set_code"])
+    for x in rows:
+        if x["shop"] in ("dorasuta", "goldenhobby"):
+            c = titles.get(set_title(x["set_name"]))
+            if c and len(c) == 1 and norm_code(next(iter(c))) != norm_code(x["set_code"]):
+                x["set_code"] = next(iter(c))
+                if x["shop"] == "goldenhobby":  # ゴールデンホビーは型番側にもコードがある（例 M6a-134）
+                    x["number"] = re.sub(r"^[A-Za-z0-9]+(?:-[A-Za-z])?-", x["set_code"] + "-", x["number"])
     by_key = defaultdict(lambda: defaultdict(list))
     singles = []
     for r in rows:
@@ -97,10 +128,21 @@ def build(con, day):
             singles.append((None, {r["shop"]: [r]}))
         else:
             by_key[k][r["shop"]].append(r)
+    # 分母のないキー（ゴールデンホビー）を、同じ弾・番号で分母つきのキーが1つだけならそこへ寄せる
+    for k in [k for k in by_key if len(k) == 3 and k[2] == ""]:
+        fam = [k2 for k2 in by_key if k2[:2] == k[:2] and k2[2] != ""]
+        if len(fam) == 1:
+            for shop, v in by_key.pop(k).items():
+                by_key[fam[0]][shop].extend(v)
+        elif len(fam) > 1:
+            for shop, v in by_key.pop(k).items():
+                for x in v:
+                    singles.append(("同じ型番が複数あり要確認", {shop: [x]}))
     out = []
     for k, shops in by_key.items():
-        if any(len(v) > 1 for v in shops.values()):
-            # 同じ店に同じキーが複数（2商品で同じ弾コード、ミラー違いなど）→ カード名と収録弾名で見分ける
+        mixed = len(shops) > 1 and len({variant(v[0])[1] for v in shops.values()}) > 1
+        if any(len(v) > 1 for v in shops.values()) or mixed:
+            # 同じ店に同じキーが複数、または店によって仕様（ミラーの柄など）が違う → 名前と仕様で見分ける
             for status, grp in split_group(shops):
                 out.append((status, grp, k))
             continue
@@ -116,7 +158,10 @@ def to_rows(items):
         base = next(shops[s][0] for s in SHOPS if s in shops)
         prices = {s: shops[s][0] for s in shops}
         valid = [r["price"] for r in prices.values() if r["price"] and not r["soldout"]]
-        avg = round(sum(valid) / len(valid)) if len(valid) >= 2 else None
+        med = round(statistics.median(valid)) if len(valid) >= 2 else None
+        # 2店だけで5倍以上離れているものは、どちらかの読み違い・別物の可能性があるので代表値を出さず保留（3.6）
+        if med is not None and len(valid) == 2 and max(valid) >= 5 * min(valid):
+            med, status = None, status + "・価格差大で保留"
         row = {"カード名": base["name"], "型番": base["number"], "レアリティ": base["rarity"],
                "収録弾": base["set_name"], "弾コード": base["set_code"]}
         for s in SHOPS:
@@ -125,10 +170,10 @@ def to_rows(items):
             row[SHOP_JA[s] + "_備考"] = "" if not r else "・".join(x for x in [
                 "SOLDOUT" if r["soldout"] else "", "強化買取中" if r["boosted"] else "",
                 f"取消線{r['struck']}" if r["struck"] else "", r["note"] if s == "champion" else ""] if x)
-        row.update({"価格のある店数": len(valid), "平均（2店以上）": avg if avg is not None else "",
-                    "照合状況": status, "照合キー": "/".join(k) if k else ""})
+        row.update({"価格のある店数": len(valid), "中央値（2店以上）": med if med is not None else "",
+                    "照合状況": status, "照合キー": "/".join(x for x in k if x) if k else ""})
         res.append(row)
-    res.sort(key=lambda r: (-(r["平均（2店以上）"] or 0), -max([r[SHOP_JA[s]] or 0 for s in SHOPS])))
+    res.sort(key=lambda r: (-(r["中央値（2店以上）"] or 0), -max([r[SHOP_JA[s]] or 0 for s in SHOPS])))
     return res
 
 
