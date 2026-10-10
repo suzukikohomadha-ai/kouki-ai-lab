@@ -24,7 +24,10 @@ CREATE TABLE IF NOT EXISTS raw_price (
 );
 CREATE INDEX IF NOT EXISTS raw_price_day ON raw_price(day, shop);
 CREATE TABLE IF NOT EXISTS fetch_log (shop TEXT, day TEXT, url TEXT, status TEXT, rows INTEGER, at TEXT);
+CREATE TABLE IF NOT EXISTS raw_price_stage AS SELECT * FROM raw_price WHERE 0;
+CREATE TABLE IF NOT EXISTS shop_day (shop TEXT, day TEXT, status TEXT, rows INTEGER, note TEXT, PRIMARY KEY (shop, day));
 """
+DROP_WARN = 0.7  # 前回の完了日より件数が3割以上減ったら、店のページの作りが変わった疑いとして警告
 
 
 class Run:
@@ -43,7 +46,8 @@ class Run:
         return body.decode("utf-8", errors="replace")
 
     def save(self, shop, url, rows):
-        self.con.executemany("INSERT INTO raw_price VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        # いったん仮の表に入れ、店の全ページが取れたときだけ本番の表と入れ替える（finish）
+        self.con.executemany("INSERT INTO raw_price_stage VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             [(shop, self.day, r["set_code"], r["set_name"], r["number"], r["name"], r["rarity"], r["price"],
               r["struck"], int(r["boosted"]), int(r["soldout"]), r["url"], r["note"]) for r in rows])
         self.log(shop, url, "ok", len(rows))
@@ -54,9 +58,26 @@ class Run:
         self.con.commit()
         print(f"[{shop}] {status} {n}件 {url}", flush=True)
 
-    def clear(self, shop):
-        self.con.execute("DELETE FROM raw_price WHERE shop=? AND day=?", (shop, self.day))
+    def begin(self, shop):
+        self.con.execute("DELETE FROM raw_price_stage WHERE shop=?", (shop,))
         self.con.commit()
+
+    def finish(self, shop, status, note=""):
+        """完了したときだけ、その日のその店のデータを入れ替える。失敗時は前回の完全なデータを残す"""
+        n = self.con.execute("SELECT count(*) FROM raw_price_stage WHERE shop=?", (shop,)).fetchone()[0]
+        if status == "complete":
+            prev = self.con.execute("SELECT rows FROM shop_day WHERE shop=? AND status='complete' AND day<? "
+                                    "ORDER BY day DESC LIMIT 1", (shop, self.day)).fetchone()
+            if n == 0 or (prev and prev[0] and n < prev[0] * DROP_WARN):
+                status, note = "suspect", f"件数が前回{prev[0] if prev else '-'}件から{n}件に減少（ページの作りが変わった疑い）"
+            self.con.execute("DELETE FROM raw_price WHERE shop=? AND day=?", (shop, self.day))
+            self.con.execute("INSERT INTO raw_price SELECT * FROM raw_price_stage WHERE shop=?", (shop,))
+        done = self.con.execute("SELECT status FROM shop_day WHERE shop=? AND day=?", (shop, self.day)).fetchone()
+        if status in ("complete", "suspect") or not (done and done[0] == "complete"):
+            self.con.execute("INSERT OR REPLACE INTO shop_day VALUES (?,?,?,?,?)", (shop, self.day, status, n, note))
+        self.con.execute("DELETE FROM raw_price_stage WHERE shop=?", (shop,))
+        self.con.commit()
+        return status
 
     # ---- 各店 ----
     def yuyutei(self):
@@ -100,16 +121,25 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="試し用：各店の収録弾（ページ）数の上限")
     a = ap.parse_args()
     run = Run(a.db, a.raw, datetime.date.today().isoformat(), a.limit)
+    bad = []
     for shop in a.shops.split(","):
-        run.clear(shop)
+        run.begin(shop)
         t = time.time()
         try:
             getattr(run, shop)()
+            status = run.finish(shop, "partial" if a.limit else "complete")
         except ShopBlocked as e:
             run.log(shop, str(e), "blocked")  # 拒否された店はその日はここで止める（回避しない）
+            status = run.finish(shop, "blocked", str(e))
         except Exception as e:  # 読み取り失敗などはその店だけ止め、ほかの店は続ける
             run.log(shop, repr(e), "error")
-        print(f"[{shop}] 終了 {time.time() - t:.0f}秒", flush=True)
+            status = run.finish(shop, "error", repr(e))
+        if status != "complete":
+            bad.append(f"{shop}:{status}")
+        print(f"[{shop}] 終了 {time.time() - t:.0f}秒 状態={status}", flush=True)
+    if bad:
+        print("要確認の店: " + ", ".join(bad), flush=True)
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":

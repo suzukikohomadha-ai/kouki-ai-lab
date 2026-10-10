@@ -1,0 +1,7 @@
+[Unit]
+Description=ポケカ買取チャート 1日1回の収集
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/home/ubuntu/pokeca-chart/deploy/run_daily.sh

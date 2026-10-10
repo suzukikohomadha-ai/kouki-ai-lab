@@ -7,11 +7,12 @@ CREATE TABLE IF NOT EXISTS box (
   name TEXT, series TEXT, release_date TEXT
 );
 CREATE TABLE IF NOT EXISTS card (
-  id INTEGER PRIMARY KEY,
-  box_code TEXT REFERENCES box(code),
-  number TEXT,                    -- 型番（例: 134/103）
-  name TEXT, rarity TEXT,
-  UNIQUE (box_code, number, rarity, name)
+  id INTEGER PRIMARY KEY,         -- 日をまたいでも変わらないカード番号
+  name TEXT, number TEXT, rarity TEXT,
+  set_code TEXT, set_name TEXT,
+  match_key TEXT,                 -- 照合キー（例 m6a/134/103）
+  official_url TEXT,              -- 公式サイトへのテキストリンク（暫定はカード名検索）
+  first_seen TEXT
 );
 CREATE TABLE IF NOT EXISTS shop (
   id TEXT PRIMARY KEY,            -- yuyutei など。サイトには出さない
@@ -30,16 +31,21 @@ CREATE TABLE IF NOT EXISTS price (
   price INTEGER,                  -- 表示価格
   struck_price INTEGER,           -- 取り消し線の価格（遊々亭）
   boosted INTEGER DEFAULT 0,
-  soldout INTEGER DEFAULT 0,      -- ドラゴンスター。意味が分かるまで平均に入れない
+  soldout INTEGER DEFAULT 0,      -- ドラゴンスター。意味が分かるまで代表値に入れない
   PRIMARY KEY (card_id, shop_id, day)
 );
 CREATE TABLE IF NOT EXISTS daily (
   card_id INTEGER REFERENCES card(id),
   day TEXT,
-  avg_price INTEGER, shop_count INTEGER,
+  median_price INTEGER, shop_count INTEGER,  -- 代表値は中央値（2026-10-10 社長決定）
   state TEXT,                     -- normal / stale / insufficient
   asof_day TEXT,                  -- stale のとき最後に2店以上そろった日
   PRIMARY KEY (card_id, day)
+);
+CREATE TABLE IF NOT EXISTS shop_day (
+  shop TEXT, day TEXT, status TEXT,  -- complete / partial / blocked / error
+  rows INTEGER, note TEXT,
+  PRIMARY KEY (shop, day)
 );
 """
 

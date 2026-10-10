@@ -6,17 +6,24 @@
 import statistics
 
 
+# 代表値に使わない店（買取チャンピオンは旧弾のみで他店と照合できないため。2026-10-10 社長決定）
+EXCLUDED_SHOPS = ("champion",)
+
+
 def aggregate_day(con, day):
     cur = con.cursor()
-    cards = [r[0] for r in cur.execute("SELECT DISTINCT card_id FROM price WHERE day=?", (day,))]
+    # 一度でも価格が記録されたカードはすべて対象にする（その日に価格がなくても「更新待ち」の行を作る）
+    cards = [r[0] for r in cur.execute("SELECT DISTINCT card_id FROM price WHERE day<=?", (day,))]
+    q = "SELECT price FROM price WHERE card_id=? AND day=? AND soldout=0 AND shop_id NOT IN (%s)" % ",".join("?" * len(EXCLUDED_SHOPS))
     for cid in cards:
-        prices = [r[0] for r in cur.execute(
-            "SELECT price FROM price WHERE card_id=? AND day=? AND soldout=0", (cid, day))]
-        if len(prices) >= 2:
+        prices = [r[0] for r in cur.execute(q, (cid, day, *EXCLUDED_SHOPS)) if r[0]]
+        # 2店だけで5倍以上離れている日は、読み違い・別物の可能性があるので採用しない（3.6 異常値の保留）
+        ok = len(prices) >= 3 or (len(prices) == 2 and max(prices) < 5 * min(prices))
+        if ok:
             row = (cid, day, round(statistics.median(prices)), len(prices), "normal", day)
         else:
             last = cur.execute(
-                "SELECT day, avg_price, shop_count FROM daily WHERE card_id=? AND day<? "
+                "SELECT day, median_price, shop_count FROM daily WHERE card_id=? AND day<? "
                 "AND state='normal' ORDER BY day DESC LIMIT 1", (cid, day)).fetchone()
             row = ((cid, day, last[1], last[2], "stale", last[0]) if last
                    else (cid, day, None, len(prices), "insufficient", None))

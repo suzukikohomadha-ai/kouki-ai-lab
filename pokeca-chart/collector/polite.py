@@ -53,6 +53,10 @@ class PoliteFetcher:
             if status in BLOCK_CODES or status == 0:
                 self._blocked.add(host)
                 raise ShopBlocked(f"{host}: robots.txt が HTTP {status}")
+            if status >= 500:
+                # robots.txt がサーバーエラーのときは「すべて拒否」として扱う（RFC 9309）
+                self._blocked.add(host)
+                raise ShopBlocked(f"{host}: robots.txt が HTTP {status}")
             rp = urllib.robotparser.RobotFileParser()
             if status == 200:
                 rp.parse(body.decode("utf-8", errors="replace").splitlines())

@@ -105,8 +105,10 @@ def split_group(shops):
 
 
 def build(con, day):
+    # 全ページ取得できた店（shop_day が complete）のデータだけを使う。途中で止まった店は混ぜない
     rows = [dict(zip([d[0] for d in cur.description], v)) for cur in [con.execute(
-        "SELECT * FROM raw_price WHERE day=?", (day,))] for v in cur.fetchall()]
+        "SELECT * FROM raw_price WHERE day=? AND shop IN (SELECT shop FROM shop_day WHERE day=? AND status='complete')",
+        (day, day))] for v in cur.fetchall()]
     # 同じ商品なのに店ごとに弾コードが違うもの（例：THE BEST OF XY は遊々亭 [HP]、ドラゴンスター【XY】）を
     # 収録弾名の一致で遊々亭のコードにそろえる
     titles = defaultdict(set)

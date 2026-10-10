@@ -1,0 +1,9 @@
+[Unit]
+Description=ポケカ買取チャート 毎日深夜3時に実行
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Asia/Tokyo
+Persistent=true
+
+[Install]
+WantedBy=timers.target
