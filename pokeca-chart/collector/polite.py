@@ -64,6 +64,9 @@ class PoliteFetcher:
     def fetch(self, url):
         """取得して本文を返す。拒否・禁止なら ShopBlocked を出す（再試行しない）"""
         p = urllib.parse.urlsplit(url)
+        # 日本語を含むURLは送れる形に変換する
+        url = urllib.parse.urlunsplit((p.scheme, p.netloc, urllib.parse.quote(p.path, safe="/%"),
+                                       urllib.parse.quote(p.query, safe="=&%+"), ""))
         if p.netloc in self._blocked:
             raise ShopBlocked(p.netloc + ": 本日は停止中")
         rp = self._rules(p.netloc, p.scheme)

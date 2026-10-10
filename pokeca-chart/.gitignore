@@ -2,3 +2,4 @@ out/
 __pycache__/
 *.db
 .env
+data/
