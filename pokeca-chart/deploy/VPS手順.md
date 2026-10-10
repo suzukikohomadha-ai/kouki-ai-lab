@@ -18,8 +18,11 @@
 ## 2. プログラムを置く（🤖が案内、🙋が貼り付け）
 ```
 sudo apt install -y git python3
-git clone https://github.com/suzukikohomadha-ai/kouki-ai-lab.git
-cp -r kouki-ai-lab/pokeca-chart ~/pokeca-chart
+sudo timedatectl set-timezone Asia/Tokyo     # サーバーの時刻を日本時間にする
+# ポケカのフォルダだけを取り出す（ほかの事業のファイルはVPSに置かない）
+git clone --filter=blob:none --sparse https://github.com/suzukikohomadha-ai/kouki-ai-lab.git ~/repo
+cd ~/repo && git sparse-checkout set pokeca-chart
+cp -r ~/repo/pokeca-chart ~/pokeca-chart && rm -rf ~/repo
 cd ~/pokeca-chart
 cp deploy/env.example.sh deploy/env.sh
 nano deploy/env.sh      # 連絡先メールアドレスを書き換えて保存（Ctrl+O → Enter → Ctrl+X）
@@ -31,7 +34,7 @@ nano deploy/env.sh      # 連絡先メールアドレスを書き換えて保存
 cd ~/pokeca-chart && ./deploy/run_daily.sh; echo 終了コード=$?
 tail -20 data/collect.log
 ```
-終了コード 0 で、最後に「spreadsheet_100yen_YYYYMMDD.csv: N行」が出ればOK（約70分かかる）。
+終了コード 0（失敗や要確認の店があると 0 以外）で、最後に「spreadsheet_100yen_YYYYMMDD.csv: N行」が出ればOK（約70分かかる）。
 
 ## 4. 毎日自動で動かす（🙋）
 ```
@@ -46,5 +49,5 @@ systemctl list-timers | grep pokeca
 パスワードログインの停止（鍵ログインへ切り替え）、ファイアウォール（ufw）の設定。収集を動かす前後どちらでもよいが、公開前には必ず行う。
 
 ## 注意
-- 収集データ（`data/`）には店名と店ごとの価格が入る。社内用として扱い、公開しない。
+- 収集データ（`data/`）には店名と店ごとの価格が入る。社内用として扱い、公開しない。スプレッドシートに取り込む場合も、共有範囲は社内（社長のみ）に限る。
 - 拒否（403・429）が出た店はその日は止まる。回避はしない。

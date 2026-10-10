@@ -2,8 +2,8 @@
 
 使い方: python3 -m collector.pipeline --db data/pokeca.db --out data/ [--day YYYY-MM-DD]
 
-- カード番号（card.id）は日をまたいで変わらない。各店の商品（shop_item）がどのカードかを覚えておき、
-  翌日以降は同じ商品を同じカードにひも付ける
+- カード番号（card.id）は、各店の商品（shop_item）がどのカードかを覚えておくことで、翌日以降も同じ番号にひも付ける。
+  ただし、それまで別カードだったものが同じカードと判定された日は、小さい番号に統合し、もう一方の番号は以後更新されない
 - 記録は全カード分残す。100円以上で絞るのはスプレッドシート用の書き出しだけ（2026-10-10 社長決定）
 - 100円の判定は中央値で行う
 """
@@ -17,7 +17,7 @@ import unicodedata
 import urllib.parse
 
 from .aggregate import aggregate_day
-from .build import SHOPS, SHOP_JA, build
+from .build import SHOPS, SHOP_JA, build, shop_key
 from .db import SCHEMA as DB_SCHEMA
 from .collect import SCHEMA as RAW_SCHEMA
 
@@ -30,11 +30,6 @@ def official_search_url(name):
     カードごとの詳細ページ（details.php/card/{番号}）は、番号の集め方の確認（リョウ）が終わるまで使わない"""
     base = re.sub(r"[\(（【\[][^\)）】\]]*[\)）】\]]", "", unicodedata.normalize("NFKC", name or "")).strip()
     return OFFICIAL_SEARCH + urllib.parse.quote(base) if base else ""
-
-
-def shop_key(r):
-    """店の中で商品を一意に表すキー。店のカードページURLがあればそれを使う"""
-    return r["url"] or "|".join([r["set_code"] or "", r["number"] or "", r["name"] or "", r["rarity"] or ""])
 
 
 def record(con, day):

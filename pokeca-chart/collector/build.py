@@ -104,11 +104,25 @@ def split_group(shops):
     return res
 
 
+def shop_key(r):
+    """店の中で商品を一意に表すキー。店のカードページURLがあればそれを使う"""
+    return r["url"] or "|".join([r["set_code"] or "", r["number"] or "", r["name"] or "", r["rarity"] or ""])
+
+
 def build(con, day):
     # 全ページ取得できた店（shop_day が complete）のデータだけを使う。途中で止まった店は混ぜない
     rows = [dict(zip([d[0] for d in cur.description], v)) for cur in [con.execute(
         "SELECT * FROM raw_price WHERE day=? AND shop IN (SELECT shop FROM shop_day WHERE day=? AND status='complete')",
         (day, day))] for v in cur.fetchall()]
+    # 同じ商品が店の一覧に2回載っていることがある（ドラゴンスターで同じ商品が2つのシリーズページに出る、
+    # 買取チャンピオンで同じカードが2回載る等）。同じ店の同じ商品は1件にまとめる
+    seen, uniq = set(), []
+    for x in rows:
+        k = (x["shop"], shop_key(x))
+        if k not in seen:
+            seen.add(k)
+            uniq.append(x)
+    rows = uniq
     # 同じ商品なのに店ごとに弾コードが違うもの（例：THE BEST OF XY は遊々亭 [HP]、ドラゴンスター【XY】）を
     # 収録弾名の一致で遊々亭のコードにそろえる
     titles = defaultdict(set)

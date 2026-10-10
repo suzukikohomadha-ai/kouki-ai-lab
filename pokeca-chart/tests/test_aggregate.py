@@ -16,12 +16,12 @@ for s, p in (("a", 4800), ("b", 3500), ("c", 5000)): put(s, "2026-10-08", p)
 aggregate_day(con, "2026-10-08")
 assert con.execute("SELECT median_price,shop_count,state FROM daily WHERE day='2026-10-08'").fetchone() == (4800, 3, "normal")
 
-# 1店だけ → 更新待ち（前回の平均を日付つきで保持）
+# 1店だけ → 更新待ち（前回の中央値を日付つきで保持）
 put("a", "2026-10-09", 4900)
 aggregate_day(con, "2026-10-09")
 assert con.execute("SELECT median_price,state,asof_day FROM daily WHERE day='2026-10-09'").fetchone() == (4800, "stale", "2026-10-08")
 
-# SOLDOUT は平均に入れない → 1店扱い
+# SOLDOUT は中央値に入れない → 1店扱い
 put("a", "2026-10-10", 4900); put("b", "2026-10-10", 9999, sold=1)
 aggregate_day(con, "2026-10-10")
 assert con.execute("SELECT state FROM daily WHERE day='2026-10-10'").fetchone()[0] == "stale"

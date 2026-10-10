@@ -283,7 +283,7 @@ function newsSection() {
 function howSection() {
   return `<section class="panel"><h2 style="margin-bottom:6px">この数字の出し方（予定の仕様）</h2><ul class="plain">
   <li>買取価格を公開している複数の店から、1日1回、美品の買取価格を集めます。</li>
-  <li>その日に価格を取得できた全店の価格の中央値（2店のときは2つの価格の真ん中）を「買取価格の中央値」とし、価格表・カード詳細・ランキングでは何店の価格から出したかを表示します。</li>
+  <li>その日に価格を取得できた店の価格の中央値（2店のときは2つの価格の真ん中）を「買取価格の中央値」とし、価格表・カード詳細・ランキングでは何店の価格から出したかを表示します。旧弾だけを扱う店など、他店と同じカードを照合できない店の価格は計算に使いません。</li><li>2店だけで価格が5倍以上離れている日は、読み違いや別のカードの可能性があるため中央値を更新しません。</li>
   <li>1店しか取得できなかった日は中央値を更新せず、最後に2店以上そろった日の値を日付つきで表示します。</li>
   <li>店が期間限定で買取価格を引き上げている場合は、その時点の表示価格を使います。買取を受け付けているか確認できない価格は計算に入れません。</li>
   <li>店名は表示しません。販売価格ではなく、買取価格の参考値です。</li></ul></section>`;
@@ -307,7 +307,7 @@ function setPage(slug) {
   <div class="filters"><label for="f-rar">レアリティ</label><select id="f-rar"><option value="">すべて</option>${rars.map(r => `<option ${SP.rar === r ? "selected" : ""}>${esc(r)}</option>`).join("")}</select>
   <label for="f-min">買取価格</label><input id="f-min" type="number" min="0" step="100" value="${SP.min || ""}" placeholder="下限なし"><span>円以上</span></div>
   <div id="set-table">${setTable()}</div>
-  <p class="sub">（予定の仕様）中央値は、その日に買取価格を取得できた全店で計算します。1店しか取得できなかった日は、最後に2店以上そろった日の中央値を日付つきで表示します（更新待ち）。一度もそろっていないカードは「データ不足」です。</p></section>`;
+  <p class="sub">（予定の仕様）中央値は、その日に買取価格を取得できた店で計算します（他店と照合できない店は除く。2店だけで5倍以上離れた日は更新しない）。1店しか取得できなかった日は、最後に2店以上そろった日の中央値を日付つきで表示します（更新待ち）。一度もそろっていないカードは「データ不足」です。</p></section>`;
 }
 function setTable() {
   const key = { price: m => m.ok || m.stale ? m.last : -1, number: m => m.c[3], name: m => m.c[4], rar: m => m.c[2], d1: m => m.ok ? m.pct : -Infinity, d7: m => m.ok ? m.p7 : -Infinity, shops: m => m.shops }[SP.sort];

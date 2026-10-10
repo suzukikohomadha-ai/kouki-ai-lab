@@ -13,6 +13,7 @@ import os
 import sqlite3
 import sys
 import time
+from zoneinfo import ZoneInfo
 
 from . import shops as S
 from .polite import PoliteFetcher, ShopBlocked
@@ -120,7 +121,8 @@ def main():
     ap.add_argument("--shops", default="yuyutei,dorasuta,goldenhobby,champion")
     ap.add_argument("--limit", type=int, default=0, help="試し用：各店の収録弾（ページ）数の上限")
     a = ap.parse_args()
-    run = Run(a.db, a.raw, datetime.date.today().isoformat(), a.limit)
+    # 記録日は日本時間で決める（サーバーの時刻設定がUTCでも前日扱いにならないように）
+    run = Run(a.db, a.raw, datetime.datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat(), a.limit)
     bad = []
     for shop in a.shops.split(","):
         run.begin(shop)
@@ -134,7 +136,7 @@ def main():
         except Exception as e:  # 読み取り失敗などはその店だけ止め、ほかの店は続ける
             run.log(shop, repr(e), "error")
             status = run.finish(shop, "error", repr(e))
-        if status != "complete":
+        if status != "complete":  # suspect（件数の急減）・partial・blocked・error
             bad.append(f"{shop}:{status}")
         print(f"[{shop}] 終了 {time.time() - t:.0f}秒 状態={status}", flush=True)
     if bad:
