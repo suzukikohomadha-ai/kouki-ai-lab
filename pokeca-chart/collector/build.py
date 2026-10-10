@@ -14,6 +14,7 @@ import argparse
 import csv
 import re
 import sqlite3
+import unicodedata
 from collections import defaultdict
 
 SHOPS = ["yuyutei", "dorasuta", "goldenhobby", "champion"]
@@ -46,6 +47,45 @@ def key_of(r):
     return (code, str(int(head))) if code else None
 
 
+def norm_name(n):
+    n = unicodedata.normalize("NFKC", n or "")
+    n = re.sub(r"\((?:\d+/[^)]*|[A-Za-z]+-P)\)", "", n)  # 型番の括弧（ドラゴンスター）
+    return re.sub(r"\s+", "", n)
+
+
+def set_title(n):
+    n = unicodedata.normalize("NFKC", n or "")
+    n = re.sub(r"^[\[【][^\]】]*[\]】]", "", n)
+    n = re.sub(r"拡張パック|強化拡張パック|ハイクラスパック|コンセプトパック|[「」\s]", "", n)
+    return n
+
+
+def split_group(shops):
+    """同じキーで店内に複数行あるグループを、名前（＋収録弾名）が一致するものどうしでまとめ直す。
+    一致が1対1に決まらないものは要確認の単独行にする"""
+    used, res = set(), []
+    base = max(shops, key=lambda s: len(shops[s]))
+    for r in shops[base]:
+        grp = {base: [r]}
+        for s, v in shops.items():
+            if s == base:
+                continue
+            cand = [x for x in v if id(x) not in used and norm_name(x["name"]) == norm_name(r["name"])]
+            if len(cand) > 1:
+                t = set_title(r["set_name"])
+                cand = [x for x in cand if t and (t in set_title(x["set_name"]) or set_title(x["set_name"]) in t)]
+            if len(cand) == 1:
+                grp[s] = cand
+                used.add(id(cand[0]))
+        used.add(id(r))
+        res.append(("照合済み（名前で判定）" if len(grp) > 1 else "同じ型番が複数あり要確認", grp))
+    for s, v in shops.items():
+        for x in v:
+            if id(x) not in used:
+                res.append(("同じ型番が複数あり要確認", {s: [x]}))
+    return res
+
+
 def build(con, day):
     rows = [dict(zip([d[0] for d in cur.description], v)) for cur in [con.execute(
         "SELECT * FROM raw_price WHERE day=?", (day,))] for v in cur.fetchall()]
@@ -60,10 +100,9 @@ def build(con, day):
     out = []
     for k, shops in by_key.items():
         if any(len(v) > 1 for v in shops.values()):
-            # 同じ店に同じキーが複数 → 照合をやめて単独行にする
-            for shop, v in shops.items():
-                for r in v:
-                    singles.append(("同じ型番が複数あり要確認", {shop: [r]}))
+            # 同じ店に同じキーが複数（2商品で同じ弾コード、ミラー違いなど）→ カード名と収録弾名で見分ける
+            for status, grp in split_group(shops):
+                out.append((status, grp, k))
             continue
         out.append(("照合済み" if len(shops) > 1 else "1店のみ", shops, k))
     for status, shops in singles:

@@ -106,7 +106,7 @@ def parse_dorasuta(html, set_name=""):
         if not (name and price):
             continue
         nm = _txt(name.group(1))
-        num = re.search(r"\(([0-9A-Za-z\-]+/[0-9A-Za-z\-]+)\)", nm)
+        num = re.search(r"\(([0-9]+/[0-9A-Za-z\-]+)(?:\s+[^)]*)?\)", nm)
         rows.append(dict(set_code=bracket.group(1) if bracket else "", set_name=set_name,
                          number=num.group(1) if num else "", name=nm, rarity=_txt(name.group(2)),
                          price=_yen(price.group(1)), struck=None, boosted=False,
