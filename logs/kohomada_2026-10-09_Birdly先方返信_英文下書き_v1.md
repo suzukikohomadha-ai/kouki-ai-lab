@@ -35,6 +35,12 @@ Before we publish, could you please confirm the following?
 7. Are there any usage conditions we should mention, such as age, height, weight or health restrictions, and how wheelchair users usually take part?
 8. If Japanese venues contact us after reading the article, who on your side should we introduce them to?
 
+Thank you also for the Grande Experiences case study (THE LUME Melbourne). We would like to include it in the article as well. Could you please confirm:
+
+- that we may present the case study and its figures in the article, credited as material provided by SOMNIACS;
+- that we may quote Craig Smith's comment with his name and title (or whether we should ask Grande Experiences directly);
+- whether "500+ increase in social media shares" means 500 or more shares, or an increase of more than 500%.
+
 If possible, we would appreciate your confirmation on behalf of SOMNIACS, so that we can note in the article that the comments are used with the company's permission.
 
 Once the Japanese draft is ready, we will send you an English summary so you can review it before publication.
