@@ -7,7 +7,7 @@ v4の変更点（ブラッシュアップ監査v1の提案ID）：冒頭に「�
 1. 見出し画像：#6 2026/09/07-medi-wave-high-front-aerial-photoreal.webp（見出し画像v2を使用）「イメージ図　画像提供：NoviOcean AB」
 2. 「はじめに」章の末尾（「…ご紹介することにしました。」の後）：#9 2026/09/noviocean-island-community-nearshore.webp「離島での活用イメージ（コンセプト図）　画像提供：NoviOcean AB」
 3. 「Medi Wave 850Hの仕組み」の見出し直後：#1 2026/09/01-medi-wave-front-right-hero-photoreal.webp「Medi Wave 850H（イメージ図。同社によると、実際の設計は個別の協議で開示）　画像提供：NoviOcean AB」
-4. 「現在の開発段階」の「…示しています（同社Validationページ）。」の直後、段階の箇条書きの直前：logs/kohomada_2026-10-14_NoviOcean紹介note_開発段階図_v2.png「NoviOceanの開発段階（同社の公開情報をもとに株式会社コホマダ作成）」。箇条書きは削らずに残す。図中の「確認日 2026年10月13日」は、公開日に確認日を更新する場合はカエデに図の修正を依頼する
+4. 「現在の開発段階」の「…示しています（同社Validationページ）。」の直後、段階の箇条書きの直前：logs/kohomada_2026-10-17_NoviOcean紹介note_開発段階図_v2.png「NoviOceanの開発段階（同社の公開情報をもとに株式会社コホマダ作成）」。箇条書きは削らずに残す。図中の「確認日 2026年10月13日」は、公開日に確認日を更新する場合はカエデに図の修正を依頼する
 5. 段階の箇条書きの直後：#16 2026/09/NoviOcean-NO3-June-2026.webp「海上で試験中のNO3デモ機（2026年6月）　画像提供：NoviOcean AB」※実写であることをNoviOceanに書面で確認できるまでは使わない
 6. 「水産・養殖」の見出し直後：#10 2026/09/noviocean-offshore-fish-farm-aquaculture.webp「養殖での活用イメージ（コンセプト図）　画像提供：NoviOcean AB」
 7. 「沿岸データセンター・海水淡水化」の見出し直後：#11 2026/09/noviocean-coastal-data-centre.webp「沿岸データセンターでの活用イメージ（コンセプト図）　画像提供：NoviOcean AB」（#12 2026/09/noviocen-medi-wave-water-desalination.webp を使う場合は「海水淡水化での活用イメージ（コンセプト図）　画像提供：NoviOcean AB」）
