@@ -54,10 +54,10 @@ Birdlyは、体験者が全身を使って「鳥として飛ぶ」VRシミュレ
 **誕生の経緯**
 
 - チューリッヒ芸術大学（ZHdK）の研究プロジェクトから生まれました
-- 2014年に、世界的なCG・インタラクティブ技術の学会であるSIGGRAPH（バンクーバー）で賞を受賞しました
+- 2014年、世界的なCG・インタラクティブ技術の学会であるSIGGRAPH（バンクーバー）のEmerging Technologies部門に出展し、Laval Virtual賞を受賞しました
 - 2015年には、サンダンス映画祭の先端表現部門「New Frontier」で展示されました
 - 2015年にSOMNIACS社として大学からスピンオフしました
-- 同社の公式サイトでは、世界17か国に60台以上が設置されていると紹介されています（2022年時点の掲載）
+- 同社の公式サイトでは、世界17か国に60台以上が設置されていると紹介されています（掲載時期は明記されておらず、最新の台数とは異なる可能性があります）
 
 ### なぜ「飛ぶ」なのか
 
@@ -207,7 +207,7 @@ Birdlyのコンテンツは、都市の上空を飛ぶものだけではあり�
 
 ---
 
-**出典・注記**（確認日：2026年10月9日）
+**出典・注記**（確認日：2026年10月17日）
 
 - SOMNIACS AG「Birdly」公式サイト https://birdly.com/ （/about：2015年スピンオフ、/birdlysimulator：本体寸法、/fly-birdly：設置台数、/getbirdly：カスタム制作）
 - AREA15「Birdly」 https://area15.com/experiences/birdly/ （利用条件・注意書き）
@@ -215,7 +215,8 @@ Birdlyのコンテンツは、都市の上空を飛ぶものだけではあり�
 - Sundance Institute アーカイブ https://history.sundance.org/films/8659/birdly
 - SOMNIACS AG提供資料「Case Study: Grande Experiences — Birdly VR at THE LUME Melbourne」（確認日：2026年10月15日、同社の許諾を得て掲載）
 - ZHdK Interaction Design「Birdly」 https://interactiondesign.zhdk.ch/en/projects/birdly
-- SOMNIACS AG サポートサイト「Birdly World」 https://support.birdly.com/hc/en-us/articles/11763947256732-Birdly-World
+- SOMNIACS AG サポートサイト「Birdly World」 https://support.birdly.com/hc/en-us/articles/11763947256732-Birdly-World （製品の存在と技術仕様の確認用。エディター機能などは同社担当者の回答による）
+- コンテンツ：Paradise Lost https://support.birdly.com/hc/en-us/articles/360011556459-Paradise-Lost ／ Jurassic Flight https://birdly.com/experiences/jurassic-flight ／ Insects https://birdly.com/experiences/insects ／ Wingsuit Racer https://support.birdly.com/hc/en-us/articles/4409707490066-Birdly-Wingsuit-Racer
 - blooloop（2024年2月29日） https://blooloop.com/technology/news/d3d-cinema-unveils-birdly-world-experience/
 - The VR Collective（2026年1月4日） https://thevrcollective.com/fly-moon-with-birdly-next-immersive-leap/
 
