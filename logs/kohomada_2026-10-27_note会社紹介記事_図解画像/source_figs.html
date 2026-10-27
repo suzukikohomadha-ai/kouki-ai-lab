@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#14284b;--navy2:#24406f;--gold:#c9a34e;--goldl:#f4ead2;--ink:#1f2633;--sub:#5b6577;--line:#dde2ea;--bg:#f7f8fb;--teal:#1f6f78;--tealL:#e3f1f2;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans JP","IPAGothic",sans-serif;color:var(--ink);background:#fff}
+.fig{width:1280px;background:var(--bg);padding:56px 64px 44px;position:relative;margin-bottom:40px}
+.eyebrow{font-size:18px;font-weight:700;color:var(--gold);letter-spacing:.12em}
+h1{font-size:40px;font-weight:900;color:var(--navy);margin:8px 0 6px;line-height:1.35}
+.lead{font-size:20px;color:var(--sub);margin-bottom:34px}
+.foot{margin-top:30px;font-size:15px;color:#8a93a3;text-align:right}
+.foot b{color:var(--navy);font-weight:700}
+/* fig1 */
+.pillars{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.pillar{background:#fff;border-radius:18px;border:2px solid var(--line);overflow:hidden}
+.pillar .hd{padding:24px 30px;color:#fff}
+.pillar.a .hd{background:var(--navy)} .pillar.b .hd{background:var(--teal)}
+.hd .no{font-size:16px;letter-spacing:.1em;opacity:.8;font-weight:700}
+.hd .tt{font-size:32px;font-weight:900;margin-top:2px}
+.pillar .bd{padding:24px 30px 28px}
+.bd .q{font-size:17px;color:var(--sub);font-weight:700;margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.chip{font-size:18px;font-weight:500;padding:8px 16px;border-radius:999px}
+.a .chip{background:#e8edf6;color:var(--navy)} .b .chip{background:var(--tealL);color:var(--teal)}
+.point{border-top:2px dashed var(--line);padding-top:18px;font-size:19px;line-height:1.7}
+.point em{font-style:normal;font-weight:700;background:linear-gradient(transparent 60%,var(--goldl) 60%)}
+.base{margin-top:26px;background:var(--navy);color:#fff;border-radius:14px;padding:20px 28px;font-size:21px;font-weight:700;text-align:center}
+.base span{color:var(--gold)}
+/* fig2 questions */
+.qs{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.qc{background:#fff;border-radius:16px;border:2px solid var(--line);padding:26px 22px;text-align:center}
+.qc .n{width:54px;height:54px;border-radius:50%;background:var(--navy);color:#fff;font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.qc .t{font-size:24px;font-weight:900;color:var(--navy);line-height:1.4}
+.qc .d{font-size:17px;color:var(--sub);margin-top:10px;line-height:1.6}
+.arrow-down{text-align:center;font-size:30px;color:var(--gold);margin:16px 0}
+.ans{background:#fff;border:3px solid var(--gold);border-radius:16px;padding:22px 30px;display:flex;align-items:center;gap:24px}
+.ans .lb{background:var(--gold);color:#fff;font-weight:900;font-size:18px;padding:8px 16px;border-radius:8px;white-space:nowrap}
+.ans .tx{font-size:22px;font-weight:700;color:var(--navy);line-height:1.6}
+/* fig3 flow */
+.flow{display:grid;grid-template-columns:1fr 46px 1fr 46px 1fr;align-items:stretch}
+.ph{background:#fff;border-radius:16px;border:2px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+.ph .top{padding:18px 22px;background:var(--navy);color:#fff}
+.ph:nth-child(3) .top{background:var(--navy2)} .ph:nth-child(5) .top{background:var(--gold)}
+.ph .st{font-size:15px;font-weight:700;letter-spacing:.1em;opacity:.85}
+.ph .nm{font-size:27px;font-weight:900}
+.ph ul{list-style:none;padding:20px 22px;flex:1}
+.ph li{font-size:19px;padding:10px 0 10px 28px;border-bottom:1px solid #eef0f4;position:relative;line-height:1.45}
+.ph li:last-child{border-bottom:none}
+.ph li:before{content:"";position:absolute;left:4px;top:19px;width:12px;height:12px;border-radius:3px;background:var(--gold)}
+.ph .goal{margin:0 22px 20px;font-size:16px;color:var(--sub);background:var(--bg);border-radius:10px;padding:12px 14px;line-height:1.55}
+.ph .goal b{color:var(--navy);display:block}
+.ar{display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--gold);font-weight:900}
+.note{margin-top:22px;font-size:18px;color:var(--sub);line-height:1.6;background:#fff;border-left:6px solid var(--gold);padding:14px 20px;border-radius:0 10px 10px 0}
+/* fig4 table */
+table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:16px;overflow:hidden;border:2px solid var(--line)}
+th{background:var(--teal);color:#fff;font-size:20px;font-weight:700;padding:16px 22px;text-align:left}
+th:first-child{width:46%}
+td{font-size:19px;padding:17px 22px;border-top:1px solid #e7ebf0;vertical-align:middle;line-height:1.5}
+tr:nth-child(even) td{background:#fafbfc}
+td.q{font-weight:700;color:var(--ink)}
+td.q:before{content:"「";color:var(--teal)} td.q:after{content:"」";color:var(--teal)}
+.tag{display:inline-block;font-size:16px;font-weight:700;background:var(--tealL);color:var(--teal);padding:5px 12px;border-radius:7px;margin:3px 6px 3px 0}
+.tbl-note{margin-top:14px;font-size:15px;color:#8a93a3}
+/* fig5 compare */
+.cmp{display:grid;grid-template-columns:1fr 1.25fr;gap:32px;align-items:stretch}
+.box{background:#fff;border-radius:18px;border:2px solid var(--line);padding:26px 30px}
+.box h3{font-size:24px;font-weight:900;margin-bottom:4px}
+.box .sb{font-size:16px;color:var(--sub);margin-bottom:20px}
+.bad h3{color:#8a93a3} .bad{display:flex;flex-direction:column} .bad .stepv{flex:1;justify-content:center}
+.stepv{display:flex;flex-direction:column;gap:12px}
+.sv{border-radius:12px;padding:16px 20px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:14px}
+.sv small{font-size:16px;font-weight:500;color:var(--sub);display:block;margin-top:2px}
+.sv .ic{font-size:15px;font-weight:900;color:#fff;border-radius:6px;padding:4px 9px;white-space:nowrap}
+.bad .sv{background:#f1f2f5;color:#6b7381}
+.bad .sv .ic{background:#a7aebb}
+.bad .x{background:#fdecec;color:#b44545;border:2px dashed #e3a5a5}
+.good{border:3px solid var(--gold)}
+.good h3{color:var(--navy)}
+.good .sv{background:#eef2f8;color:var(--navy)}
+.good .sv .ic{background:var(--navy)}
+.good .sv.hl{background:var(--goldl);border:2px solid var(--gold)}
+.good .sv.hl .ic{background:var(--gold)}
+.good .o{background:#e6f3ea;color:#2a6b3e;border:2px solid #9bcfac}
+.dn{text-align:center;color:var(--gold);font-size:20px;line-height:1}
+.bad .dn{color:#b9bfca}
+</style></head><body>
+
+<!-- FIG 1 -->
+<section class="fig" id="f1">
+  <div class="eyebrow">KOHOMADA ｜ 支援領域の全体像</div>
+  <h1>コホマダの支援は「2つの柱」</h1>
+  <p class="lead">海外展開・貿易関連支援と、AI・DX導入支援を行っています</p>
+  <div class="pillars">
+    <div class="pillar a">
+      <div class="hd"><div class="no">柱 1</div><div class="tt">海外展開・貿易関連支援</div></div>
+      <div class="bd">
+        <div class="q">主な支援内容</div>
+        <div class="chips"><span class="chip">市場調査</span><span class="chip">国別比較</span><span class="chip">販路開拓</span><span class="chip">海外パートナー探索</span><span class="chip">商談準備</span><span class="chip">資料作成</span></div>
+        <div class="point">最初に整理するのは<br><em>「どの国に、どの販路で、どう展開するか」</em></div>
+      </div>
+    </div>
+    <div class="pillar b">
+      <div class="hd"><div class="no">柱 2</div><div class="tt">AI・DX導入支援</div></div>
+      <div class="bd">
+        <div class="q">主な支援内容</div>
+        <div class="chips"><span class="chip">社内業務の効率化</span><span class="chip">営業管理</span><span class="chip">リサーチ自動化</span><span class="chip">マニュアル作成</span><span class="chip">問い合わせ対応</span><span class="chip">情報整理</span></div>
+        <div class="point">最初に整理するのは<br><em>「どの業務に、どうAIを使い、続けられるか」</em></div>
+      </div>
+    </div>
+  </div>
+  <div class="base">共通するのは、情報提供で終わらず <span>「次の一手」</span> を考えるための支援</div>
+  <div class="foot"><b>株式会社コホマダ</b></div>
+</section>
+
+<!-- FIG 2 -->
+<section class="fig" id="f2">
+  <div class="eyebrow">海外展開 ｜ 最初に確認すること</div>
+  <h1>海外展開の前に整理したい「4つの問い」</h1>
+  <p class="lead">いきなり現地へ行く・販売を始める前に、まず初期調査から</p>
+  <div class="qs">
+    <div class="qc"><div class="n">1</div><div class="t">どの国に<br>展開すべきか</div><div class="d">展開国の候補を<br>洗い出して比較する</div></div>
+    <div class="qc"><div class="n">2</div><div class="t">現地に需要が<br>あるのか</div><div class="d">市場規模・競合・<br>現地ニーズを確かめる</div></div>
+    <div class="qc"><div class="n">3</div><div class="t">どの販路が<br>適しているか</div><div class="d">販路やパートナーの<br>候補を整理する</div></div>
+    <div class="qc"><div class="n">4</div><div class="t">規制や商習慣に<br>問題はないか</div><div class="d">進める前に<br>確認すべき点を洗い出す</div></div>
+  </div>
+  <div class="arrow-down">▼</div>
+  <div class="ans"><div class="lb">ポイント</div><div class="tx">限られた予算と時間の中で、「どの国に可能性があるか」<br>「どの順番で動くべきか」を整理することが重要です</div></div>
+  <div class="foot"><b>株式会社コホマダ</b></div>
+</section>
+
+<!-- FIG 3 -->
+<section class="fig" id="f3">
+  <div class="eyebrow">海外展開支援 ｜ できること</div>
+  <h1>海外展開支援の8項目を、3つのステップで整理</h1>
+  <p class="lead">調べる → 絞り込む・探す → 動き出す計画と資料</p>
+  <div class="flow">
+    <div class="ph"><div class="top"><div class="st">STEP 1</div><div class="nm">調べる</div></div>
+      <ul><li>展開国候補の調査</li><li>市場規模や競合環境の整理</li><li>現地ニーズの仮説設計</li></ul>
+      <div class="goal"><b>整理できること：</b>どの国に可能性があるか</div></div>
+    <div class="ar">▶</div>
+    <div class="ph"><div class="top"><div class="st">STEP 2</div><div class="nm">絞り込む・探す</div></div>
+      <ul><li>販路候補の整理</li><li>海外パートナー候補の探索</li></ul>
+      <div class="goal"><b>整理できること：</b>どの販路・相手が候補になるか</div></div>
+    <div class="ar">▶</div>
+    <div class="ph"><div class="top"><div class="st">STEP 3</div><div class="nm">動き出す計画と資料</div></div>
+      <ul><li>商談資料の作成</li><li>SNS・PR・認知拡大施策の設計</li><li>初期展開プランの作成</li></ul>
+      <div class="goal"><b>整うこと：</b>商談・展開に向けた資料と計画</div></div>
+  </div>
+  <div class="note">※ 本文の支援8項目を、読みやすさのため3つの段階に整理したものです</div>
+  <div class="foot"><b>株式会社コホマダ</b></div>
+</section>
+
+<!-- FIG 4 -->
+<section class="fig" id="f4">
+  <div class="eyebrow">AI・DX支援 ｜ よくあるご相談</div>
+  <h1>よくあるお悩みと、主な支援メニュー</h1>
+  <p class="lead">相談内容と、関係する主な支援メニューの例</p>
+  <table>
+    <tr><th>よくあるご相談</th><th>主な支援メニュー</th></tr>
+    <tr><td class="q">ChatGPTを会社で使いたいが、何から始めればいいか分からない</td><td><span class="tag">AI導入領域の選定</span><span class="tag">ChatGPT活用設計</span><span class="tag">社内向けAI研修</span></td></tr>
+    <tr><td class="q">業務が属人化していて、マニュアルが整っていない</td><td><span class="tag">業務フローの整理</span><span class="tag">マニュアル作成</span></td></tr>
+    <tr><td class="q">リサーチや資料作成に時間がかかっている</td><td><span class="tag">業務フローの整理</span><span class="tag">ChatGPT活用設計</span><span class="tag">自動化設計</span></td></tr>
+    <tr><td class="q">営業管理や問い合わせ対応を効率化したい</td><td><span class="tag">Notion構築</span><span class="tag">自動化設計</span><span class="tag">KPI設計</span></td></tr>
+    <tr><td class="q">Notionやワークフロー自動化ツールを使って<br>業務を自動化したい</td><td><span class="tag">Notion構築</span><span class="tag">自動化設計</span><span class="tag">運用ルールの作成</span></td></tr>
+  </table>
+  <p class="tbl-note">※ 組み合わせは一例です。</p>
+  <div class="foot"><b>株式会社コホマダ</b></div>
+</section>
+
+<!-- FIG 5 -->
+<section class="fig" id="f5">
+  <div class="eyebrow">AI・DX支援 ｜ コホマダの考え方</div>
+  <h1>ツールを入れて終わり、にしない</h1>
+  <p class="lead">大切なのは、現場で使い続けられる形にすること</p>
+  <div class="cmp">
+    <div class="box bad">
+      <h3>ツール導入だけの場合</h3><div class="sb">「とりあえず入れてみる」</div>
+      <div class="stepv">
+        <div class="sv"><span class="ic">導入</span><div>ツールを導入する</div></div>
+        <div class="dn">▼</div>
+        <div class="sv x"><span class="ic" style="background:#c96a6a">！</span><div>「どの業務に使うか」が曖昧なまま<small>現場で使い続けられる形になりにくい</small></div></div>
+      </div>
+    </div>
+    <div class="box good">
+      <h3>コホマダの進め方：業務設計から</h3><div class="sb">「どこに使うか」を決めてから導入する</div>
+      <div class="stepv">
+        <div class="sv hl"><span class="ic">1 設計</span><div>業務設計<small>どの業務を自動化すべきか／どこにAIを使うと効果が出るか</small></div></div>
+        <div class="dn">▼</div>
+        <div class="sv"><span class="ic">2 導入</span><div>ツール導入<small>ChatGPT・Notion・ワークフロー自動化ツールなど</small></div></div>
+        <div class="dn">▼</div>
+        <div class="sv o"><span class="ic" style="background:#2a6b3e">3 定着</span><div>使い続けられる仕組みへ<small>マニュアル・研修・運用ルール・KPI</small></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><b>株式会社コホマダ</b></div>
+</section>
+</body></html>
