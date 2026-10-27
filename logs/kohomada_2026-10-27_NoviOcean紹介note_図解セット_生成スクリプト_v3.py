@@ -10,7 +10,7 @@ FONT, OUT = sys.argv[1], sys.argv[2]
 W = 1080; M = 56; CW = W - 2 * M
 NAVY = (8, 30, 58); AQUA = (24, 128, 178); PALE = (232, 243, 249); GREY = (96, 108, 122)
 LINE = (200, 212, 224); WHITE = (255, 255, 255); SAND = (250, 245, 232)
-SRC = '出典：NoviOcean AB 公式サイト（確認日 2026年10月17日）をもとに株式会社コホマダ作成'
+SRC = '出典：NoviOcean AB 公式サイト（確認日 2026年10月17日）をもとに\n株式会社コホマダ作成'
 
 def F(size, weight='Regular'):
     f = ImageFont.truetype(FONT, size); f.set_variation_by_name(weight); return f
