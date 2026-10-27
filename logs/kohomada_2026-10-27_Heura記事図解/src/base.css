@@ -1,0 +1,15 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"IPAPGothic","IPAGothic",sans-serif;background:#fff;color:#1f2a37;width:1200px}
+.fig{padding:48px 56px 36px;background:#fff}
+.kicker{font-size:18px;color:#0f6e6e;font-weight:bold;letter-spacing:.06em}
+h1{font-size:36px;margin:6px 0 8px;line-height:1.35}
+.lead{font-size:19px;color:#4b5563;margin-bottom:28px;line-height:1.6}
+.note{font-size:15px;color:#6b7280;margin-top:22px;line-height:1.6;border-top:1px solid #e5e7eb;padding-top:12px}
+.credit{font-size:14px;color:#9ca3af;text-align:right;margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:19px}
+th,td{border:1px solid #d1d5db;padding:14px 16px;text-align:left;vertical-align:top;line-height:1.55}
+th{background:#0f6e6e;color:#fff;font-weight:bold}
+td.h{background:#eef6f6;font-weight:bold;width:24%}
+.tag{display:inline-block;font-size:14px;padding:2px 10px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.t-maker{background:#fff4d6;color:#8a5a00}.t-press{background:#e6eefc;color:#1d4ed8}.t-public{background:#e7f6ec;color:#166534}
+.callout{background:#f3f7f7;border-left:6px solid #0f6e6e;padding:14px 18px;font-size:18px;margin-top:22px;line-height:1.6}
