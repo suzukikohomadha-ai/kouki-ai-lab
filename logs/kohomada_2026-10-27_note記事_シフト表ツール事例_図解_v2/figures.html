@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>note図解（シフト表ツール事例）</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --navy:#1F3A5F; --navy2:#2E5A88; --teal:#2A9D8F; --teal-l:#E3F4F1;
+    --amber:#E9A23B; --amber-l:#FDF3E1; --red:#C8553D; --red-l:#FBE9E5;
+    --ink:#1E2A36; --sub:#5B6B7B; --line:#D5DDE5; --bg:#F5F7FA; --white:#FFFFFF;
+    --g1:#DCEBFA; --g2:#FCE9C8; --g3:#E6E1F5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Noto Sans JP","IPAGothic",sans-serif;color:var(--ink);background:#fff;padding:40px}
+  .fig{width:1200px;background:var(--white);margin:0 auto 60px;padding:56px 64px 48px;position:relative}
+  .eyebrow{font-size:22px;font-weight:700;color:var(--teal);letter-spacing:.06em;margin-bottom:10px}
+  h2{font-size:40px;font-weight:900;line-height:1.35;color:var(--navy);margin-bottom:12px}
+  .lead{font-size:24px;color:var(--sub);line-height:1.6;margin-bottom:36px}
+  .badge{position:absolute;top:24px;right:32px;font-size:26px;font-weight:900;color:#fff;border-radius:999px;padding:6px 20px;background:#5B6B7B}
+  .note{font-size:22px;color:var(--sub);margin-top:28px;line-height:1.6}
+  .row{display:flex;align-items:center;gap:20px}
+  .box{border-radius:16px;padding:22px 24px;font-size:24px;font-weight:700;line-height:1.45;text-align:center}
+  .b-navy{background:var(--navy);color:#fff}
+  .b-teal{background:var(--teal);color:#fff}
+  .b-soft{background:var(--bg);border:3px solid var(--line)}
+  .b-tl{background:var(--teal-l);border:3px solid var(--teal);color:var(--navy)}
+  .b-am{background:var(--amber-l);border:3px solid var(--amber);color:#7A4B00}
+  .b-red{background:var(--red-l);border:3px solid var(--red);color:#7E2A18}
+  .small{font-size:22px;font-weight:500;color:var(--sub);display:block;margin-top:6px}
+  .arrow{font-size:44px;color:var(--navy2);font-weight:900;flex:0 0 auto}
+  .arrow-d{font-size:44px;color:var(--navy2);font-weight:900;text-align:center;line-height:1}
+  .alabel{font-size:22px;color:var(--sub);font-weight:700;text-align:center}
+  table{border-collapse:collapse;width:100%}
+  th,td{border:2px solid var(--line);font-size:22px;padding:12px 14px;text-align:center}
+  th{background:var(--navy);color:#fff;font-weight:700}
+  .t-left td{text-align:left}
+  .ok{color:var(--teal);font-weight:900}
+  .ng{color:var(--red);font-weight:900}
+  .pill{display:inline-block;border-radius:8px;padding:2px 10px;font-size:22px;font-weight:700}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--navy);color:#fff;font-weight:900;font-size:24px;flex:0 0 auto}
+  .footer{margin-top:30px;font-size:22px;color:#98A4B0;text-align:right}
+</style>
+</head>
+<body>
+
+<!-- 00 アイキャッチ（1280×670） -->
+<section class="fig" id="fig00" style="width:1280px;height:670px;padding:70px 80px;background:linear-gradient(135deg,#1F3A5F 0%,#2E5A88 60%,#2A9D8F 100%);color:#fff">
+  <div style="display:inline-block;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);border-radius:999px;padding:6px 22px;font-size:24px;font-weight:700;margin-bottom:34px">トライアル版の設計記録</div>
+  <div style="font-size:60px;font-weight:900;line-height:1.35;letter-spacing:.01em">Excelのシフト表づくりを、<br>ネットにつながない<br>ブラウザツールへ</div>
+  <div style="margin-top:34px;font-size:28px;font-weight:500;opacity:.92">シフト表と業務割当表の「下書き」はツール、最後は人</div>
+  <div style="position:absolute;right:80px;bottom:150px;display:flex;flex-direction:column;gap:14px;width:330px">
+    <div style="background:#fff;color:var(--navy);border-radius:14px;padding:14px 18px;font-size:22px;font-weight:700">売場ごとの週のシフト表</div>
+    <div style="background:#fff;color:var(--navy);border-radius:14px;padding:14px 18px;font-size:22px;font-weight:700">時間帯ごとの業務割当表</div>
+    <div style="background:#fff;color:var(--navy);border-radius:14px;padding:14px 18px;font-size:22px;font-weight:700">人が確かめて直す</div>
+  </div>
+  <div style="position:absolute;left:80px;bottom:56px;font-size:24px;font-weight:700;opacity:.9">株式会社コホマダ</div>
+</section>
+
+<!-- 01 全体像 -->
+<section class="fig" id="fig01">
+  <div class="eyebrow">作ったもの</div>
+  <h2>ツールの全体像</h2>
+  <p class="lead">シフト管理システムから書き出したデータを取り込み、<br>パソコンの中だけで、シフト表と業務割当表の下書きをつくります。</p>
+  <div class="row" style="align-items:stretch">
+    <div style="display:flex;flex-direction:column;justify-content:center;width:220px">
+      <div class="box b-soft">シフト管理<br>システム</div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;width:110px">
+      <div class="arrow">➜</div><div class="alabel">書き出した<br>データを<br>取り込む</div>
+    </div>
+    <div style="flex:1;border:4px dashed var(--teal);border-radius:22px;padding:26px 26px 22px;position:relative">
+      <div style="position:absolute;top:-20px;left:24px;background:#fff;padding:0 12px;font-size:22px;font-weight:900;color:var(--teal)">パソコンの中（インターネットにつながない）</div>
+      <div class="box b-navy" style="margin-bottom:22px">シフト表・業務割当表ツール<span class="small" style="color:#C9D8EA">ブラウザ（Chrome・Edge）で開く</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+        <div class="box b-tl" style="font-size:22px">売場ごとの<br>週のシフト表</div>
+        <div class="box b-tl" style="font-size:22px">時間帯ごとの<br>業務割当表<br><span class="small">（下書き）</span></div>
+        <div class="box b-tl" style="font-size:22px">確認一覧<br><span class="small">人が足りない<br>時間帯</span></div>
+      </div>
+      <div class="arrow-d" style="margin:14px 0 6px">⬇</div>
+      <div class="box b-am" style="margin-bottom:14px">人が確かめて、必要なら直す</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="box b-soft" style="font-size:22px">1週間分を印刷・PDF</div>
+        <div class="box b-soft" style="font-size:22px">Excel形式で書き出し</div>
+      </div>
+    </div>
+  </div>
+  <p class="note">※ ツールの中で、外への通信を止める設定にしています。</p>
+</section>
+
+<!-- 02 機能1 取り込みと照合 -->
+<section class="fig" id="fig02">
+  <div class="eyebrow">主な機能 ①</div>
+  <h2>1週間分のデータを取り込む</h2>
+  <p class="lead">取り込むときに、そのデータが対象の店舗のものかを確かめます。</p>
+  <div class="row" style="justify-content:center">
+    <div class="box b-soft" style="width:270px">1週間分の<br>データ<span class="small">シフト管理システム<br>から書き出したもの</span></div>
+    <div class="arrow">➜</div>
+    <div class="box b-navy" style="width:300px;border-radius:50px;padding:30px 20px">対象の店舗の<br>データ？</div>
+    <div style="display:flex;flex-direction:column;gap:26px">
+      <div class="row" style="gap:12px"><div class="arrow" style="font-size:36px">➜</div><div class="box b-tl" style="width:300px;text-align:left"><span class="ok">はい</span>　取り込む</div></div>
+      <div class="row" style="gap:12px"><div class="arrow" style="font-size:36px">➜</div><div class="box b-red" style="width:300px;text-align:left"><span class="ng">いいえ</span>　止まる<span class="small">取り込まない</span></div></div>
+    </div>
+  </div>
+  <p class="note">ほかの店舗のデータを、まちがえて取り込まないためです。</p>
+</section>
+
+<!-- 03 機能2 下書き -->
+<section class="fig" id="fig03">
+  <div class="badge">イメージ図（架空のデータ）</div>
+  <div class="eyebrow">主な機能 ②</div>
+  <h2>シフト表と、業務割当表の下書きをつくる</h2>
+  <p class="lead">取り込んだシフトをもとに、休憩と業務を自動で割り当てて、下書きをつくります。</p>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="width:720px">
+      <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:10px">売場ごとの週のシフト表</div>
+      <table style="font-size:22px">
+        <tr><th style="font-size:22px">売場A</th><th style="font-size:22px">月</th><th style="font-size:22px">火</th><th style="font-size:22px">水</th><th style="font-size:22px">…</th></tr>
+        <tr><td style="font-size:22px">スタッフA</td><td style="font-size:22px">早番</td><td style="font-size:22px">早番</td><td style="font-size:22px">休</td><td style="font-size:22px">…</td></tr>
+        <tr><td style="font-size:22px">スタッフB</td><td style="font-size:22px">遅番</td><td style="font-size:22px">休</td><td style="font-size:22px">遅番</td><td style="font-size:22px">…</td></tr>
+        <tr><td style="font-size:22px">スタッフC</td><td style="font-size:22px">早番</td><td style="font-size:22px">遅番</td><td style="font-size:22px">早番</td><td style="font-size:22px">…</td></tr>
+      </table>
+    </div>
+    <div class="row" style="gap:14px;margin-left:300px"><div class="arrow-d">⬇</div><div class="alabel" style="text-align:left">自動で割り当て</div></div>
+    <div style="width:100%">
+      <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:10px">時間帯ごとの業務割当表（下書き）</div>
+      <table>
+        <tr><th style="font-size:22px">月曜</th><th style="font-size:22px">10時</th><th style="font-size:22px">11時</th><th style="font-size:22px">12時</th><th style="font-size:22px">13時</th><th style="font-size:22px">14時</th></tr>
+        <tr><td style="font-size:22px">スタッフA</td><td style="background:var(--g1);font-size:22px">業務X</td><td style="background:var(--g1);font-size:22px">業務X</td><td style="background:#EEE;font-size:22px">休憩</td><td style="background:var(--g2);font-size:22px">業務Y</td><td style="background:var(--g2);font-size:22px">業務Y</td></tr>
+        <tr><td style="font-size:22px">スタッフB</td><td style="background:#F3F3F3;color:#AAA;font-size:22px">ー</td><td style="background:#F3F3F3;color:#AAA;font-size:22px">ー</td><td style="background:var(--g2);font-size:22px">業務Y</td><td style="background:var(--g1);font-size:22px">業務X</td><td style="background:#EEE;font-size:22px">休憩</td></tr>
+        <tr><td style="font-size:22px">スタッフC</td><td style="background:var(--g3);font-size:22px">業務Z</td><td style="background:#EEE;font-size:22px">休憩</td><td style="background:var(--g1);font-size:22px">業務X</td><td style="background:var(--g3);font-size:22px">業務Z</td><td style="background:var(--g3);font-size:22px">業務Z</td></tr>
+      </table>
+      <div style="font-size:22px;color:var(--sub);margin-top:8px">灰色の「ー」は勤務の時間の外。<br>時刻・名前・業務は架空で、時間の区切りも図のための簡略化です</div>
+    </div>
+  </div>
+  <div class="box b-am" style="margin-top:30px">できるのは「下書き」まで。人が確かめて、必要なら直します。</div>
+</section>
+
+<!-- 04 機能3 未割当 -->
+<section class="fig" id="fig04">
+  <div class="badge">イメージ図（架空のデータ）</div>
+  <div class="eyebrow">主な機能 ③</div>
+  <h2>新しく入った人は「未割当」に出す</h2>
+  <p class="lead">どの勤務の時間帯のグループに入るかは、おすすめがあるときは最初から選ばれています。<br>決めるのは人です。</p>
+  <div class="row" style="justify-content:center;gap:14px">
+    <div class="box b-soft" style="width:240px">新しく入った人<span class="small">スタッフE</span></div>
+    <div class="arrow">➜</div>
+    <div style="width:470px;border:3px solid var(--navy2);border-radius:16px;padding:18px 20px">
+      <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:12px">未割当</div>
+      <div class="row" style="justify-content:space-between;background:var(--bg);border-radius:10px;padding:12px 14px">
+        <span style="font-size:22px;font-weight:700">スタッフE</span>
+        <span style="font-size:22px;border:2px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px">早番グループ ▼</span>
+      </div>
+      <div style="font-size:22px;color:var(--teal);font-weight:700;margin-top:10px">↑ おすすめがあるときは、選ばれた状態</div>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="box b-am" style="width:230px">人が確かめて<br>決める</div>
+  </div>
+</section>
+
+<!-- 05 機能4 確認一覧 -->
+<section class="fig" id="fig05">
+  <div class="badge">イメージ図（架空のデータ）</div>
+  <div class="eyebrow">主な機能 ④</div>
+  <h2>人が足りない時間帯を一覧にする</h2>
+  <p class="lead">必要な人数に届かない時間帯を「確認一覧」にまとめます。<br>表の中を目で探さなくても、見るべき所がわかるようにすることを目指しました。</p>
+  <div class="row" style="align-items:center;gap:18px">
+    <div style="width:430px">
+      <div style="font-size:22px;font-weight:700;color:var(--sub);margin-bottom:8px">表の中を探すと…</div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px">
+        <!-- 40 cells -->
+        <div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:#EEE"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g3)"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g1)"></div>
+        <div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g3)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:#EEE"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g3)"></div><div style="height:40px;background:var(--g2)"></div>
+        <div style="height:40px;background:var(--g3)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:#EEE"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g3)"></div>
+        <div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g3)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:#EEE"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g1)"></div>
+        <div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:var(--g3)"></div><div style="height:40px;background:var(--g2)"></div><div style="height:40px;background:var(--g1)"></div><div style="height:40px;background:#EEE"></div><div style="height:40px;background:var(--g3)"></div>
+      </div>
+      <div style="font-size:22px;color:var(--sub);margin-top:8px">どこが足りないのか、見つけにくい</div>
+    </div>
+    <div class="arrow">➜</div>
+    <div style="flex:1">
+      <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:8px">確認一覧</div>
+      <table>
+        <tr><th>日付</th><th>業務</th><th>状態</th></tr>
+        <tr><td>月曜</td><td>業務X</td><td class="ng">人数が足りない</td></tr>
+        <tr><td>水曜</td><td>業務Y</td><td class="ng">人数が足りない</td></tr>
+        <tr><td>土曜</td><td>業務Z</td><td class="ng">人数が足りない</td></tr>
+      </table>
+      <div style="font-size:22px;color:var(--sub);margin-top:8px">見るべき所がまとまって並ぶ（列の名前はイメージです）</div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 機能5 手直し・保存・印刷 -->
+<section class="fig" id="fig06">
+  <div class="eyebrow">主な機能 ⑤</div>
+  <h2>画面で手直しして、印刷する</h2>
+  <p class="lead">業務割当表は画面の上で手直しできます。<br>手で直した内容は、保存すると記録ファイルに残ります。</p>
+  <div class="row" style="justify-content:center;gap:18px;align-items:center">
+    <div class="box b-soft" style="width:280px;padding:40px 20px">画面で手直し</div>
+    <div class="arrow">➜</div>
+    <div style="display:flex;flex-direction:column;gap:16px;width:640px">
+      <div class="box b-tl" style="text-align:left">保存すると<span class="small">手で直した内容が、記録ファイルに残る</span></div>
+      <div class="box b-navy" style="text-align:left">1週間分をまとめて印刷・PDF</div>
+      <div class="box b-navy" style="text-align:left">1週間分をExcel形式で書き出し</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 機能6 元に戻す -->
+<section class="fig" id="fig07">
+  <div class="eyebrow">主な機能 ⑥</div>
+  <h2>まちがえたら、元に戻せる</h2>
+  <p class="lead">ツールを開いている間は、操作を最大20回まで元に戻せます。</p>
+  <div style="display:flex;gap:8px;align-items:flex-end;justify-content:center">
+    <div style="font-size:22px;color:var(--sub);font-weight:700;margin-right:10px;align-self:center">古い操作</div>
+    <div style="width:44px;height:70px;background:var(--g1);border-radius:6px"></div>
+    <div style="width:44px;height:70px;background:var(--g1);border-radius:6px"></div>
+    <div style="width:44px;height:70px;background:var(--g1);border-radius:6px"></div>
+    <div style="font-size:30px;color:var(--sub);align-self:center">…</div>
+    <div style="width:44px;height:70px;background:var(--g1);border-radius:6px"></div>
+    <div style="width:44px;height:70px;background:var(--g1);border-radius:6px"></div>
+    <div style="width:44px;height:70px;background:var(--navy2);border-radius:6px"></div>
+    <div style="font-size:22px;color:var(--sub);font-weight:700;margin-left:10px;align-self:center">直前の操作</div>
+  </div>
+  <div style="text-align:center;margin-top:14px;font-size:24px;font-weight:900;color:var(--navy)">⟲ 直前の操作から順に、最大20回まで戻せる</div>
+  <div class="box b-am" style="margin-top:30px">ツールを閉じたり、月を切り替えたりすると、<br>それまでの操作は元に戻せません</div>
+</section>
+
+<!-- 08 機能7 18歳未満・休憩 -->
+<section class="fig" id="fig08">
+  <div class="eyebrow">主な機能 ⑦</div>
+  <h2>18歳未満の深夜勤務・休憩の確認（目安）</h2>
+  <p class="lead">2つのことを確かめる機能があります。どちらも「目安」です。</p>
+  <table class="t-left">
+    <tr><th style="width:36%">確かめること</th><th>対象・しくみ</th></tr>
+    <tr><td style="font-weight:700">休憩が足りているか</td><td>ツールが目安として確かめる</td></tr>
+    <tr><td style="font-weight:700">18歳未満のスタッフに、<br>深夜の勤務が<br>入っていないか</td><td>18歳未満の<b>印を付けた</b>スタッフ（業務割当表をつくる対象の人）が対象<br><span style="color:var(--red);font-weight:700">年齢は自動では判定しません</span></td></tr>
+  </table>
+  <div class="box b-am" style="margin-top:28px;text-align:left">最終確認は人が行います。<br><span style="font-size:22px;font-weight:500">法令を守れていることを保証するものではありません。</span></div>
+</section>
+
+<!-- 09 機能8 ボタンの種類 -->
+<section class="fig" id="fig09">
+  <div class="eyebrow">主な機能 ⑧</div>
+  <h2>ボタンの種類が見分けられる</h2>
+  <p class="lead">ボタンは色と枠で見分けられるようにしています。</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:26px">
+    <div style="text-align:center">
+      <div style="background:var(--navy2);color:#fff;border-radius:12px;padding:22px 10px;font-size:24px;font-weight:700">青いボタン</div>
+      <div style="font-size:23px;font-weight:700;margin-top:16px">順番に押すボタン</div>
+    </div>
+    <div style="text-align:center">
+      <div style="background:#fff;color:var(--ink);border:2px solid #AEB9C4;border-radius:12px;padding:22px 10px;font-size:24px;font-weight:700">白いボタン</div>
+      <div style="font-size:23px;font-weight:700;margin-top:16px">そのほかのボタン</div>
+    </div>
+    <div style="text-align:center">
+      <div style="background:#fff;color:var(--red);border:3px dashed var(--red);border-radius:12px;padding:21px 10px;font-size:24px;font-weight:700">⚠ 点線の枠</div>
+      <div style="font-size:23px;font-weight:700;margin-top:16px">押すと、手で直した<br>内容が消えるボタン</div>
+      <div style="font-size:22px;color:var(--sub);margin-top:6px">押したときは確認の画面が出る</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 設計で大事にしたこと -->
+<section class="fig" id="fig10">
+  <div class="eyebrow">設計で大事にしたこと</div>
+  <h2>5つの考え方</h2>
+  <div style="display:flex;flex-direction:column;gap:14px;margin-top:20px">
+    <div class="row" style="background:var(--bg);border-radius:14px;padding:16px 20px"><span class="num">1</span><span style="font-size:25px;font-weight:900;width:510px">インターネットにつながない</span><span style="font-size:22px;color:var(--sub)">外への通信を止める設定</span></div>
+    <div class="row" style="background:var(--bg);border-radius:14px;padding:16px 20px"><span class="num">2</span><span style="font-size:25px;font-weight:900;width:510px">作業の流れを、できるだけ変えない</span><span style="font-size:22px;color:var(--sub)">書き出す→取り込む→つくる、の流れのまま</span></div>
+    <div class="row" style="background:var(--bg);border-radius:14px;padding:16px 20px"><span class="num">3</span><span style="font-size:25px;font-weight:900;width:510px">止まるべきときは止まる・写しを残す</span><span style="font-size:22px;color:var(--sub)">取り込みなどの前に自動でバックアップ</span></div>
+    <div class="row" style="background:var(--bg);border-radius:14px;padding:16px 20px"><span class="num">4</span><span style="font-size:25px;font-weight:900;width:510px">個人情報の置き場所をはっきりさせる</span><span style="font-size:22px;color:var(--sub)">ツール本体に氏名などを持たない</span></div>
+    <div class="row" style="background:var(--bg);border-radius:14px;padding:16px 20px"><span class="num">5</span><span style="font-size:25px;font-weight:900;width:510px">最後は人が確かめる</span><span style="font-size:22px;color:var(--sub)">ツールがつくるのは下書きまで</span></div>
+  </div>
+</section>
+
+<!-- 11 バックアップと停止 -->
+<section class="fig" id="fig11">
+  <div class="eyebrow">設計で大事にしたこと ③</div>
+  <h2>止まるべきときは止まる・写しを残す</h2>
+  <p class="lead">「写しがないまま、上書きしてしまう」ことを避けるためです。</p>
+  <div class="row" style="justify-content:center;gap:14px">
+    <div class="box b-soft" style="width:230px">取り込みなどを<br>始めるとき</div>
+    <div class="arrow">➜</div>
+    <div class="box b-tl" style="width:270px">先に、自動で<br>バックアップ<br>（写し）を保存</div>
+    <div class="arrow">➜</div>
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div class="row" style="gap:10px"><div class="box b-navy" style="width:300px;text-align:left"><span style="color:#9FE3D8">保存できた</span><br>作業を進める</div></div>
+      <div class="row" style="gap:10px"><div class="box b-red" style="width:300px;text-align:left"><span class="ng">保存できない</span><br>何も変えずに止まる</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 フォルダ構成 -->
+<section class="fig" id="fig12">
+  <div class="eyebrow">記録の残し方</div>
+  <h2>作業用のフォルダの中身</h2>
+  <p class="lead">記録は、月ごとに1つの「記録ファイル」にまとめます。</p>
+  <div style="font-family:'Noto Sans JP',sans-serif;font-size:26px;line-height:1.5">
+    <div style="font-weight:900;color:var(--navy)">📁 作業用のフォルダ</div>
+    <div style="margin-left:34px;border-left:4px solid var(--line);padding-left:26px;display:flex;flex-direction:column;gap:18px;margin-top:12px">
+      <div><span style="font-weight:900">📁 記録ファイル</span>　<span class="pill" style="background:var(--teal-l);color:var(--teal)">自動でできる</span><div style="font-size:22px;color:var(--sub)">月ごとの記録ファイルを入れる（1か月＝1ファイル）。<br>中身はスタッフの一覧・つくった週・業務割当表</div></div>
+      <div><span style="font-weight:900">📁 バックアップ</span>　<span class="pill" style="background:var(--teal-l);color:var(--teal)">自動でできる</span><div style="font-size:22px;color:var(--sub)">データの取り込みなどの前に残す写し</div></div>
+      <div><span style="font-weight:900">📁 Excel出力</span>　<span class="pill" style="background:var(--amber-l);color:#7A4B00">Excelに書き出すとできる</span><div style="font-size:22px;color:var(--sub)">1週間分をExcel形式で書き出したもの</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 個人情報の置き場所 -->
+<section class="fig" id="fig13">
+  <div class="eyebrow">設計で大事にしたこと ④</div>
+  <h2>個人情報の置き場所</h2>
+  <p class="lead">ツール本体には、スタッフの氏名や従業員番号を持たない設計にしました。</p>
+  <div class="row" style="align-items:flex-start;gap:30px">
+    <div style="flex:1.1">
+      <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:10px">氏名などが入るか</div>
+      <table>
+        <tr><th style="text-align:left">ファイル・出力物</th><th>氏名など</th></tr>
+        <tr><td style="text-align:left">ツール本体</td><td class="ok">入らない</td></tr>
+        <tr><td style="text-align:left">記録ファイル</td><td class="ng">入る</td></tr>
+        <tr><td style="text-align:left">バックアップ</td><td class="ng">入る</td></tr>
+        <tr><td style="text-align:left">Excel出力</td><td class="ng">入る</td></tr>
+        <tr><td style="text-align:left">印刷した表・PDF</td><td class="ng">載る</td></tr>
+      </table>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:10px">置き場所<br><span style="font-size:22px;font-weight:500;color:var(--sub)">（記録ファイル・バックアップ・Excel出力）</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="box b-tl" style="text-align:left;font-size:22px"><span class="ok">○</span>　そのパソコンの中だけ</div>
+        <div class="box b-red" style="text-align:left;font-size:22px"><span class="ng">✕</span>　クラウドと同期するフォルダ</div>
+        <div class="box b-red" style="text-align:left;font-size:22px"><span class="ng">✕</span>　USBメモリ</div>
+        <div class="box b-red" style="text-align:left;font-size:22px"><span class="ng">✕</span>　メール</div>
+      </div>
+      <div style="font-size:22px;color:var(--sub);margin-top:10px">手順書でお願いしていること</div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 役割分担 -->
+<section class="fig" id="fig14">
+  <div class="eyebrow">設計で大事にしたこと ⑤</div>
+  <h2>ツールがすること、人がすること</h2>
+  <div class="row" style="align-items:stretch;gap:20px;margin-top:20px">
+    <div style="flex:1;border:3px solid var(--navy2);border-radius:18px;padding:22px 26px">
+      <div style="font-size:26px;font-weight:900;color:var(--navy2);margin-bottom:14px">ツール：下書きをつくる</div>
+      <ul style="list-style:none;font-size:23px;line-height:1.9">
+        <li>・業務割当表の下書き</li>
+        <li>・新しく入った人のおすすめ</li>
+        <li>・人が足りない時間帯の一覧</li>
+        <li>・18歳未満や休憩の目安</li>
+      </ul>
+    </div>
+    <div class="arrow" style="align-self:center">➜</div>
+    <div style="flex:1;border:3px solid var(--amber);background:var(--amber-l);border-radius:18px;padding:22px 26px">
+      <div style="font-size:26px;font-weight:900;color:#7A4B00;margin-bottom:14px">人：確かめて、決める</div>
+      <ul style="list-style:none;font-size:23px;line-height:1.9">
+        <li>・下書きを確かめる</li>
+        <li>・必要なら直す</li>
+        <li>・入るグループを決める</li>
+        <li>・最終確認をする</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 15 進め方 -->
+<section class="fig" id="fig15">
+  <div class="eyebrow">これから</div>
+  <h2>今回の進め方（予定）</h2>
+  <p class="lead">1店舗向けのトライアル版として、まず1店舗で試していただく形で進めています。</p>
+  <div class="row" style="justify-content:center;gap:12px">
+    <div class="box b-tl" style="width:220px;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="margin:0 0 10px">1</span>お試し<br>いただく</div>
+    <div class="arrow">➜</div>
+    <div class="box b-tl" style="width:220px;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="margin:0 0 10px">2</span>ご意見を<br>伺う</div>
+    <div class="arrow">➜</div>
+    <div class="box b-tl" style="width:220px;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="margin:0 0 10px">3</span>直す</div>
+    <div class="arrow">➜</div>
+    <div class="box b-soft" style="width:220px;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="margin:0 0 10px;background:var(--sub)">4</span>その先の<br>進め方を<br>ご相談</div>
+  </div>
+  <p class="note">※ トライアル段階のツールです。お客さまによる評価や効果の検証を経たものではありません。</p>
+</section>
+
+</body>
+</html>
