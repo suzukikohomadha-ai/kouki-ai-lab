@@ -1,0 +1,50 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+:root{
+  --bg:#F4F7FB; --surface:#FFFFFF; --ink:#1B2533; --ink2:#4A5566; --muted:#7A8596;
+  --line:#D9E1EC; --sky:#1F6FB2; --sky-soft:#E3EFFA; --sky-deep:#0F4C81;
+  --sun:#E58A2E; --sun-soft:#FCEFE1; --gray-soft:#ECEFF3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:'Noto Sans JP','IPAPGothic',sans-serif;color:var(--ink);width:1280px}
+#c{width:1280px;padding:56px 64px 44px;background:var(--bg)}
+.kicker{font-size:20px;font-weight:700;color:var(--sky);letter-spacing:.08em;margin-bottom:10px}
+h1{font-size:40px;font-weight:900;line-height:1.35;margin-bottom:8px}
+.lead{font-size:22px;color:var(--ink2);line-height:1.6;margin-bottom:32px}
+.src{margin-top:28px;font-size:16px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px 28px}
+.row{display:flex;gap:20px}
+.tag{display:inline-block;white-space:nowrap;font-size:16px;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--sky-soft);color:var(--sky-deep)}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--sky);font-size:40px;font-weight:900;flex:0 0 44px}
+.brand{position:absolute;right:64px;bottom:18px;font-size:14px;color:var(--muted)}
+</style></head><body><div id="c" style="position:relative">
+<div class="kicker">Birdly World</div>
+<h1>映像を撮らずに、「自分の地域の空」をつくる</h1>
+<p class="lead">Google Earthの3Dデータを使うため、新たな撮影・映像制作がいらないとされています。</p>
+<div class="row" style="align-items:stretch">
+  <div class="card" style="flex:1">
+    <div class="tag">1　素材</div>
+    <div style="font-size:26px;font-weight:900;margin:16px 0 10px">Google Earthの<br>3Dデータ</div>
+    <div style="font-size:19px;line-height:1.65;color:var(--ink2)">世界の街の立体データをもとに飛行空間をつくる</div>
+  </div>
+  <div class="arrow">›</div>
+  <div class="card" style="flex:1.35">
+    <div class="tag">2　エディターで編集</div>
+    <div style="font-size:26px;font-weight:900;margin:16px 0 14px">施設側で中身を加える</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:var(--sky-soft);border-radius:10px;padding:10px 12px;font-size:18px;font-weight:700;color:var(--sky-deep)">ランドマーク</div><div style="background:var(--sky-soft);border-radius:10px;padding:10px 12px;font-size:18px;font-weight:700;color:var(--sky-deep)">ロゴ</div><div style="background:var(--sky-soft);border-radius:10px;padding:10px 12px;font-size:18px;font-weight:700;color:var(--sky-deep)">マーカー</div><div style="background:var(--sky-soft);border-radius:10px;padding:10px 12px;font-size:18px;font-weight:700;color:var(--sky-deep)">ポータル（別の場所への入口）</div><div style="background:var(--sky-soft);border-radius:10px;padding:10px 12px;font-size:18px;font-weight:700;color:var(--sky-deep)">宝探しゲーム</div><div style="background:var(--sky-soft);border-radius:10px;padding:10px 12px;font-size:18px;font-weight:700;color:var(--sky-deep)">内容は何度でも変更</div>
+    </div>
+  </div>
+  <div class="arrow">›</div>
+  <div class="card" style="flex:1;background:var(--sky);border-color:var(--sky);color:#fff">
+    <div class="tag" style="background:#fff">3　体験</div>
+    <div style="font-size:26px;font-weight:900;margin:16px 0 10px">来場者が<br>地元の上空を飛ぶ</div>
+    <div style="font-size:19px;line-height:1.65;opacity:.95">名所めぐり・周遊のきっかけづくりなど（活用イメージ）</div>
+  </div>
+</div>
+<div class="row" style="margin-top:20px;gap:16px">
+  <div class="card" style="flex:1;padding:18px 24px;font-size:19px;line-height:1.6"><b>取り組み中：</b>実在の場所を高精細に再現する「3D Gaussian Splatting（3DGS）」の導入を進めているそうです</div>
+  <div class="card" style="flex:1;padding:18px 24px;font-size:19px;line-height:1.6"><b>オリジナル制作：</b>完全オリジナルのコンテンツを制作することも可能です</div>
+</div>
+<div class="src">出典：開発元の回答、blooloop（2024年2月29日）、The VR Collective（2026年1月4日）。対象地域や再現の細かさは、事前に開発元へご確認ください。</div>
+<div class="brand">株式会社コホマダ</div></div></body></html>
