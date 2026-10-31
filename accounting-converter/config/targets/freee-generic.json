@@ -1,0 +1,33 @@
+{
+  "_comment": "freee会計「他社会計ソフトインポート」用（freee汎用形式テンプレート想定）。columns は公式テンプレートの1行目（ヘッダー）を列順どおりに転記する。テンプレートに存在しない列は削除し、存在するが中間モデルに対応が無い列は from:null で空欄出力する。金額列が税込か税抜か、税額列の有無、複合仕訳の表現、文字コードも要確認（すべて未確認）。",
+  "system": "freee_generic",
+  "templateInfo": {
+    "name": "TODO_VERIFY:仕訳インポート（UTF-8）.csv",
+    "downloadedFrom": "TODO_VERIFY:https://support.freee.co.jp/（他社会計ソフトから仕訳データを移行する）",
+    "downloadedAt": "TODO_VERIFY:YYYY-MM-DD",
+    "sha256": "TODO_VERIFY"
+  },
+  "encoding": "utf8_bom",
+  "newline": "CRLF",
+  "rowModel": "debit_credit_pair",
+  "compoundEntries": "TODO_VERIFY:blank_side",
+  "columns": [
+    { "name": "TODO_VERIFY:日付",         "from": "entry.date", "format": "YYYY/MM/DD", "required": true },
+    { "name": "TODO_VERIFY:伝票番号",     "from": "entry.voucherNo", "required": false },
+    { "name": "TODO_VERIFY:借方勘定科目", "from": "debit.mapped.freeeAccount", "required": true },
+    { "name": "TODO_VERIFY:借方補助科目", "from": "debit.mapped.freeeSubAccount" },
+    { "name": "TODO_VERIFY:借方税区分",   "from": "debit.mapped.freeeTaxCode", "required": true },
+    { "name": "TODO_VERIFY:借方金額",     "from": "debit.amount", "required": true },
+    { "name": "TODO_VERIFY:借方取引先",   "from": "debit.mapped.partner" },
+    { "name": "TODO_VERIFY:借方部門",     "from": "debit.mapped.department" },
+    { "name": "TODO_VERIFY:借方メモタグ", "from": "debit.mapped.memoTags", "join": "," },
+    { "name": "TODO_VERIFY:貸方勘定科目", "from": "credit.mapped.freeeAccount", "required": true },
+    { "name": "TODO_VERIFY:貸方補助科目", "from": "credit.mapped.freeeSubAccount" },
+    { "name": "TODO_VERIFY:貸方税区分",   "from": "credit.mapped.freeeTaxCode", "required": true },
+    { "name": "TODO_VERIFY:貸方金額",     "from": "credit.amount", "required": true },
+    { "name": "TODO_VERIFY:貸方取引先",   "from": "credit.mapped.partner" },
+    { "name": "TODO_VERIFY:貸方部門",     "from": "credit.mapped.department" },
+    { "name": "TODO_VERIFY:貸方メモタグ", "from": "credit.mapped.memoTags", "join": "," },
+    { "name": "TODO_VERIFY:摘要",         "from": "entry.description" }
+  ]
+}

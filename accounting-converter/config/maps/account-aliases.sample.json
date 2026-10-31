@@ -1,0 +1,9 @@
+{
+  "_comment": "RuleSuggester（--suggester rule）が使う勘定科目の別名辞書。sourceNames（元CSVに現れうる科目名）→ freeeAccount（freee側の科目名）。以下はすべて『例_』付きの架空の例であり、実在の会計ソフトの科目体系や freee の正式科目名を示すものではない。事務所の科目表に合わせて編集する。ここに書いた対応は『候補』としてレポートに出るだけで、変換には適用されない（accounts の対応表に転記して confirmed:true にした時点で有効になる）。",
+  "version": 1,
+  "entries": [
+    { "sourceNames": ["例_売掛金（一般）", "例_売掛金-A"], "freeeAccount": "例_売掛金", "note": "架空の例" },
+    { "sourceNames": ["例_現金及び預金"], "freeeAccount": "例_現金", "note": "架空の例。実際は口座別に分ける可能性があるため要確認" },
+    { "sourceNames": ["例_事務用品費"], "freeeAccount": "例_消耗品費", "note": "架空の例" }
+  ]
+}

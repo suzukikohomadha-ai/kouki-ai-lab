@@ -1,0 +1,10 @@
+node_modules/
+in/
+out/
+config/templates/*
+!config/templates/.gitkeep
+config/profile.json
+config/sources/*.local.json
+config/targets/*.local.json
+config/maps/*.local.json
+!config/maps/*.sample.json

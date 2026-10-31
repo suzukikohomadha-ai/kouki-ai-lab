@@ -1,0 +1,17 @@
+{
+  "_comment": "テスト専用。元税区分名・freee税区分名とも架空。80%/50%の期間だけは現行制度に基づく。",
+  "version": 1,
+  "reviewedBy": null,
+  "defaultForBlank": {
+    "freeeTaxCode": "例_freee対象外",
+    "appliesToAccounts": ["現金", "普通預金", "当座預金", "売掛金", "買掛金", "預り金", "未払金", "資本金", "元入金", "繰越利益剰余金"]
+  },
+  "entries": [
+    { "sourceTaxCode": "例_課税売上10%",   "freeeTaxCode": "例_freee課税売上10%",   "rate": 0.10, "confirmed": true },
+    { "sourceTaxCode": "例_課税仕入10%",   "freeeTaxCode": "例_freee課対仕入10%",   "rate": 0.10, "confirmed": true },
+    { "sourceTaxCode": "例_課税仕入軽8%",  "freeeTaxCode": "例_freee課対仕入軽8%",  "rate": 0.08, "confirmed": true },
+    { "sourceTaxCode": "例_課税仕入免税10%", "freeeTaxCode": "例_freee課対仕入控80_10%", "rate": 0.10, "effectiveFrom": "2023-10-01", "effectiveTo": "2026-09-30", "confirmed": true },
+    { "sourceTaxCode": "例_課税仕入免税10%", "freeeTaxCode": "例_freee課対仕入控50_10%", "rate": 0.10, "effectiveFrom": "2026-10-01", "effectiveTo": "2029-09-30", "confirmed": true },
+    { "sourceTaxCode": "例_対象外",        "freeeTaxCode": "例_freee対象外",        "rate": 0, "confirmed": true }
+  ]
+}

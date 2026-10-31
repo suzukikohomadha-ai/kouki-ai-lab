@@ -1,0 +1,40 @@
+{
+  "_comment": "弥生会計「汎用形式」エクスポート用。index は0始まり。以下の並びは弥生インポート形式について第三者情報で流布している列順を『仮置き』したものであり、汎用形式が同じ並びかは未確認。公式ヘルプ『データのエクスポート』の項目一覧と実エクスポートで確定させる。識別フラグ列が無い場合は grouping.strategy を by_voucher_no にする。",
+  "system": "yayoi_generic",
+  "encoding": "shift_jis",
+  "delimiter": ",",
+  "hasHeader": "auto",
+  "headerSignature": ["TODO_VERIFY:伝票No", "TODO_VERIFY:取引日付"],
+  "dateFormats": ["YYYY/MM/DD", "GYY/MM/DD"],
+  "eraTable": { "R": 2018, "H": 1988 },
+  "amountMode": "TODO_VERIFY:tax_included",
+  "grouping": {
+    "strategy": "TODO_VERIFY:by_flag",
+    "flagColumn": { "index": 0 },
+    "flagValues": {
+      "single": ["TODO_VERIFY:2000"],
+      "compoundStart": ["TODO_VERIFY:2111"],
+      "compoundMiddle": ["TODO_VERIFY:2100"],
+      "compoundEnd": ["TODO_VERIFY:2101"]
+    }
+  },
+  "columns": {
+    "voucherNo":         { "index": "TODO_VERIFY:1" },
+    "closingFlag":       { "index": "TODO_VERIFY:2", "optional": true },
+    "date":              { "index": "TODO_VERIFY:3" },
+    "debit.account":     { "index": "TODO_VERIFY:4" },
+    "debit.subAccount":  { "index": "TODO_VERIFY:5", "optional": true },
+    "debit.department":  { "index": "TODO_VERIFY:6", "optional": true },
+    "debit.taxCode":     { "index": "TODO_VERIFY:7" },
+    "debit.amount":      { "index": "TODO_VERIFY:8" },
+    "debit.taxAmount":   { "index": "TODO_VERIFY:9", "optional": true },
+    "credit.account":    { "index": "TODO_VERIFY:10" },
+    "credit.subAccount": { "index": "TODO_VERIFY:11", "optional": true },
+    "credit.department": { "index": "TODO_VERIFY:12", "optional": true },
+    "credit.taxCode":    { "index": "TODO_VERIFY:13" },
+    "credit.amount":     { "index": "TODO_VERIFY:14" },
+    "credit.taxAmount":  { "index": "TODO_VERIFY:15", "optional": true },
+    "description":       { "index": "TODO_VERIFY:16" },
+    "memo":              { "index": "TODO_VERIFY:21", "optional": true }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "税区分対応表の雛形。sourceTaxCode は元CSVの税区分文字列（弥生は税区分+税計算区分の結合表記のまま）。freeeTaxCode の名称例『課対仕入（控80）10%』は先行調査の検索要約に現れた表記であり、freee上の正式名称は未確認。80%/50%の期間は現行制度（〜2026-09-30 / 2026-10-01〜2029-09-30）に基づく（国税庁一次情報での再確認は未了・リサ確認待ち）。税制改正による延長は未確定のため、法制化を確認した後に entries を追記する。",
+  "version": 1,
+  "reviewedBy": null,
+  "defaultForBlank": {
+    "freeeTaxCode": "TODO_VERIFY:対象外",
+    "appliesToAccounts": ["現金", "普通預金", "当座預金", "売掛金", "買掛金"]
+  },
+  "entries": [
+    { "sourceTaxCode": "TODO_VERIFY:課税売上 10%", "freeeTaxCode": "TODO_VERIFY:課税売上10%", "rate": 0.10, "confirmed": false },
+    { "sourceTaxCode": "TODO_VERIFY:課税仕入 10%", "freeeTaxCode": "TODO_VERIFY:課対仕入10%", "rate": 0.10, "confirmed": false },
+    { "sourceTaxCode": "TODO_VERIFY:課税仕入 8%（軽）", "freeeTaxCode": "TODO_VERIFY:課対仕入（軽）8%", "rate": 0.08, "confirmed": false },
+    { "sourceTaxCode": "TODO_VERIFY:課税仕入 免税事業者 10%", "freeeTaxCode": "TODO_VERIFY:課対仕入（控80）10%", "rate": 0.10, "effectiveFrom": "2023-10-01", "effectiveTo": "2026-09-30", "confirmed": false },
+    { "sourceTaxCode": "TODO_VERIFY:課税仕入 免税事業者 10%", "freeeTaxCode": "TODO_VERIFY:課対仕入（控50）10%", "rate": 0.10, "effectiveFrom": "2026-10-01", "effectiveTo": "2029-09-30", "confirmed": false },
+    { "sourceTaxCode": "TODO_VERIFY:対象外", "freeeTaxCode": "TODO_VERIFY:対象外", "rate": 0, "confirmed": false }
+  ]
+}

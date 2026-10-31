@@ -1,0 +1,8 @@
+{
+  "_comment": "テスト専用の架空の別名辞書。",
+  "version": 1,
+  "entries": [
+    { "sourceNames": ["例_売掛金（一般）", "例_売掛金-A"], "freeeAccount": "例_売掛金", "note": "架空の例" },
+    { "sourceNames": ["例_事務用品費"], "freeeAccount": "例_消耗品費" }
+  ]
+}

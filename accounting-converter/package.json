@@ -1,0 +1,25 @@
+{
+  "name": "accounting-converter",
+  "version": "0.0.1",
+  "private": true,
+  "description": "弥生会計/MFクラウド会計 → freee会計 仕訳CSVコンバータ PoC（ローカル完結・外部通信なし）",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "convert": "tsx src/cli/index.ts convert",
+    "verify-config": "tsx src/cli/index.ts verify-config",
+    "inspect": "tsx src/cli/index.ts inspect",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3",
+    "papaparse": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/papaparse": "^5.3.14",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

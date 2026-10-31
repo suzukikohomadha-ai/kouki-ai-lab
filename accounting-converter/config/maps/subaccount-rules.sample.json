@@ -1,0 +1,30 @@
+{
+  "_comment": "補助科目→freeeタグ割当ルール。上から順に評価し最初にマッチしたルールを適用。when は parentAccountIn / subAccountMatches(正規表現) / sourceSystemIs の AND。空 {} は常にマッチ。assign: partner | freee_sub_account | memo_tag | drop | item(PoCでは警告付きで落とす) | department(options.departments=drop のとき警告付きで落とす)。",
+  "version": 1,
+  "defaultAction": "memo_tag",
+  "rules": [
+    {
+      "id": "r01-receivables-to-partner",
+      "when": { "parentAccountIn": ["売掛金", "買掛金", "未収入金", "未払金", "前受金", "前払金", "預り金"] },
+      "then": { "assign": "partner" },
+      "note": "債権債務の補助科目は取引先名である前提（取引先別内訳の維持）"
+    },
+    {
+      "id": "r02-bank-branch-to-subaccount",
+      "when": { "parentAccountIn": ["普通預金", "当座預金", "定期預金"] },
+      "then": { "assign": "freee_sub_account" },
+      "note": "口座名は freee の補助科目（口座）へ。freee側が口座を補助科目として受けるかは TODO_VERIFY"
+    },
+    {
+      "id": "r03-pattern-department",
+      "when": { "subAccountMatches": "^(本社|支店|営業所|.*部)$" },
+      "then": { "assign": "department" },
+      "note": "PoCでは警告付きで落とす（options.departments=drop）"
+    },
+    {
+      "id": "r99-fallback",
+      "when": {},
+      "then": { "assign": "memo_tag" }
+    }
+  ]
+}
