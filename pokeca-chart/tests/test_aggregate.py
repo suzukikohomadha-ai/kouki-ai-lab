@@ -25,10 +25,11 @@ assert con.execute("SELECT median_price,state,asof_day FROM daily WHERE day='202
 put("a", "2026-10-10", 4900); put("b", "2026-10-10", 9999, sold=1)
 aggregate_day(con, "2026-10-10")
 assert con.execute("SELECT state FROM daily WHERE day='2026-10-10'").fetchone()[0] == "stale"
-# 2店だけで5倍以上の差 → 採用せず更新待ち
+# 2店だけで5倍以上の差（店ペアの件数が少ないので従来の目安で判定）→ 採用せず保留、確認一覧に載る
 put("a", "2026-10-11", 100); put("b", "2026-10-11", 900)
 aggregate_day(con, "2026-10-11")
-assert con.execute("SELECT state FROM daily WHERE day='2026-10-11'").fetchone()[0] == "stale"
+assert con.execute("SELECT state,median_price FROM daily WHERE day='2026-10-11'").fetchone() == ("hold", 4800)
+assert con.execute("SELECT count(*) FROM review WHERE day='2026-10-11'").fetchone()[0] == 1
 
 # その日に1件も価格がなくても行を作る（チャートの抜けにしない）
 aggregate_day(con, "2026-10-12")
@@ -39,4 +40,9 @@ con.execute("INSERT INTO shop(id) VALUES ('champion')")
 put("a", "2026-10-13", 1000); con.execute("INSERT INTO price(card_id,shop_id,day,price,soldout) VALUES (1,'champion','2026-10-13',1100,0)")
 aggregate_day(con, "2026-10-13")
 assert con.execute("SELECT state FROM daily WHERE day='2026-10-13'").fetchone()[0] == "stale"
+# 強化買取中（取り消し線あり）は通常価格で計算する
+con.execute("INSERT INTO price(card_id,shop_id,day,price,struck_price,boosted,soldout) VALUES (1,'a','2026-10-14',6000,3000,1,0)")
+put("b", "2026-10-14", 3200)
+aggregate_day(con, "2026-10-14")
+assert con.execute("SELECT median_price FROM daily WHERE day='2026-10-14'").fetchone()[0] == 3100
 print("OK")

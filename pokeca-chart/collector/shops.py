@@ -133,6 +133,8 @@ def parse_goldenhobby(html):
             if not (name and price and len(ps) >= 2):
                 continue
             code = _txt(ps[1])
+            if _txt(name.group(1)).startswith("その他"):
+                continue  # 「その他 RR 10円」のような価格ルールの行で、個別のカードではない
             rows.append(dict(set_code=bracket.group(1) if bracket else "", set_name=head,
                              number=code, name=_txt(name.group(1)), rarity=_txt(ps[0]),
                              price=_yen(price.group(1)), struck=None, boosted=False, soldout=False,

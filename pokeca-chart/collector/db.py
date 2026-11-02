@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS daily (
   asof_day TEXT,                  -- stale のとき最後に2店以上そろった日
   PRIMARY KEY (card_id, day)
 );
+CREATE TABLE IF NOT EXISTS review (  -- 外れ値の印（自動で捨てず、人が確認する）
+  card_id INTEGER, day TEXT, shop_count INTEGER, reason TEXT
+);
 CREATE TABLE IF NOT EXISTS shop_day (
   shop TEXT, day TEXT, status TEXT,  -- complete / partial / blocked / error
   rows INTEGER, note TEXT,

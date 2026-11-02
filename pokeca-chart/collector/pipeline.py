@@ -73,19 +73,32 @@ def export(con, day, out):
             (day,)):
         row = {"カード番号": cid, "カード名": name, "型番": num, "レアリティ": rar, "収録弾": sname, "弾コード": scode,
                "中央値": med if med is not None else "", "算出店数": n if state == "normal" else "",
-               "状態": {"normal": "通常", "stale": f"更新待ち（{asof}時点）", "insufficient": "データ不足"}[state],
+               "状態": {"normal": "通常", "stale": f"更新待ち（{asof}時点）", "insufficient": "データ不足",
+                        "hold": f"外れ値で保留（{asof}時点）" if asof else "外れ値で保留"}[state],
                "公式で確認（カード名検索・暫定）": url}
         for s in SHOPS:
             p = prices.get(cid, {}).get(s)
             row[SHOP_JA[s]] = p[0] if p else ""
             row[SHOP_JA[s] + "_備考"] = "" if not p else "・".join(
-                x for x in ["SOLDOUT" if p[1] else "", "強化買取中" if p[2] else "", f"取消線{p[3]}" if p[3] else ""] if x)
+                x for x in ["SOLDOUT" if p[1] else "", f"強化買取中（通常価格{p[3]}円を計算に使用）" if p[3] else ""] if x)
         row["照合キー"] = key
         rows.append(row)
     rows.sort(key=lambda r: -(r["中央値"] or 0))
     os.makedirs(out, exist_ok=True)
     tag = day.replace("-", "")
     paths = []
+    # 外れ値の確認用一覧（週1回、人が見て、読み違い・別カードなら照合や読み取りを直す）
+    rv = [{"カード番号": cid, "カード名": n, "型番": num, "収録弾": sn, "店数": k, "理由": why, "状態": st}
+          for cid, n, num, sn, k, why, st in con.execute(
+              "SELECT c.id, c.name, c.number, c.set_name, r.shop_count, r.reason, d.state FROM review r "
+              "JOIN card c ON c.id=r.card_id JOIN daily d ON d.card_id=r.card_id AND d.day=r.day WHERE r.day=?", (day,))]
+    if rv:
+        path = os.path.join(out, f"review_outliers_{tag}.csv")
+        with open(path, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.DictWriter(f, fieldnames=list(rv[0].keys()))
+            w.writeheader()
+            w.writerows(rv)
+        paths.append((path, len(rv)))
     for fname, sel in [(f"cards_all_{tag}.csv", rows),
                        (f"spreadsheet_100yen_{tag}.csv", [r for r in rows if r["中央値"] != "" and r["中央値"] >= MIN_PRICE])]:
         path = os.path.join(out, fname)

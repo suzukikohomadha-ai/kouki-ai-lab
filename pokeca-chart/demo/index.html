@@ -208,7 +208,7 @@ async function load() {
   all.forEach(m => { if (!m.ok) S.sum.lack++; else if (m.diff > 0) S.sum.up++; else if (m.diff < 0) S.sum.down++; else S.sum.flat++; });
   S.pool = all.filter(m => m.ok && m.last >= 300);
   const cons = S.pool.slice().sort((a, b) => b.last - a.last).slice(0, 300);
-  S.idx = Array.from({ length: DAYS }, (_, t) => cons.reduce((a, m) => a + m.s[t] / m.s[0], 0) / cons.length * 1000);
+  S.idx = Array.from({ length: DAYS }, (_, t) => Math.exp(cons.reduce((a, m) => a + Math.log(Math.min(10, Math.max(0.1, m.s[t] / m.s[0]))), 0) / cons.length) * 1000);  // ジェヴォンズ型（価格比の幾何平均）。価格比は0.1〜10倍で上下限
   S.ready = true; route();
 }
 function holdings() { try { return JSON.parse(store.get("pokeca-mine") || "{}"); } catch { return {}; } }
@@ -249,7 +249,7 @@ function topPage() {
     <div class="panel gold"><h2>ポケカ買取指数</h2>
       <div class="row"><span class="idx-v">${last.toFixed(1)}</span>${chipHtml(d1, "前日比 " + pct(d1))}<span class="num sub">30日前比 ${pct(d30)}</span></div>
       <div class="chart">${lineChart(S.idx.slice(-90), Array.from({ length: 90 }, (_, i) => dl(89 - i)), lineVar(d1), "ポケカ買取指数の直近90日の推移")}</div>
-      <p class="sub" style="margin:6px 0 0">構成：直近の買取価格上位300枚（固定）。各カードの値動き率の単純平均で、${dl(DAYS - 1)}＝1000。数値はダミーです。</p></div>
+      <p class="sub" style="margin:6px 0 0">構成：直近の買取価格上位300枚（固定）。各カードの値動き率の幾何平均（ジェヴォンズ型）で、${dl(DAYS - 1)}＝1000。数値はダミーです。</p></div>
     <div class="panel"><div class="row" style="justify-content:space-between"><h2>ランキング（前日比）</h2><div class="tabs">${tabBtns("rank", [["gain", "上昇"], ["loss", "下落"]])}</div></div>
       <div class="rank">${rk(S.rank === "gain" ? gain : loss)}</div>
       <p class="sub" style="margin:6px 0 0">買取価格300円以上で、2店以上の価格がそろっているカードが対象です。</p></div>
