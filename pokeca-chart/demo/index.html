@@ -123,7 +123,7 @@ footer div{max-width:1240px;margin:0 auto;padding:16px;display:grid;gap:4px}
 <div class="demo-banner">UIデモ：カード名・型番・レアリティ・収録弾は、買取店の買取表とみられる共有データから取り込んだもので、公式情報との照合は一部のみです。<br><b>価格・前日比・店数・価格差・強化買取・チャート・指数・ランキング・順位・枚数の集計・評価額・更新日時・対応状況はすべてダミー</b>で、実在の価格とは無関係です。</div>
 <header class="top"><div class="top-in">
   <button class="brand" id="go-top"><i></i><span>ポケカ買取チャート（仮）</span></button>
-  <nav aria-label="メイン"><button data-nav="top">トップ</button><button data-nav="boxes">BOX一覧</button><button data-nav="mine">マイコレクション</button></nav>
+  <nav aria-label="メイン"><button data-nav="top">トップ</button><button data-nav="boxes">BOX一覧</button><button data-nav="mine">マイコレクション</button><button data-nav="scan">📷 カメラで探す</button></nav>
   <div class="searchbox"><label for="q" class="sr" style="position:absolute;left:-9999px">カード名・型番で検索</label>
     <input id="q" type="search" placeholder="カード名・型番で検索（例：ピカチュウ、201/165）" autocomplete="off"><div class="suggest" id="suggest" hidden></div></div>
   <button class="tgl" id="scheme" aria-label="上昇と下落の配色を切り替える"></button>
@@ -222,6 +222,7 @@ function route() {
   else if (h.startsWith("c-") && S.byId.has(+h.slice(2))) { v.innerHTML = cardPage(+h.slice(2)); nav = "boxes"; }
   else if (h === "boxes") { v.innerHTML = boxesPage(); nav = "boxes"; }
   else if (h === "mine") { v.innerHTML = minePage(); nav = "mine"; }
+  else if (h === "scan") { v.innerHTML = scanPage(); nav = "scan"; }
   else v.innerHTML = topPage();
   document.querySelectorAll("nav button").forEach(b => { if (b.dataset.nav === nav) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   bind(); scrollTo(0, 0);
@@ -387,6 +388,7 @@ function minePage() {
 
 /* ===== 操作 ===== */
 function bind() {
+  bindScan();
   const v = $("view");
   v.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
   v.querySelectorAll("[data-rank]").forEach(b => b.onclick = () => { S.rank = b.dataset.rank; route(); });
@@ -434,6 +436,86 @@ q.addEventListener("keydown", e => {
 });
 sg.addEventListener("click", () => { sg.hidden = true; q.value = ""; });
 document.addEventListener("click", e => { if (!e.target.closest(".searchbox")) sg.hidden = true; });
+
+/* ===== カメラで探す（試作） =====
+   カード左下の「収録弾コード＋型番」（例：M6a 134/103）を端末内で文字認識し、データから探す。
+   写真は外部に送らない（文字認識のプログラムと英数字の学習データだけをCDNから読み込む）。 */
+const TESS = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+let tessWorker = null;
+function scanPage() {
+  return `<section style="display:grid;gap:14px;max-width:720px">
+  <h1>カメラで探す（試作）</h1>
+  <p class="sub">カードの<b>左下</b>にある「収録弾コードと型番」（例：<span class="num">M6a 134/103</span>）を大きく、明るく撮影してください。写真は端末の中だけで読み取り、外部には送りません。</p>
+  <div class="panel" style="display:grid;gap:10px">
+    <label class="btn solid" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer;width:max-content">📷 撮影・写真を選ぶ<input id="scan-file" type="file" accept="image/*" capture="environment" style="display:none"></label>
+    <div id="scan-status" class="sub" aria-live="polite">まだ読み取っていません。</div>
+    <canvas id="scan-preview" style="max-width:100%;border-radius:6px;display:none"></canvas>
+  </div>
+  <div class="panel" style="display:grid;gap:8px">
+    <label for="scan-manual" class="sub">読み取れないときは、型番を入力してください（例：134/103、M6a 134/103、277/XY-P）</label>
+    <div class="row"><input id="scan-manual" type="search" placeholder="型番" style="min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);flex:1 1 200px"><button class="btn" id="scan-go">探す</button></div>
+  </div>
+  <div id="scan-result"></div>
+  <p class="sub">読み取りの精度は撮り方で大きく変わります。現行シリーズはコードと型番が文字で印刷されていますが、古いシリーズはコードが記号のことがあり、その場合は型番だけで候補を出します（未確認の前提）。</p></section>`;
+}
+function loadScript(src) { return new Promise((ok, ng) => { const t = document.createElement("script"); t.src = src; t.onload = ok; t.onerror = () => ng(new Error("読み込み失敗")); document.head.appendChild(t); }); }
+function normCode(c) { return (c || "").toLowerCase().replace(/(?<=[a-z])0+(?=\d)/g, ""); }
+function parseCardText(text) {
+  const t = text.replace(/[|]/g, "/").replace(/\s+/g, " ");
+  const out = [];
+  for (const m of t.matchAll(/(?:([A-Za-z]{1,4}\d{0,2}[A-Za-z]?)\s+)?(\d{1,3})\s*\/\s*(\d{2,3}|[A-Za-z]{1,3}-P)\b/g))
+    out.push({ code: m[1] || "", num: m[2], den: m[3] });
+  return out;
+}
+function findCards(q) {
+  const res = [];
+  const codeOf = slug => (S.setMap.get(slug) || {}).code || "";
+  for (const c of S.cards) {
+    const m = (c[3] || "").match(/^(\d+)\/(.+)$/);
+    if (!m || +m[1] !== +q.num || m[2].toUpperCase() !== q.den.toUpperCase()) continue;
+    res.push({ c, codeHit: q.code && normCode(codeOf(c[1])) === normCode(q.code) });
+  }
+  const hits = res.filter(r => r.codeHit);
+  return hits.length ? hits : res;
+}
+function showResults(qs, statusText) {
+  const el = $("scan-result");
+  if (!qs.length) { el.innerHTML = '<div class="warn">型番を読み取れませんでした。カード左下を画面いっぱいに、明るい場所で撮り直すか、型番を入力してください。</div>'; $("scan-status").textContent = statusText; return; }
+  const seen = new Set(), rows = [];
+  for (const q of qs) for (const r of findCards(q)) if (!seen.has(r.c[0])) { seen.add(r.c[0]); rows.push(r); }
+  $("scan-status").textContent = statusText + `（読み取った型番：${qs.map(q => (q.code ? q.code + " " : "") + q.num + "/" + q.den).join("、")}）`;
+  el.innerHTML = rows.length ? `<div class="panel"><h2 style="margin-bottom:4px">候補 ${rows.length}件${rows.some(r => r.codeHit) ? "（収録弾コードも一致）" : "（型番だけで検索）"}</h2>${rows.slice(0, 30).map(r => { const m = vm(r.c), s = S.setMap.get(r.c[1]); return `<button class="rowbtn" data-go="c-${r.c[0]}"><span class="nm"><b style="color:var(--accent);text-decoration:underline">${esc(r.c[4])}</b><small>${esc(r.c[3])}・${esc(r.c[2])}・${esc(s ? s.name : "")}</small></span><span class="num">${m.none ? "データ不足" : yen(m.last)}</span></button>`; }).join("")}</div>`
+    : '<div class="warn">読み取った型番に一致するカードがデータにありません。読み違いの可能性があるので、型番を入力して確かめてください。</div>';
+  el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+}
+async function scanImage(file) {
+  const st = $("scan-status"), cv = $("scan-preview");
+  st.textContent = "画像を準備しています…";
+  const img = await createImageBitmap(file);
+  // 長辺1600pxに縮小し、白黒・コントラストを上げて文字を読みやすくする
+  const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+  cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+  const g = cv.getContext("2d"); g.drawImage(img, 0, 0, cv.width, cv.height);
+  const d = g.getImageData(0, 0, cv.width, cv.height), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { const y = 0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2]; const v = y > 140 ? 255 : y < 90 ? 0 : (y - 90) * 5.1; a[i] = a[i + 1] = a[i + 2] = v; }
+  g.putImageData(d, 0, 0); cv.style.display = "block";
+  try {
+    if (!window.Tesseract) { st.textContent = "文字認識の準備をしています（初回は数十秒かかります）…"; await loadScript(TESS); }
+    if (!tessWorker) { tessWorker = await Tesseract.createWorker("eng"); await tessWorker.setParameters({ tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/- " }); }
+    st.textContent = "読み取っています…";
+    const { data } = await tessWorker.recognize(cv);
+    showResults(parseCardText(data.text), "読み取りました");
+  } catch (e) {
+    st.textContent = "文字認識を使えませんでした（" + e.message + "）。型番を入力して探してください。";
+  }
+}
+function bindScan() {
+  const f = $("scan-file"); if (!f) return;
+  f.onchange = () => { if (f.files[0]) scanImage(f.files[0]); };
+  const manual = () => showResults(parseCardText($("scan-manual").value.trim().replace(/^(\d+\/)/, " $1")), "入力から検索しました");
+  $("scan-go").onclick = manual;
+  $("scan-manual").onkeydown = e => { if (e.key === "Enter") manual(); };
+}
 
 load().catch(() => { $("view").innerHTML = '<p class="empty">データを読み込めませんでした。このページはHTTPサーバー経由で開いてください（例：<code>python3 -m http.server</code>）。</p>'; });
 </script>
