@@ -26,6 +26,7 @@ window.AI_STATE = {
   },
 
   tasks: [
+    { id: "T228", client: "コホマダnote", title: "Cupffee紹介note記事（調査・本文・図解7点）", owner: "ジン", status: "review", progress: 85, hint: "Cupffee社への掲載了承・問い合わせ先・紹介料の扱いを決める", cmd: "T228の確認事項に回答します", log: [ { time: "11-24", text: "リサ調査→本文v1→リョウ法務整理→v2→アオイ監査（HUMAN REVIEW REQUIRED）→v3・図解修正" } ], deliverables: [ { title: "記事本文v3", type: "md", path: "logs/kohomada_2026-11-24_Cupffee紹介note記事_本文_v3.md" }, { title: "図解7点", type: "png", path: "logs/images/kohomada_2026-11-24_cupffee/" }, { title: "調査レポート", type: "md", path: "logs/kohomada_2026-11-24_Cupffee調査_v1.md" }, { title: "監査ログ", type: "md", path: "logs/kohomada_2026-11-24_Cupffee紹介note記事_監査_v1.md" } ] },
     { id: "T1", client: "ガチャガチャ案件", title: "ガチャガチャ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T2", client: "トップパフォーマー案件", title: "トップパフォーマー案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
     { id: "T3", client: "へウラ案件", title: "へウラ案件（コホマダ貿易）", owner: "レン", status: "done", progress: 100, hint: "社長確認：完了済み", cmd: "", log: [ { time: "now", text: "社長より完了済みと確認" } ], deliverables: [] },
